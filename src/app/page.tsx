@@ -11,14 +11,17 @@ import {
   MobileNavMenu,
 } from "@/components/ui/resizable-navbar";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { ProfileDropdown } from "@/components/profile/ProfileDropdown";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function NavbarDemo() {
   const { user, loading, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     {
@@ -66,14 +69,20 @@ export default function NavbarDemo() {
           <NavItems items={navItems} />
           <div className="flex items-center gap-4">
             {user ? (
-              <>
-                <span className="text-sm text-neutral-600">
-                  {user.email}
-                </span>
-                <NavbarButton variant="secondary" onClick={handleSignOut}>
-                  Sign Out
-                </NavbarButton>
-              </>
+              <div className="relative">
+                <div 
+                  ref={avatarRef}
+                  className="user-avatar clickable" 
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                >
+                  {user.email?.charAt(0).toUpperCase()}
+                </div>
+                <ProfileDropdown
+                  isOpen={profileDropdownOpen}
+                  onClose={() => setProfileDropdownOpen(false)}
+                  avatarRef={avatarRef}
+                />
+              </div>
             ) : (
               <>
                 <NavbarButton variant="secondary" onClick={handleLoginClick}>
@@ -113,9 +122,23 @@ export default function NavbarDemo() {
             ))}
             <div className="flex w-full flex-col gap-4">
               {user ? (
-                <>
-                  <div className="text-center text-sm text-neutral-600 p-2">
-                    {user.email}
+                <div className="mobile-user-section">
+                  <div className="mobile-user-info">
+                    <div className="user-avatar">
+                      {user.email?.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="mobile-user-details">
+                      <span className="user-email">{user.email}</span>
+                      <button 
+                        className="edit-profile-link"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setProfileDropdownOpen(true);
+                        }}
+                      >
+                        View Profile
+                      </button>
+                    </div>
                   </div>
                   <NavbarButton
                     onClick={() => {
@@ -127,7 +150,7 @@ export default function NavbarDemo() {
                   >
                     Sign Out
                   </NavbarButton>
-                </>
+                </div>
               ) : (
                 <>
                   <NavbarButton
