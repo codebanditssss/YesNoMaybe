@@ -1,21 +1,33 @@
 export function StatsSection() {
   const stats = [
-    { value: "$2.4M+", label: "Total Volume Traded" },
-    { value: "15K+", label: "Active Traders" },
-    { value: "89%", label: "Accuracy Rate" },
-    { value: "500+", label: "Markets Available" }
+    {
+      value: "$2.4M+",
+      label: "Total Volume Traded"
+    },
+    {
+      value: "15K+", 
+      label: "Active Traders"
+    },
+    {
+      value: "89%",
+      label: "Accuracy Rate"
+    },
+    {
+      value: "500+",
+      label: "Markets Available"
+    }
   ];
 
   return (
-    <section className="py-16 bg-white/50 backdrop-blur-sm border-y border-slate-200">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+    <section className="py-20 px-6">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {stats.map((stat, index) => (
-            <div key={index} className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+            <div key={index} className="space-y-2">
+              <div className="text-3xl md:text-4xl font-light text-black">
                 {stat.value}
               </div>
-              <div className="text-sm text-slate-600 uppercase tracking-wide font-medium">
+              <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">
                 {stat.label}
               </div>
             </div>

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { ProfileDropdown } from "@/components/profile/ProfileDropdown";
 
 interface NavbarProps {
   children: React.ReactNode;
@@ -53,7 +52,7 @@ interface NavBodyProps {
 
 export function NavBody({ children }: NavBodyProps) {
   return (
-    <div className="nav-body">
+    <div className="nav-body flex items-center justify-between w-full">
       {children}
     </div>
   );
@@ -190,7 +189,7 @@ interface ResizableNavbarProps {
 export default function ResizableNavbar({ onOpenAuth }: ResizableNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const avatarRef = useRef<HTMLDivElement>(null);
   
   const navItems = [
@@ -200,83 +199,182 @@ export default function ResizableNavbar({ onOpenAuth }: ResizableNavbarProps) {
     { name: "About", link: "/about" }
   ];
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  const toggleProfile = () => {
+    setIsProfileOpen(!isProfileOpen);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setIsProfileOpen(false);
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (avatarRef.current && !avatarRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  if (loading) {
+    return null;
+  }
+
   return (
     <Navbar>
       <NavBody>
-        <NavbarLogo />
+        {/* Left: Logo */}
+        <div className="flex-shrink-0">
+          <NavbarLogo />
+        </div>
         
-        {/* Desktop Navigation */}
-        <div className="hidden md:block">
+        {/* Center: Desktop Navigation */}
+        <div className="hidden md:flex flex-1 justify-center">
           <NavItems items={navItems} />
         </div>
         
-        {/* Desktop Buttons */}
-        <div className="hidden md:flex gap-3">
-          {loading ? (
-            <div className="text-gray-500">Loading...</div>
-          ) : user ? (
-            <div className="relative">
-              <div
-                ref={avatarRef}
-                className="profile-avatar cursor-pointer"
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-              >
-                {user.email?.charAt(0).toUpperCase()}
+        {/* Right: Auth buttons or Profile */}
+        <div className="flex-shrink-0">
+          <div className="hidden md:flex">
+            {user ? (
+              <div className="relative" ref={avatarRef}>
+                <button
+                  onClick={toggleProfile}
+                  className="user-avatar"
+                >
+                  {user.email?.charAt(0).toUpperCase() || 'U'}
+                </button>
+                
+                {isProfileOpen && (
+                  <div className="profile-dropdown">
+                    <div className="profile-info">
+                      <div className="profile-name">
+                        {user.email?.split('@')[0] || 'User'}
+                      </div>
+                      <div className="profile-email">
+                        {user.email}
+                      </div>
+                    </div>
+                    <div className="profile-divider"></div>
+                    <button
+                      onClick={handleSignOut}
+                      className="sign-out-button"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
-              <ProfileDropdown
-                isOpen={isProfileOpen}
-                onClose={() => setIsProfileOpen(false)}
-                avatarRef={avatarRef}
-              />
-            </div>
-          ) : (
-            <>
-              <NavbarButton variant="secondary" onClick={() => onOpenAuth?.('signin')}>Sign In</NavbarButton>
-              <NavbarButton variant="primary" onClick={() => onOpenAuth?.('signup')}>Get Started</NavbarButton>
-            </>
-          )}
-        </div>
-        
-        {/* Mobile Navigation */}
-        <MobileNav>
-          <MobileNavHeader>
+            ) : (
+              <div className="auth-buttons flex gap-3">
+                <NavbarButton 
+                  variant="secondary" 
+                  onClick={() => onOpenAuth?.('signin')}
+                >
+                  Sign In
+                </NavbarButton>
+                <NavbarButton 
+                  variant="primary" 
+                  onClick={() => onOpenAuth?.('signup')}
+                >
+                  Sign Up
+                </NavbarButton>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Navigation Toggle */}
+          <div className="md:hidden">
             <MobileNavToggle 
               isOpen={isMobileMenuOpen} 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+              onClick={toggleMobileMenu} 
             />
-          </MobileNavHeader>
-          
-          <MobileNavMenu 
-            isOpen={isMobileMenuOpen} 
-            onClose={() => setIsMobileMenuOpen(false)}
-          >
-            {navItems.map((item, idx) => (
-              <a key={idx} href={item.link}>{item.name}</a>
-            ))}
-            {user ? (
-              <>
-                <div className="mobile-user-info">
-                  <div className="mobile-profile-avatar">
-                    {user.email?.charAt(0).toUpperCase()}
-                  </div>
-                  <span>{user.email}</span>
-                </div>
-                <a href="/profile">Profile</a>
-                <a href="#" onClick={(e) => {
-                  e.preventDefault();
-                  setIsMobileMenuOpen(false);
-                  setIsProfileOpen(true);
-                }}>Settings</a>
-              </>
-            ) : (
-              <>
-                <a href="/signin" onClick={() => onOpenAuth?.('signin')}>Sign In</a>
-                <a href="/signup" onClick={() => onOpenAuth?.('signup')}>Get Started</a>
-              </>
-            )}
-          </MobileNavMenu>
-        </MobileNav>
+          </div>
+        </div>
       </NavBody>
+
+      {/* Mobile Navigation Menu */}
+      <MobileNavMenu isOpen={isMobileMenuOpen} onClose={closeMobileMenu}>
+        <MobileNavHeader>
+          <NavbarLogo />
+        </MobileNavHeader>
+        
+        <div className="mobile-nav-items">
+          {navItems.map((item, idx) => (
+            <a 
+              key={idx} 
+              href={item.link} 
+              className="mobile-nav-link"
+              onClick={closeMobileMenu}
+            >
+              {item.name}
+            </a>
+          ))}
+        </div>
+        
+        {user ? (
+          <div className="mobile-user-section">
+            <div className="mobile-user-info">
+              <div className="mobile-user-avatar">
+                {user.email?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              <div>
+                <div className="mobile-user-name">
+                  {user.email?.split('@')[0] || 'User'}
+                </div>
+                <div className="mobile-user-email">
+                  {user.email}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="mobile-sign-out"
+            >
+              Sign Out
+            </button>
+          </div>
+        ) : (
+          <div className="mobile-auth-buttons flex flex-col gap-3">
+            <NavbarButton 
+              variant="secondary" 
+              onClick={() => {
+                onOpenAuth?.('signin');
+                closeMobileMenu();
+              }}
+            >
+              Sign In
+            </NavbarButton>
+            <NavbarButton 
+              variant="primary" 
+              onClick={() => {
+                onOpenAuth?.('signup');
+                closeMobileMenu();
+              }}
+            >
+              Sign Up
+            </NavbarButton>
+          </div>
+        )}
+      </MobileNavMenu>
     </Navbar>
   );
 } 
