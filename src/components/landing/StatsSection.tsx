@@ -1,7 +1,7 @@
 export function StatsSection() {
   const stats = [
     {
-      value: "$2.4M+",
+      value: "₹20Cr+",
       label: "Total Volume Traded"
     },
     {

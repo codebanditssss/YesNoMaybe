@@ -18,7 +18,7 @@ export function CTASection({ onOpenAuth }: CTASectionProps) {
         <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto">
           {user 
             ? "Explore new markets, manage your portfolio, and stay ahead of market trends with our professional trading tools."
-            : "Join thousands of traders who are already profiting from their predictions. Start with just $10 and see where your insights can take you."
+            : "Join thousands of traders who are already profiting from their predictions. Start with just ₹1000 and see where your insights can take you."
           }
         </p>
         

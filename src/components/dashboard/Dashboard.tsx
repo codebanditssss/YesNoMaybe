@@ -21,9 +21,9 @@ export function Dashboard() {
   const portfolioStats = [
     {
       title: "Portfolio Value",
-      value: "$1,247.50",
+      value: "₹1,04,750",
       change: "+12.5%",
-      changeValue: "+$137.20",
+      changeValue: "+₹11,520",
       trend: "up",
       icon: DollarSign
     },
@@ -37,7 +37,7 @@ export function Dashboard() {
     },
     {
       title: "Total Returns",
-      value: "$247.50",
+      value: "₹20,750",
       change: "+18.7%",
       changeValue: "this month",
       trend: "up",
@@ -61,7 +61,7 @@ export function Dashboard() {
       shares: 150,
       currentPrice: 34,
       entryPrice: 28,
-      pnl: "+$90.00",
+      pnl: "+₹7,560",
       pnlPercent: "+21.4%",
       trend: "up"
     },
@@ -72,7 +72,7 @@ export function Dashboard() {
       shares: 200,
       currentPrice: 73,
       entryPrice: 65,
-      pnl: "+$160.00",
+      pnl: "+₹13,440",
       pnlPercent: "+12.3%",
       trend: "up"
     },
@@ -83,7 +83,7 @@ export function Dashboard() {
       shares: 100,
       currentPrice: 48,
       entryPrice: 52,
-      pnl: "-$40.00",
+      pnl: "-₹3,360",
       pnlPercent: "-7.7%",
       trend: "down"
     }
@@ -91,17 +91,17 @@ export function Dashboard() {
 
   const trendingMarkets = [
     {
-      title: "Bitcoin hits $100K by end of 2024?",
+      title: "Bitcoin hits ₹84L by end of 2024?",
       category: "Crypto",
-      volume: "$89K",
+      volume: "₹7.5L",
       yesPrice: 42,
       noPrice: 58,
       change: "+5%"
     },
     {
-      title: "Tesla stock above $300 by Q1 2025?",
+      title: "Tesla stock above ₹25,000 by Q1 2025?",
       category: "Stocks",
-      volume: "$156K", 
+      volume: "₹13L", 
       yesPrice: 67,
       noPrice: 33,
       change: "+12%"
@@ -109,7 +109,7 @@ export function Dashboard() {
     {
       title: "ChatGPT-5 released by OpenAI in 2024?",
       category: "Technology",
-      volume: "$203K",
+      volume: "₹17L",
       yesPrice: 78,
       noPrice: 22,
       change: "-3%"
@@ -125,7 +125,7 @@ export function Dashboard() {
     },
     {
       type: "Market resolved",
-      description: "Won $45 from Election prediction",
+      description: "Won ₹3,780 from Election prediction",
       time: "5 hours ago",
       status: "info"
     },

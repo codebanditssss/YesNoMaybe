@@ -94,9 +94,9 @@ export function Markets() {
   const markets: Market[] = [
     {
       id: '1',
-      title: 'Bitcoin to reach $100K by December 2024?',
+      title: 'Bitcoin to reach ₹84L by December 2024?',
       category: 'crypto',
-      description: 'Will Bitcoin price reach $100,000 USD by December 31, 2024?',
+      description: 'Will Bitcoin price reach ₹84,00,000 INR by December 31, 2024?',
       traders: 4521,
       volume: '₹8.7L',
       volume24h: 870000,
@@ -169,9 +169,9 @@ export function Markets() {
     },
     {
       id: '4',
-      title: 'Tesla stock to cross $300 by Q1 2025?',
+      title: 'Tesla stock to cross ₹25,000 by Q1 2025?',
       category: 'economics',
-      description: 'Will Tesla (TSLA) stock price exceed $300 by March 31, 2025?',
+      description: 'Will Tesla (TSLA) stock price exceed ₹25,000 INR by March 31, 2025?',
       traders: 3247,
       volume: '₹6.8L',
       volume24h: 680000,
@@ -269,9 +269,9 @@ export function Markets() {
     },
     {
       id: '8',
-      title: 'Ethereum to reach $5K by end of 2024?',
+      title: 'Ethereum to reach ₹4.2L by end of 2024?',
       category: 'crypto',
-      description: 'Will Ethereum price reach $5,000 USD by December 31, 2024?',
+      description: 'Will Ethereum price reach ₹4,20,000 INR by December 31, 2024?',
       traders: 2891,
       volume: '₹5.4L',
       volume24h: 540000,

@@ -109,7 +109,7 @@ export function Portfolio() {
     {
       id: '1',
       marketId: 'btc-100k',
-      marketTitle: 'Bitcoin to reach $100K by December 2024?',
+      marketTitle: 'Bitcoin to reach ₹84L by December 2024?',
       category: 'crypto',
       type: 'yes',
       quantity: 150,
@@ -145,7 +145,7 @@ export function Portfolio() {
     {
       id: '3',
       marketId: 'tesla-300',
-      marketTitle: 'Tesla stock to cross $300 by Q1 2025?',
+      marketTitle: 'Tesla stock to cross ₹25,000 by Q1 2025?',
       category: 'economics',
       type: 'no',
       quantity: 80,
@@ -184,7 +184,7 @@ export function Portfolio() {
     {
       id: '1',
       marketId: 'btc-100k',
-      marketTitle: 'Bitcoin to reach $100K by December 2024?',
+      marketTitle: 'Bitcoin to reach ₹84L by December 2024?',
       type: 'buy',
       side: 'yes',
       quantity: 50,
@@ -196,7 +196,7 @@ export function Portfolio() {
     {
       id: '2',
       marketId: 'tesla-300',
-      marketTitle: 'Tesla stock to cross $300 by Q1 2025?',
+      marketTitle: 'Tesla stock to cross ₹25,000 by Q1 2025?',
       type: 'sell',
       side: 'no',
       quantity: 20,
@@ -232,7 +232,7 @@ export function Portfolio() {
     {
       id: '5',
       marketId: 'tesla-300',
-      marketTitle: 'Tesla stock to cross $300 by Q1 2025?',
+      marketTitle: 'Tesla stock to cross ₹25,000 by Q1 2025?',
       type: 'sell',
       side: 'no',
       quantity: 15,

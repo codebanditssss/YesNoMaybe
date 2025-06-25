@@ -188,7 +188,7 @@ export function DashboardLayout({ children, currentPage = 'dashboard', onNavigat
               {/* Portfolio value */}
               <div className="hidden md:block text-right bg-gray-50 px-4 py-2 rounded-xl">
                 <p className="text-xs text-gray-500 font-medium">Portfolio Value</p>
-                <p className="text-lg font-bold text-gray-900">$1,247.50</p>
+                <p className="text-lg font-bold text-gray-900">₹1,04,750</p>
               </div>
             </div>
           </div>

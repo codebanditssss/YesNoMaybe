@@ -17,7 +17,7 @@ export function DashboardApp() {
     {
       id: '1',
       marketId: '1',
-      marketTitle: 'Bitcoin to reach $100K by 2024?',
+      marketTitle: 'Bitcoin to reach ₹84L by 2024?',
       type: 'yes' as const,
       quantity: 150,
       avgPrice: 3.8,
@@ -28,7 +28,7 @@ export function DashboardApp() {
     {
       id: '2',
       marketId: '2',
-      marketTitle: 'Tesla stock above $300 by Q1 2025?',
+      marketTitle: 'Tesla stock above ₹25,000 by Q1 2025?',
       type: 'no' as const,
       quantity: 100,
       avgPrice: 3.5,

@@ -6,21 +6,21 @@ export function MarketsSection() {
     {
       title: "Will AI achieve AGI by 2025?",
       category: "Technology",
-      volume: "$125K",
+      volume: "₹10L",
       yesPrice: 34,
       noPrice: 66
     },
     {
       title: "2024 Election Prediction",
       category: "Politics", 
-      volume: "$89K",
+      volume: "₹7.5L",
       yesPrice: 52,
       noPrice: 48
     },
     {
       title: "Fed Rate Cut by Q2 2024?",
       category: "Economics",
-      volume: "$156K",
+      volume: "₹13L",
       yesPrice: 73,
       noPrice: 27
     }

@@ -64,9 +64,9 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
   const availableMarkets: Market[] = [
     {
       id: '1',
-      title: 'Bitcoin to reach $100K by 2024?',
+      title: 'Bitcoin to reach ₹84L by 2024?',
       category: 'Crypto',
-      description: 'Will Bitcoin price reach $100,000 USD by December 31, 2024?',
+      description: 'Will Bitcoin price reach ₹84,00,000 INR by December 31, 2024?',
       lastPrice: 4.2,
       change: 0.3,
       changePercent: 7.8,
@@ -79,9 +79,9 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
     },
     {
       id: '2',
-      title: 'Tesla stock above $300 by Q1 2025?',
+      title: 'Tesla stock above ₹25,000 by Q1 2025?',
       category: 'Stocks',
-      description: 'Will Tesla stock price be above $300 by March 31, 2025?',
+      description: 'Will Tesla stock price be above ₹25,000 INR by March 31, 2025?',
       lastPrice: 6.7,
       change: 0.8,
       changePercent: 13.6,

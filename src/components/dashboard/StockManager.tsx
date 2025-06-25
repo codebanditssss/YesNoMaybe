@@ -74,7 +74,7 @@ export function StockManager({ userStocks, onMint, onBurn }: StockManagerProps) 
   const availableMarkets = [
     { 
       id: '1', 
-      title: 'Bitcoin to reach $100K by 2024?', 
+      title: 'Bitcoin to reach ₹84L by 2024?', 
       yesPrice: 4.2, 
       noPrice: 5.8, 
       category: 'crypto',
@@ -85,7 +85,7 @@ export function StockManager({ userStocks, onMint, onBurn }: StockManagerProps) 
     },
     { 
       id: '2', 
-      title: 'Tesla stock above $300 by Q1 2025?', 
+      title: 'Tesla stock above ₹25,000 by Q1 2025?', 
       yesPrice: 6.7, 
       noPrice: 3.3, 
       category: 'economics',

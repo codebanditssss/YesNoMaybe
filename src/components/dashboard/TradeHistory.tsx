@@ -90,7 +90,7 @@ export function TradeHistory() {
     {
       id: '1',
       marketId: 'btc-100k',
-      marketTitle: 'Bitcoin to reach $100K by December 2024?',
+      marketTitle: 'Bitcoin to reach ₹84L by December 2024?',
       category: 'crypto',
       type: 'buy',
       side: 'yes',
@@ -110,7 +110,7 @@ export function TradeHistory() {
     {
       id: '2',
       marketId: 'tesla-300',
-      marketTitle: 'Tesla stock to cross $300 by Q1 2025?',
+      marketTitle: 'Tesla stock to cross ₹25,000 by Q1 2025?',
       category: 'economics',
       type: 'sell',
       side: 'no',
