@@ -1,289 +1,242 @@
 "use client";
-import {
-  Navbar,
-  NavBody,
-  NavItems,
-  MobileNav,
-  NavbarLogo,
-  NavbarButton,
-  MobileNavHeader,
-  MobileNavToggle,
-  MobileNavMenu,
-} from "@/components/ui/resizable-navbar";
-import { AuthModal } from "@/components/auth/AuthModal";
-import { ProfileDropdown } from "@/components/profile/ProfileDropdown";
-import { useAuth } from "@/contexts/AuthContext";
-import { useState, useRef } from "react";
 
-export default function NavbarDemo() {
-  const { user, loading, signOut } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const avatarRef = useRef<HTMLDivElement>(null);
+import { useState } from 'react'
+import { HeroSection } from '@/components/landing/HeroSection'
+import { CTASection } from '@/components/landing/CTASection'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { AuthModal } from '@/components/auth/AuthModal'
+import ResizableNavbar from '@/components/ui/resizable-navbar'
 
-  const navItems = [
-    {
-      name: "Features",
-      link: "#features",
-    },
-    {
-      name: "Pricing",
-      link: "#pricing",
-    },
-    {
-      name: "Contact",
-      link: "#contact",
-    },
-  ];
+export default function Home() {
+  const [authModal, setAuthModal] = useState<{ isOpen: boolean; tab: 'signin' | 'signup' }>({
+    isOpen: false,
+    tab: 'signin'
+  });
 
-  const handleLoginClick = () => {
-    setAuthMode("login");
-    setAuthModalOpen(true);
+  const openAuthModal = (tab: 'signin' | 'signup') => {
+    setAuthModal({ isOpen: true, tab });
   };
 
-  const handleSignupClick = () => {
-    setAuthMode("signup");
-    setAuthModalOpen(true);
+  const closeAuthModal = () => {
+    setAuthModal({ isOpen: false, tab: 'signin' });
   };
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
 
   return (
-    <div className="relative w-full">
-      <Navbar>
-        {/* Desktop Navigation */}
-        <NavBody>
-          <NavbarLogo />
-          <NavItems items={navItems} />
-          <div className="flex items-center gap-4">
-            {user ? (
-              <div className="relative">
-                <div 
-                  ref={avatarRef}
-                  className="user-avatar clickable" 
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                >
-                  {user.email?.charAt(0).toUpperCase()}
-                </div>
-                <ProfileDropdown
-                  isOpen={profileDropdownOpen}
-                  onClose={() => setProfileDropdownOpen(false)}
-                  avatarRef={avatarRef}
-                />
+    <main className="min-h-screen bg-white relative">
+      {/* Navbar */}
+      <ResizableNavbar onOpenAuth={openAuthModal} />
+      
+      {/* Premium Grid Background */}
+      <div 
+        className="fixed inset-0 opacity-60"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #000000 1px, transparent 1px)',
+          backgroundSize: '20px 20px'
+        }}
+      />
+      
+      {/* Content */}
+      <div className="relative z-10">
+        <HeroSection onOpenAuth={openAuthModal} />
+        
+        {/* Stats Section */}
+        <section className="py-20 px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+              <div className="space-y-2">
+                <div className="text-3xl md:text-4xl font-light text-black">$2.4M+</div>
+                <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Volume Traded</div>
               </div>
-            ) : (
-              <>
-                <NavbarButton variant="secondary" onClick={handleLoginClick}>
-                  Login
-                </NavbarButton>
-                <NavbarButton variant="primary" onClick={handleSignupClick}>
-                  Signup
-                </NavbarButton>
-              </>
-            )}
+              <div className="space-y-2">
+                <div className="text-3xl md:text-4xl font-light text-black">15K+</div>
+                <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Active Traders</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-3xl md:text-4xl font-light text-black">89%</div>
+                <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Accuracy Rate</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-3xl md:text-4xl font-light text-black">500+</div>
+                <div className="text-sm font-medium text-gray-500 uppercase tracking-wide">Markets Available</div>
+              </div>
+            </div>
           </div>
-        </NavBody>
+        </section>
 
-        {/* Mobile Navigation */}
-        <MobileNav>
-          <MobileNavHeader>
-            <NavbarLogo />
-            <MobileNavToggle
-              isOpen={isMobileMenuOpen}
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            />
-          </MobileNavHeader>
+        {/* Features Section */}
+        <section className="py-24 px-6 bg-gray-50/50">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-light text-black mb-4">
+                Enterprise-grade prediction markets
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                Advanced tools and analytics for professional opinion trading
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8">
+              <Card className="p-8 border border-gray-200 bg-white/80 backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center">
+                    <span className="text-white text-xl">📊</span>
+                  </div>
+                  <h3 className="text-xl font-medium text-black">Real-time Analytics</h3>
+                  <p className="text-gray-600">
+                    Advanced market analytics with real-time data feeds and institutional-grade insights.
+                  </p>
+                </div>
+              </Card>
+              
+              <Card className="p-8 border border-gray-200 bg-white/80 backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center">
+                    <span className="text-white text-xl">⚡</span>
+                  </div>
+                  <h3 className="text-xl font-medium text-black">Instant Execution</h3>
+                  <p className="text-gray-600">
+                    Lightning-fast order execution with minimal slippage and maximum efficiency.
+                  </p>
+                </div>
+              </Card>
+              
+              <Card className="p-8 border border-gray-200 bg-white/80 backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-black rounded-sm flex items-center justify-center">
+                    <span className="text-white text-xl">🔒</span>
+                  </div>
+                  <h3 className="text-xl font-medium text-black">Secure Trading</h3>
+                  <p className="text-gray-600">
+                    Bank-level security with multi-factor authentication and encrypted transactions.
+                  </p>
+                </div>
+              </Card>
+              </div>
+          </div>
+        </section>
 
-          <MobileNavMenu
-            isOpen={isMobileMenuOpen}
-            onClose={() => setIsMobileMenuOpen(false)}
-          >
-            {navItems.map((item, idx) => (
-              <a
-                key={`mobile-link-${idx}`}
-                href={item.link}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="relative text-neutral-600"
-              >
-                <span className="block">{item.name}</span>
-              </a>
-            ))}
-            <div className="flex w-full flex-col gap-4">
-              {user ? (
-                <div className="mobile-user-section">
-                  <div className="mobile-user-info">
-                    <div className="user-avatar">
-                      {user.email?.charAt(0).toUpperCase()}
+        {/* Popular Markets */}
+        <section className="py-24 px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-light text-black mb-4">
+                Popular Markets
+              </h2>
+              <p className="text-lg text-gray-600">
+                Trade on high-volume prediction markets
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="p-6 border border-gray-200 bg-white/80 backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className="text-xs">Technology</Badge>
+                    <span className="text-sm text-gray-500">24h volume: $125K</span>
+                  </div>
+                  <h3 className="font-medium text-black">Will AI achieve AGI by 2025?</h3>
+                  <div className="flex justify-between text-sm">
+                    <div className="text-center">
+                      <div className="text-green-600 font-medium">YES</div>
+                      <div className="text-gray-500">34¢</div>
                     </div>
-                    <div className="mobile-user-details">
-                      <span className="user-email">{user.email}</span>
-                      <button 
-                        className="edit-profile-link"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setProfileDropdownOpen(true);
-                        }}
-                      >
-                        View Profile
-                      </button>
+                    <div className="text-center">
+                      <div className="text-red-600 font-medium">NO</div>
+                      <div className="text-gray-500">66¢</div>
                     </div>
                   </div>
-                  <NavbarButton
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      handleSignOut();
-                    }}
-                    variant="secondary"
-                    className="w-full"
-                  >
-                    Sign Out
-                  </NavbarButton>
                 </div>
-              ) : (
-                <>
-                  <NavbarButton
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      handleLoginClick();
-                    }}
-                    variant="secondary"
-                    className="w-full"
-                  >
-                    Login
-                  </NavbarButton>
-                  <NavbarButton
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      handleSignupClick();
-                    }}
-                    variant="primary"
-                    className="w-full"
-                  >
-                    Signup
-                  </NavbarButton>
-                </>
-              )}
+              </Card>
+              
+              <Card className="p-6 border border-gray-200 bg-white/80 backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className="text-xs">Politics</Badge>
+                    <span className="text-sm text-gray-500">24h volume: $89K</span>
+                  </div>
+                  <h3 className="font-medium text-black">2024 Election Prediction</h3>
+                  <div className="flex justify-between text-sm">
+                    <div className="text-center">
+                      <div className="text-green-600 font-medium">YES</div>
+                      <div className="text-gray-500">52¢</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-red-600 font-medium">NO</div>
+                      <div className="text-gray-500">48¢</div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+              
+              <Card className="p-6 border border-gray-200 bg-white/80 backdrop-blur-sm">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="secondary" className="text-xs">Economics</Badge>
+                    <span className="text-sm text-gray-500">24h volume: $156K</span>
+                  </div>
+                  <h3 className="font-medium text-black">Fed Rate Cut by Q2 2024?</h3>
+                  <div className="flex justify-between text-sm">
+                    <div className="text-center">
+                      <div className="text-green-600 font-medium">YES</div>
+                      <div className="text-gray-500">73¢</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-red-600 font-medium">NO</div>
+                      <div className="text-gray-500">27¢</div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
             </div>
-          </MobileNavMenu>
-        </MobileNav>
-      </Navbar>
-      <DummyContent />
-      
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        mode={authMode}
-        onModeChange={setAuthMode}
-      />
-    </div>
-  );
-}
-
-const DummyContent = () => {
-  return (
-    <div className="container p-8 pt-24">
-      <h1 className="mb-4 text-center text-3xl font-bold">
-        Check the navbar at the top of the container
-      </h1>
-      <p className="mb-10 text-center text-sm text-zinc-500">
-        For demo purpose we have kept the position as{" "}
-        <span className="font-medium">Sticky</span>. Keep in mind that this
-        component is <span className="font-medium">fixed</span> and will not
-        move when scrolling.
-      </p>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        {[
-          {
-            id: 1,
-            title: "The",
-            width: "md:col-span-1",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 2,
-            title: "First",
-            width: "md:col-span-2",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 3,
-            title: "Rule",
-            width: "md:col-span-1",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 4,
-            title: "Of",
-            width: "md:col-span-3",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 5,
-            title: "F",
-            width: "md:col-span-1",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 6,
-            title: "Club",
-            width: "md:col-span-2",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 7,
-            title: "Is",
-            width: "md:col-span-2",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 8,
-            title: "You",
-            width: "md:col-span-1",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 9,
-            title: "Do NOT TALK about",
-            width: "md:col-span-2",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-          {
-            id: 10,
-            title: "F Club",
-            width: "md:col-span-1",
-            height: "h-60",
-            bg: "bg-neutral-100",
-          },
-        ].map((box) => (
-          <div
-            key={box.id}
-            className={`${box.width} ${box.height} ${box.bg} flex items-center justify-center rounded-lg p-4 shadow-sm`}
-          >
-            <h2 className="text-xl font-medium">{box.title}</h2>
           </div>
-        ))}
-      </div>
+        </section>
+
+        {/* How It Works */}
+        <section className="py-24 px-6 bg-gray-50/50">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-light text-black mb-4">
+                How it works
+              </h2>
+              <p className="text-lg text-gray-600">
+                Three simple steps to start trading predictions
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-12">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-black text-white rounded-sm flex items-center justify-center mx-auto text-2xl font-light">1</div>
+                <h3 className="text-xl font-medium text-black">Create Account</h3>
+                <p className="text-gray-600">Sign up and verify your identity for secure trading access.</p>
+              </div>
+              
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-black text-white rounded-sm flex items-center justify-center mx-auto text-2xl font-light">2</div>
+                <h3 className="text-xl font-medium text-black">Fund Wallet</h3>
+                <p className="text-gray-600">Deposit funds using secure payment methods and start trading.</p>
     </div>
-  );
-}; 
+              
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-black text-white rounded-sm flex items-center justify-center mx-auto text-2xl font-light">3</div>
+                <h3 className="text-xl font-medium text-black">Trade Predictions</h3>
+                <p className="text-gray-600">Place positions on outcomes and profit from accurate predictions.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <CTASection onOpenAuth={openAuthModal} />
+      </div>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={authModal.isOpen}
+        onClose={closeAuthModal}
+        defaultTab={authModal.tab}
+      />
+    </main>
+  )
+} 

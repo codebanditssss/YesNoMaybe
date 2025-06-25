@@ -1,190 +1,178 @@
 "use client";
 
-import React, { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { supabase } from '@/lib/supabase';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  mode: "login" | "signup";
-  onModeChange: (mode: "login" | "signup") => void;
+  defaultTab?: 'signin' | 'signup';
 }
 
-export function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalProps) {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  if (!isOpen) return null;
+
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError("");
-    setSuccess("");
+    setMessage('');
 
     try {
-      if (mode === "signup") {
-        if (password !== confirmPassword) {
-          setError("Passwords don't match");
-          return;
-        }
-        
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-        if (error) throw error;
-        
-        setSuccess("Check your email for verification link!");
-        
-        // Clear form
-        setEmail("");
-        setPassword("");
-        setConfirmPassword("");
+      if (error) {
+        setMessage(error.message);
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) throw error;
-        
-        setSuccess("Logged in successfully!");
-        setTimeout(() => {
-          onClose();
-        }, 1000);
+        setMessage('Check your email for the confirmation link!');
       }
-    } catch (error: any) {
-      setError(error.message);
+    } catch (err) {
+      setMessage('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
-    setEmail("");
-    setPassword("");
-    setConfirmPassword("");
-    setError("");
-    setSuccess("");
-  };
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-  const handleModeChange = (newMode: "login" | "signup") => {
-    resetForm();
-    onModeChange(newMode);
+      if (error) {
+        setMessage(error.message);
+      } else {
+        setMessage('Successfully signed in!');
+        onClose();
+      }
+    } catch (err) {
+      setMessage('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
-
-  if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">
-            {mode === "login" ? "Welcome Back" : "Create Account"}
-          </h2>
-          <button className="modal-close" onClick={handleClose}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M6 18L18 6M6 6l12 12"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="form-input"
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="form-input"
-              placeholder="Enter your password"
-              required
-              minLength={6}
-            />
-          </div>
-
-          {mode === "signup" && (
-            <div className="form-group">
-              <label htmlFor="confirmPassword" className="form-label">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="form-input"
-                placeholder="Confirm your password"
-                required
-                minLength={6}
-              />
-            </div>
-          )}
-
-          {error && <div className="error-message">{error}</div>}
-          {success && <div className="success-message">{success}</div>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="auth-submit-button"
-          >
-            {loading
-              ? "Loading..."
-              : mode === "login"
-              ? "Sign In"
-              : "Create Account"}
-          </button>
-        </form>
-
-        <div className="auth-switch">
-          <p>
-            {mode === "login" ? "Don't have an account?" : "Already have an account?"}
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-white border border-gray-200">
+        <div className="p-8">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-light text-black">
+              {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
+            </h2>
             <button
-              type="button"
-              onClick={() =>
-                handleModeChange(mode === "login" ? "signup" : "login")
-              }
-              className="auth-switch-button"
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-2xl"
             >
-              {mode === "login" ? "Sign up" : "Sign in"}
+              ×
             </button>
-          </p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex mb-8 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('signin')}
+              className={`flex-1 pb-4 text-sm font-medium transition-colors ${
+                activeTab === 'signin'
+                  ? 'text-black border-b-2 border-black'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setActiveTab('signup')}
+              className={`flex-1 pb-4 text-sm font-medium transition-colors ${
+                activeTab === 'signup'
+                  ? 'text-black border-b-2 border-black'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Sign Up
+            </button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={activeTab === 'signin' ? handleSignIn : handleSignUp}>
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  placeholder="your@email.com"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+
+              {message && (
+                <div className={`text-sm p-3 rounded-sm ${
+                  message.includes('error') || message.includes('Invalid')
+                    ? 'bg-red-50 text-red-600 border border-red-200'
+                    : 'bg-green-50 text-green-600 border border-green-200'
+                }`}>
+                  {message}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-black text-white hover:bg-gray-800 py-3 rounded-sm font-normal"
+              >
+                {loading ? 'Processing...' : activeTab === 'signin' ? 'Sign In' : 'Create Account'}
+              </Button>
+            </div>
+          </form>
+
+          {/* Footer */}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">
+              {activeTab === 'signin' ? "Don't have an account? " : "Already have an account? "}
+              <button
+                onClick={() => setActiveTab(activeTab === 'signin' ? 'signup' : 'signin')}
+                className="text-black hover:underline font-medium"
+              >
+                {activeTab === 'signin' ? 'Sign up' : 'Sign in'}
+              </button>
+            </p>
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 } 
