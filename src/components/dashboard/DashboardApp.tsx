@@ -6,6 +6,8 @@ import { OrderbookPage } from './OrderbookPage';
 import { StockManager } from './StockManager';
 import { TradingDashboard } from './TradingDashboard';
 import { Portfolio } from './Portfolio';
+import { TradeHistory } from './TradeHistory';
+import { Leaderboard } from './Leaderboard';
 
 export function DashboardApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -59,27 +61,9 @@ export function DashboardApp() {
       case 'portfolio':
         return <Portfolio />;
       case 'history':
-        return (
-          <div className="p-8 bg-gray-50 min-h-full">
-            <div className="max-w-7xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">Trade History</h1>
-              <div className="bg-white rounded-lg p-8 text-center">
-                <p className="text-gray-600">Trade history coming soon...</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <TradeHistory />;
       case 'leaderboard':
-        return (
-          <div className="p-8 bg-gray-50 min-h-full">
-            <div className="max-w-7xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-8">Leaderboard</h1>
-              <div className="bg-white rounded-lg p-8 text-center">
-                <p className="text-gray-600">Leaderboard coming soon...</p>
-              </div>
-            </div>
-          </div>
-        );
+        return <Leaderboard />;
       default:
         return <Dashboard />;
     }
