@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { Dashboard } from '@/components/dashboard/Dashboard'
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
+import { DashboardApp } from '@/components/dashboard/DashboardApp'
 import { LandingPage } from '@/components/landing/LandingPage'
 import { AuthModal } from '@/components/auth/AuthModal'
 import ResizableNavbar from '@/components/ui/resizable-navbar'
@@ -37,11 +36,7 @@ export default function Home() {
 
   // Show Dashboard with sidebar layout for authenticated users
   if (user) {
-    return (
-      <DashboardLayout>
-        <Dashboard />
-      </DashboardLayout>
-    );
+    return <DashboardApp />;
   }
 
   // Show Landing Page for guests

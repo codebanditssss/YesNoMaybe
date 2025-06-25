@@ -19,19 +19,22 @@ import {
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  currentPage?: string;
+  onNavigate?: (page: string) => void;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, currentPage = 'dashboard', onNavigate }: DashboardLayoutProps) {
   const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navigation = [
-    { name: 'Dashboard', href: '#', icon: Home, current: true },
-    { name: 'Markets', href: '#', icon: BarChart3, current: false },
-    { name: 'Portfolio', href: '#', icon: Target, current: false },
-    { name: 'Analytics', href: '#', icon: TrendingUp, current: false },
-    { name: 'Trade History', href: '#', icon: Clock, current: false },
-    { name: 'Leaderboard', href: '#', icon: Users, current: false },
+    { name: 'Dashboard', page: 'dashboard', icon: Home, current: currentPage === 'dashboard' },
+    { name: 'Markets', page: 'markets', icon: BarChart3, current: currentPage === 'markets' },
+    { name: 'Portfolio', page: 'portfolio', icon: Target, current: currentPage === 'portfolio' },
+    { name: 'Order Book', page: 'orderbook', icon: Activity, current: currentPage === 'orderbook' },
+    { name: 'Stock Manager', page: 'stocks', icon: TrendingUp, current: currentPage === 'stocks' },
+    { name: 'Trade History', page: 'history', icon: Clock, current: currentPage === 'history' },
+    { name: 'Leaderboard', page: 'leaderboard', icon: Users, current: currentPage === 'leaderboard' },
   ];
 
   const handleSignOut = async () => {
@@ -109,10 +112,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
-              <a
+              <button
                 key={item.name}
-                href={item.href}
-                className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                onClick={() => onNavigate?.(item.page)}
+                className={`group flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all duration-200 w-full text-left ${
                   item.current
                     ? 'bg-gray-900 text-white shadow-sm'
                     : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
@@ -122,7 +125,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   item.current ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'
                 }`} />
                 {item.name}
-              </a>
+              </button>
             );
           })}
         </nav>
