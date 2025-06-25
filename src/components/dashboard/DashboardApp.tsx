@@ -8,6 +8,7 @@ import { TradingDashboard } from './TradingDashboard';
 import { Portfolio } from './Portfolio';
 import { TradeHistory } from './TradeHistory';
 import { Leaderboard } from './Leaderboard';
+import { Settings } from './Settings';
 
 export function DashboardApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -64,6 +65,8 @@ export function DashboardApp() {
         return <TradeHistory />;
       case 'leaderboard':
         return <Leaderboard />;
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard />;
     }
