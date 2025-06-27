@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useOrders } from "@/hooks/useOrders";
 import { 
   Plus, 
   Minus, 
@@ -36,8 +37,9 @@ export function OrderPlacement({ market, user_id, onOrderPlace, onOrderSuccess }
   const [price, setPrice] = useState(selectedSide === 'yes' ? market.yesPrice : market.noPrice);
   const [quantity, setQuantity] = useState(1);
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [orderError, setOrderError] = useState<string | null>(null);
+  
+  // Use the orders hook for placing orders
+  const { placeOrder, placing, error: orderError } = useOrders();
 
   const totalCost = price * quantity;
   const potentialReturns = selectedSide === 'yes' 
@@ -71,45 +73,24 @@ export function OrderPlacement({ market, user_id, onOrderPlace, onOrderSuccess }
   };
 
   const handlePlaceOrder = async () => {
-    if (!user_id) {
-      setOrderError('Please log in to place orders');
-      return;
-    }
-
-    setIsPlacingOrder(true);
-    setOrderError(null);
-
     try {
       const orderData = {
-        market_id: market.id,
-        user_id: user_id,
-        side: selectedSide.toUpperCase(), // Convert to YES/NO
-        price: price,
+        marketId: market.id,
+        side: selectedSide.toUpperCase() as 'YES' | 'NO',
+        price: price * 10, // Convert to cents (API expects 0-100 range)
         quantity: quantity
       };
 
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to place order');
-      }
+      const newOrder = await placeOrder(orderData);
 
       // Call the legacy callback for backward compatibility
-      if (onOrderPlace) {
-        onOrderPlace({
-          side: selectedSide,
-          price,
-          quantity,
-          type: orderType
-        });
+    if (onOrderPlace) {
+      onOrderPlace({
+        side: selectedSide,
+        price,
+        quantity,
+        type: orderType
+      });
       }
 
       // Call success callback
@@ -119,13 +100,10 @@ export function OrderPlacement({ market, user_id, onOrderPlace, onOrderSuccess }
 
       // Reset form
       setQuantity(1);
-      setOrderError(null);
 
     } catch (error) {
+      // Error is already handled by the useOrders hook
       console.error('Error placing order:', error);
-      setOrderError(error instanceof Error ? error.message : 'Failed to place order');
-    } finally {
-      setIsPlacingOrder(false);
     }
   };
 
@@ -318,14 +296,14 @@ export function OrderPlacement({ market, user_id, onOrderPlace, onOrderSuccess }
         {/* Place Order Button */}
         <Button
           onClick={handlePlaceOrder}
-          disabled={isPlacingOrder || !user_id}
+          disabled={placing}
           className={`w-full py-3 text-base font-semibold rounded-lg ${
             selectedSide === 'yes'
               ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400'
               : 'bg-gray-900 hover:bg-gray-800 text-white disabled:bg-gray-600'
           }`}
         >
-          {isPlacingOrder ? (
+          {placing ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Placing order...

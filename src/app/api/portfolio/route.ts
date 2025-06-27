@@ -1,190 +1,194 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/supabase';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { createClient } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const user_id = searchParams.get('user_id');
-
-    if (!user_id) {
-      return NextResponse.json(
-        { error: 'user_id is required' },
-        { status: 400 }
-      );
+    const supabase = createClient()
+    const { searchParams } = new URL(request.url)
+    
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+    const includeHistory = searchParams.get('include_history') === 'true'
+    const historyLimit = parseInt(searchParams.get('history_limit') || '20')
 
-    // Get user balance and stats
+    // Fetch user balance
     const { data: userBalance, error: balanceError } = await supabase
       .from('user_balances')
       .select('*')
-      .eq('user_id', user_id)
-      .single();
+      .eq('user_id', user.id)
+      .single()
 
-    if (balanceError) {
-      console.error('Error fetching user balance:', balanceError);
-      return NextResponse.json(
-        { error: 'Failed to fetch user balance' },
-        { status: 500 }
-      );
+    if (balanceError || !userBalance) {
+      return NextResponse.json({ error: 'User balance not found' }, { status: 404 })
     }
 
-    // Get user's active orders
-    const { data: activeOrders, error: ordersError } = await supabase
+    // Fetch active positions (orders that have been partially or fully filled)
+    const { data: positions, error: positionsError } = await supabase
       .from('orders')
       .select(`
         *,
-        markets (
+        markets:market_id (
+          id,
           title,
           category,
           status,
-          resolution_date
+          resolution_date,
+          actual_outcome,
+          yes_volume,
+          no_volume
         )
       `)
-      .eq('user_id', user_id)
-      .eq('status', 'open')
-      .order('created_at', { ascending: false });
+      .eq('user_id', user.id)
+      .gt('filled_quantity', 0)
+      .order('updated_at', { ascending: false })
 
-    if (ordersError) {
-      console.error('Error fetching active orders:', ordersError);
-      return NextResponse.json(
-        { error: 'Failed to fetch active orders' },
-        { status: 500 }
-      );
+    if (positionsError) {
+      console.error('Error fetching positions:', positionsError)
+      return NextResponse.json({ error: 'Failed to fetch positions' }, { status: 500 })
     }
 
-    // Get user's recent trades
-    const { data: recentTrades, error: tradesError } = await supabase
-      .from('trades')
-      .select(`
-        *,
-        markets (
-          title,
-          category,
-          status
-        )
-      `)
-      .or(`yes_user_id.eq.${user_id},no_user_id.eq.${user_id}`)
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (tradesError) {
-      console.error('Error fetching recent trades:', tradesError);
-      return NextResponse.json(
-        { error: 'Failed to fetch recent trades' },
-        { status: 500 }
-      );
-    }
-
-    // Calculate portfolio positions
-    const positions = new Map();
+    // Calculate current positions by market
+    const positionsByMarket = new Map()
     
-    // Process active orders to calculate positions
-    activeOrders?.forEach(order => {
-      const marketId = order.market_id;
-      if (!positions.has(marketId)) {
-        positions.set(marketId, {
-          market_id: marketId,
-          market_title: order.markets?.title,
-          market_category: order.markets?.category,
-          market_status: order.markets?.status,
-          yes_quantity: 0,
-          no_quantity: 0,
-          yes_avg_price: 0,
-          no_avg_price: 0,
-          total_invested: 0,
-          current_value: 0,
-          pnl: 0
-        });
+    positions?.forEach(order => {
+      const marketId = order.market_id
+      if (!positionsByMarket.has(marketId)) {
+        positionsByMarket.set(marketId, {
+          marketId,
+          marketTitle: order.markets?.title,
+          marketCategory: order.markets?.category,
+          marketStatus: order.markets?.status,
+          resolutionDate: order.markets?.resolution_date,
+          actualOutcome: order.markets?.actual_outcome,
+          yesShares: 0,
+          noShares: 0,
+          totalInvested: 0,
+          unrealizedPnL: 0,
+          realizedPnL: 0
+        })
       }
-      
-      const position = positions.get(marketId);
+
+      const position = positionsByMarket.get(marketId)
+      const investedAmount = order.filled_quantity * order.price / 100
+
       if (order.side === 'YES') {
-        position.yes_quantity += (order.quantity - order.filled_quantity);
-        position.total_invested += (order.quantity - order.filled_quantity) * order.price;
+        position.yesShares += order.filled_quantity
       } else {
-        position.no_quantity += (order.quantity - order.filled_quantity);
-        position.total_invested += (order.quantity - order.filled_quantity) * order.price;
+        position.noShares += order.filled_quantity
       }
-    });
+      position.totalInvested += investedAmount
 
-    // Process completed trades to add to positions
-    recentTrades?.forEach(trade => {
-      const marketId = trade.market_id;
-      if (!positions.has(marketId)) {
-        positions.set(marketId, {
-          market_id: marketId,
-          market_title: trade.markets?.title,
-          market_category: trade.markets?.category,
-          market_status: trade.markets?.status,
-          yes_quantity: 0,
-          no_quantity: 0,
-          yes_avg_price: 0,
-          no_avg_price: 0,
-          total_invested: 0,
-          current_value: 0,
-          pnl: 0
-        });
-      }
-      
-      const position = positions.get(marketId);
-      
-      // Add quantities based on user's side in the trade
-      if (trade.yes_user_id === user_id) {
-        position.yes_quantity += trade.quantity;
-        position.total_invested += trade.quantity * trade.price;
-      }
-      if (trade.no_user_id === user_id) {
-        position.no_quantity += trade.quantity;
-        position.total_invested += trade.quantity * trade.price;
-      }
-      
-      // Add payouts if market is resolved
-      if (trade.markets?.status === 'resolved') {
-        if (trade.yes_user_id === user_id && trade.yes_payout > 0) {
-          position.pnl += trade.yes_payout - (trade.quantity * trade.price);
-        }
-        if (trade.no_user_id === user_id && trade.no_payout > 0) {
-          position.pnl += trade.no_payout - (trade.quantity * trade.price);
-        }
-      }
-    });
+      // Calculate current market price based on volume
+      const totalVolume = (order.markets?.yes_volume || 0) + (order.markets?.no_volume || 0)
+      const currentYesPrice = totalVolume > 0 
+        ? (order.markets?.yes_volume || 0) / totalVolume * 100 
+        : 50
 
-    const portfolioPositions = Array.from(positions.values());
+      // Calculate unrealized P&L for active markets
+      if (order.markets?.status === 'active') {
+        const yesValue = position.yesShares * currentYesPrice / 100
+        const noValue = position.noShares * (100 - currentYesPrice) / 100
+        position.unrealizedPnL = (yesValue + noValue) - position.totalInvested
+      }
 
-    // Calculate total portfolio value
-    const totalInvested = portfolioPositions.reduce((sum, pos) => sum + pos.total_invested, 0);
-    const totalPnL = portfolioPositions.reduce((sum, pos) => sum + pos.pnl, 0);
+      // Calculate realized P&L for resolved markets
+      if (order.markets?.status === 'resolved' && order.markets?.actual_outcome) {
+        const winningShares = order.markets.actual_outcome === 'YES' 
+          ? position.yesShares 
+          : position.noShares
+        position.realizedPnL = winningShares - position.totalInvested
+        position.unrealizedPnL = 0 // No unrealized P&L for resolved markets
+      }
+    })
 
-    const portfolioData = {
-      user_balance: userBalance,
-      active_orders: activeOrders || [],
-      recent_trades: recentTrades || [],
+    const portfolioPositions = Array.from(positionsByMarket.values())
+
+    // Calculate portfolio summary
+    const totalUnrealizedPnL = portfolioPositions.reduce((sum, pos) => sum + pos.unrealizedPnL, 0)
+    const totalRealizedPnL = portfolioPositions.reduce((sum, pos) => sum + pos.realizedPnL, 0)
+    const totalInvested = portfolioPositions.reduce((sum, pos) => sum + pos.totalInvested, 0)
+    const totalValue = totalInvested + totalUnrealizedPnL + totalRealizedPnL
+
+    // Fetch trade history if requested
+    let tradeHistory = []
+    if (includeHistory) {
+      const { data: trades, error: tradesError } = await supabase
+        .from('trades')
+        .select(`
+          *,
+          markets:market_id (
+            title,
+            category
+          ),
+          yes_orders:yes_order_id (
+            user_id,
+            side,
+            price
+          ),
+          no_orders:no_order_id (
+            user_id,
+            side,
+            price
+          )
+        `)
+        .or(`yes_user_id.eq.${user.id},no_user_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
+        .limit(historyLimit)
+
+      if (!tradesError && trades) {
+        tradeHistory = trades.map(trade => {
+          const isYesUser = trade.yes_user_id === user.id
+          const userSide = isYesUser ? 'YES' : 'NO'
+          const userPrice = isYesUser ? trade.yes_orders?.price : trade.no_orders?.price
+
+          return {
+            id: trade.id,
+            marketId: trade.market_id,
+            marketTitle: trade.markets?.title,
+            marketCategory: trade.markets?.category,
+            side: userSide,
+            quantity: trade.quantity,
+            price: userPrice,
+            pnl: trade.settlement_amount || 0,
+            createdAt: trade.created_at
+          }
+        })
+      }
+    }
+
+    // Calculate win rate
+    const resolvedTrades = tradeHistory.filter(trade => trade.pnl !== 0)
+    const winningTrades = resolvedTrades.filter(trade => trade.pnl > 0)
+    const winRate = resolvedTrades.length > 0 ? (winningTrades.length / resolvedTrades.length) * 100 : 0
+
+    const portfolioSummary = {
+      balance: {
+        available: userBalance.available_balance,
+        total: totalValue,
+        invested: totalInvested,
+        unrealizedPnL: totalUnrealizedPnL,
+        realizedPnL: totalRealizedPnL
+      },
+      stats: {
+        totalTrades: userBalance.total_trades || 0,
+        winningTrades: userBalance.winning_trades || 0,
+        winRate: Math.round(winRate * 100) / 100,
+        profitLoss: userBalance.profit_loss || 0,
+        activePositions: portfolioPositions.filter(pos => pos.marketStatus === 'active').length,
+        resolvedPositions: portfolioPositions.filter(pos => pos.marketStatus === 'resolved').length
+      },
       positions: portfolioPositions,
-      portfolio_summary: {
-        total_balance: userBalance?.available_balance || 0,
-        total_invested: totalInvested,
-        total_pnl: totalPnL,
-        total_trades: userBalance?.total_trades || 0,
-        winning_trades: userBalance?.winning_trades || 0,
-        win_rate: userBalance?.total_trades > 0 
-          ? ((userBalance?.winning_trades || 0) / userBalance.total_trades * 100).toFixed(1)
-          : '0.0'
-      }
-    };
+      ...(includeHistory && { tradeHistory })
+    }
 
-    return NextResponse.json(portfolioData);
+    return NextResponse.json(portfolioSummary)
 
   } catch (error) {
-    console.error('Error in portfolio API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Portfolio API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

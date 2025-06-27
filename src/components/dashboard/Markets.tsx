@@ -45,7 +45,7 @@ const getCategoryIcon = (category: string) => {
     case 'technology': return Activity;
     case 'entertainment': return Tv;
     default: return Globe;
-  }
+}
 };
 
 export function Markets() {
@@ -490,10 +490,10 @@ export function Markets() {
           {/* Markets Data */}
           {!loading && !error && (
             <>
-              {viewMode === 'list' ? (
-                /* List View */
-                <div className="space-y-4">
-                  {filteredMarkets.map((market) => {
+          {viewMode === 'list' ? (
+            /* List View */
+            <div className="space-y-4">
+              {filteredMarkets.map((market) => {
                 const Icon = market.icon;
                 return (
                   <Card key={market.id} className="p-6 bg-white border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group">
@@ -711,40 +711,40 @@ export function Markets() {
             </div>
           )}
 
-              {/* Empty State */}
-              {filteredMarkets.length === 0 && (
-                <Card className="p-12 bg-white border-0 shadow-sm">
-                  <div className="text-center">
-                    <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No markets found</h3>
-                    <p className="text-gray-600 mb-4">
-                      Try adjusting your search or filter criteria to find more markets.
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setSearchTerm('');
-                        setSelectedCategory('all');
-                        setStatusFilter('all');
-                        setRiskFilter('all');
-                        setFeaturedOnly(false);
-                      }}
-                    >
-                      Clear All Filters
-                    </Button>
-                  </div>
-                </Card>
-              )}
+          {/* Empty State */}
+          {filteredMarkets.length === 0 && (
+            <Card className="p-12 bg-white border-0 shadow-sm">
+              <div className="text-center">
+                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No markets found</h3>
+                <p className="text-gray-600 mb-4">
+                  Try adjusting your search or filter criteria to find more markets.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('all');
+                    setStatusFilter('all');
+                    setRiskFilter('all');
+                    setFeaturedOnly(false);
+                  }}
+                >
+                  Clear All Filters
+                </Button>
+              </div>
+            </Card>
+          )}
 
-              {/* Load More */}
-              {filteredMarkets.length > 0 && (
-                <div className="text-center pt-8">
-                  <Button variant="outline" className="px-8 py-3">
-                    <Zap className="h-4 w-4 mr-2" />
-                    Load More Markets
-                  </Button>
-                </div>
-              )}
+        {/* Load More */}
+        {filteredMarkets.length > 0 && (
+          <div className="text-center pt-8">
+            <Button variant="outline" className="px-8 py-3">
+              <Zap className="h-4 w-4 mr-2" />
+              Load More Markets
+            </Button>
+          </div>
+        )}
             </>
           )}
         </div>

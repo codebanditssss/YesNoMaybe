@@ -1,196 +1,227 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/lib/supabase';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+import { supabase } from '@/lib/supabase'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const market_id = searchParams.get('market_id');
-    const depth = parseInt(searchParams.get('depth') || '20');
-
-    if (!market_id) {
-      return NextResponse.json(
-        { error: 'market_id is required' },
-        { status: 400 }
-      );
+    const { searchParams } = new URL(request.url)
+    
+    const marketId = searchParams.get('market_id')
+    
+    if (!marketId) {
+      return NextResponse.json({ error: 'market_id is required' }, { status: 400 })
     }
 
-    const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-
-    // Get market info
+    // Verify market exists
     const { data: market, error: marketError } = await supabase
       .from('markets')
       .select('*')
-      .eq('id', market_id)
-      .single();
+      .eq('id', marketId)
+      .single()
 
     if (marketError || !market) {
-      return NextResponse.json(
-        { error: 'Market not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Market not found' }, { status: 404 })
     }
 
-    // Get YES orders (bids) - users wanting to buy YES
-    const { data: yesOrders, error: yesError } = await supabase
+    // Fetch active orders for the market (orderbook)
+    const { data: orders, error: ordersError } = await supabase
       .from('orders')
-      .select(`
-        id,
-        user_id,
-        price,
-        quantity,
-        filled_quantity,
-        created_at,
-        profiles (
-          username
-        )
-      `)
-      .eq('market_id', market_id)
-      .eq('side', 'YES')
+      .select('*')
+      .eq('market_id', marketId)
       .eq('status', 'open')
-      .order('price', { ascending: false }) // Highest price first
-      .order('created_at', { ascending: true }) // FIFO for same price
-      .limit(depth);
+      .order('price', { ascending: false }) // YES orders: highest price first, NO orders: lowest price first
 
-    if (yesError) {
-      console.error('Error fetching YES orders:', yesError);
-      return NextResponse.json(
-        { error: 'Failed to fetch YES orders' },
-        { status: 500 }
-      );
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError)
+      return NextResponse.json({ error: 'Failed to fetch orderbook' }, { status: 500 })
     }
 
-    // Get NO orders (asks) - users wanting to buy NO (sell YES)
-    const { data: noOrders, error: noError } = await supabase
-      .from('orders')
-      .select(`
-        id,
-        user_id,
-        price,
-        quantity,
-        filled_quantity,
-        created_at,
-        profiles (
-          username
-        )
-      `)
-      .eq('market_id', market_id)
-      .eq('side', 'NO')
-      .eq('status', 'open')
-      .order('price', { ascending: true }) // Lowest price first
-      .order('created_at', { ascending: true }) // FIFO for same price
-      .limit(depth);
+    // Get unique user IDs from orders to fetch usernames
+    const userIds = [...new Set((orders || []).map(order => order.user_id))]
+    
+    // Fetch usernames for all users with orders
+    const { data: userBalances, error: usersError } = await supabase
+      .from('user_balances')
+      .select('user_id, username')
+      .in('user_id', userIds)
 
-    if (noError) {
-      console.error('Error fetching NO orders:', noError);
-      return NextResponse.json(
-        { error: 'Failed to fetch NO orders' },
-        { status: 500 }
-      );
+    if (usersError) {
+      console.error('Error fetching user data:', usersError)
     }
 
-    // Group orders by price level for better orderbook display
-    const groupOrdersByPrice = (orders: any[], side: 'YES' | 'NO') => {
-      const priceMap = new Map();
-      
-      orders?.forEach(order => {
-        const price = order.price;
-        const remainingQty = order.quantity - order.filled_quantity;
-        
-        if (!priceMap.has(price)) {
-          priceMap.set(price, {
-            price,
-            quantity: 0,
-            orders: 0,
-            side
-          });
-        }
-        
-        const level = priceMap.get(price);
-        level.quantity += remainingQty;
-        level.orders += 1;
-      });
-      
-      return Array.from(priceMap.values()).sort((a, b) => 
-        side === 'YES' ? b.price - a.price : a.price - b.price
-      );
-    };
+    // Create a mapping of user_id to username
+    const userMap = new Map((userBalances || []).map(user => [user.user_id, user.username || 'Anonymous']))
 
-    // Get recent trades for market activity
+    // Separate YES and NO orders (only include orders with remaining quantity)
+    const yesOrders = (orders || [])
+      .filter(order => order.side === 'YES' && order.quantity > order.filled_quantity)
+      .sort((a, b) => b.price - a.price) // Highest price first for YES
+
+    const noOrders = (orders || [])
+      .filter(order => order.side === 'NO' && order.quantity > order.filled_quantity)
+      .sort((a, b) => a.price - b.price) // Lowest price first for NO
+
+    // Group orders by price level for YES side
+    const yesBids = yesOrders.reduce((acc, order) => {
+      const remainingQuantity = order.quantity - order.filled_quantity
+      const existing = acc.find(bid => bid.price === order.price)
+      
+      if (existing) {
+        existing.quantity += remainingQuantity
+        existing.orders.push({
+          id: order.id,
+          quantity: remainingQuantity,
+          username: userMap.get(order.user_id) || 'Anonymous'
+        })
+      } else {
+        acc.push({
+          price: order.price,
+          quantity: remainingQuantity,
+          orders: [{
+            id: order.id,
+            quantity: remainingQuantity,
+            username: userMap.get(order.user_id) || 'Anonymous'
+          }]
+        })
+      }
+      return acc
+    }, [] as Array<{
+      price: number
+      quantity: number
+      orders: Array<{ id: string, quantity: number, username: string }>
+    }>)
+
+    // Group orders by price level for NO side
+    const noAsks = noOrders.reduce((acc, order) => {
+      const remainingQuantity = order.quantity - order.filled_quantity
+      const existing = acc.find(ask => ask.price === order.price)
+      
+      if (existing) {
+        existing.quantity += remainingQuantity
+        existing.orders.push({
+          id: order.id,
+          quantity: remainingQuantity,
+          username: userMap.get(order.user_id) || 'Anonymous'
+        })
+      } else {
+        acc.push({
+          price: order.price,
+          quantity: remainingQuantity,
+          orders: [{
+            id: order.id,
+            quantity: remainingQuantity,
+            username: userMap.get(order.user_id) || 'Anonymous'
+          }]
+        })
+      }
+      return acc
+    }, [] as Array<{
+      price: number
+      quantity: number
+      orders: Array<{ id: string, quantity: number, username: string }>
+    }>)
+
+    // Fetch recent trades for this market
     const { data: recentTrades, error: tradesError } = await supabase
       .from('trades')
-      .select('price, quantity, created_at, winner_side')
-      .eq('market_id', market_id)
+      .select(`
+        *,
+        yes_orders:yes_order_id (
+          price
+        ),
+        no_orders:no_order_id (
+          price
+        )
+      `)
+      .eq('market_id', marketId)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(20)
 
-    if (tradesError) {
-      console.error('Error fetching recent trades:', tradesError);
-    }
+    const trades = recentTrades?.map(trade => ({
+      id: trade.id,
+      quantity: trade.quantity,
+      price: trade.yes_orders?.price || trade.no_orders?.price || 0,
+      timestamp: trade.created_at,
+      side: trade.winner_side as 'YES' | 'NO' | null
+    })) || []
 
-    // Calculate market stats
-    const yesLevels = groupOrdersByPrice(yesOrders, 'YES');
-    const noLevels = groupOrdersByPrice(noOrders, 'NO');
+    // Calculate market statistics
+    const totalYesQuantity = yesBids.reduce((sum, bid) => sum + bid.quantity, 0)
+    const totalNoQuantity = noAsks.reduce((sum, ask) => sum + ask.quantity, 0)
+    const totalOrderbookVolume = totalYesQuantity + totalNoQuantity
+
+    // Best bid/ask prices
+    const bestYesBid = yesBids.length > 0 ? yesBids[0].price : null
+    const bestNoAsk = noAsks.length > 0 ? noAsks[0].price : null
+
+    // Calculate current market price based on volume
+    const totalVolume = market.total_yes_volume + market.total_no_volume
+    const currentPrice = totalVolume > 0 
+      ? Math.round((market.total_yes_volume / totalVolume) * 100) 
+      : 50
+
+    // Calculate spread
+    const spread = bestYesBid && bestNoAsk 
+      ? Math.abs(bestYesBid - (100 - bestNoAsk))
+      : null
+
+    // Calculate 24h volume and price change
+    const oneDayAgo = new Date()
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1)
+
+    const { data: dayTrades, error: dayTradesError } = await supabase
+      .from('trades')
+      .select('quantity, yes_orders:yes_order_id(price), no_orders:no_order_id(price)')
+      .eq('market_id', marketId)
+      .gte('created_at', oneDayAgo.toISOString())
+
+    const volume24h = dayTrades?.reduce((sum, trade) => sum + trade.quantity, 0) || 0
     
-    const bestBid = yesLevels.length > 0 ? yesLevels[0].price : 0;
-    const bestAsk = noLevels.length > 0 ? 100 - noLevels[0].price : 100; // Convert NO price to YES equivalent
-    const spread = bestAsk - bestBid;
-    const midPrice = (bestBid + bestAsk) / 2;
-    
-    // Calculate total liquidity
-    const totalYesLiquidity = yesLevels.reduce((sum, level) => sum + (level.quantity * level.price), 0);
-    const totalNoLiquidity = noLevels.reduce((sum, level) => sum + (level.quantity * level.price), 0);
-    
-    // Get last trade price
-    const lastTradePrice = recentTrades && recentTrades.length > 0 ? recentTrades[0].price : midPrice;
-    
-    // Calculate 24h volume
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const volume24h = recentTrades?.filter(trade => 
-      new Date(trade.created_at) > oneDayAgo
-    ).reduce((sum, trade) => sum + (trade.quantity * trade.price), 0) || 0;
+    // Get price from 24h ago for price change calculation
+    const { data: oldTrade } = await supabase
+      .from('trades')
+      .select('yes_orders:yes_order_id(price), no_orders:no_order_id(price)')
+      .eq('market_id', marketId)
+      .lte('created_at', oneDayAgo.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    const priceChange24h = oldTrade 
+      ? currentPrice - (oldTrade.yes_orders?.price || oldTrade.no_orders?.price || currentPrice)
+      : 0
 
     const orderbookData = {
-      market_id,
-      market_title: market.title,
-      market_status: market.status,
-      timestamp: new Date().toISOString(),
-      
-      // Price levels
-      yes_levels: yesLevels.slice(0, depth),
-      no_levels: noLevels.slice(0, depth),
-      
-      // Market stats
-      best_bid: bestBid,
-      best_ask: bestAsk,
-      spread,
-      mid_price: midPrice,
-      last_price: lastTradePrice,
-      
-      // Liquidity
-      total_yes_liquidity: totalYesLiquidity,
-      total_no_liquidity: totalNoLiquidity,
-      total_liquidity: totalYesLiquidity + totalNoLiquidity,
-      
-      // Activity
-      volume_24h: volume24h,
-      recent_trades: recentTrades?.slice(0, 10) || [],
-      
-      // Order counts
-      total_yes_orders: yesOrders?.length || 0,
-      total_no_orders: noOrders?.length || 0
-    };
+      marketId,
+      marketInfo: {
+        title: market.title,
+        category: market.category,
+        status: market.status,
+        resolutionDate: market.resolution_date,
+        currentPrice,
+        volume24h,
+        priceChange24h,
+        totalVolume: market.total_yes_volume + market.total_no_volume,
+        yesVolume: market.total_yes_volume,
+        noVolume: market.total_no_volume
+      },
+      orderbook: {
+        yesBids, // Buying YES shares (supporting the outcome)
+        noAsks,  // Selling NO shares (also supporting YES outcome)
+        bestYesBid,
+        bestNoAsk,
+        spread,
+        totalYesQuantity,
+        totalNoQuantity,
+        totalOrderbookVolume
+      },
+      recentTrades: trades,
+      lastUpdated: new Date().toISOString()
+    }
 
-    return NextResponse.json(orderbookData);
+    return NextResponse.json(orderbookData)
 
   } catch (error) {
-    console.error('Error in orderbook API:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('Orderbook API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 
