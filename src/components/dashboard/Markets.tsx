@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useMarkets } from '@/hooks/useMarkets';
+import type { Market } from '@/lib/supabase';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -33,31 +35,18 @@ import {
   TrendingDownIcon
 } from "lucide-react";
 
-interface Market {
-  id: string;
-  title: string;
-  category: string;
-  description?: string;
-  traders: number;
-  volume: string;
-  volume24h: number;
-  yesPrice: number;
-  noPrice: number;
-  priceChange: number;
-  priceChangePercent: number;
-  lastUpdate: string;
-  trending: boolean;
-  icon: React.ComponentType<any>;
-  status: 'active' | 'closing_soon' | 'resolved';
-  expiryDate: Date;
-  totalLiquidity: number;
-  marketCap: number;
-  createdAt: Date;
-  tags: string[];
-  featured: boolean;
-  riskLevel: 'low' | 'medium' | 'high';
-  probability: number;
-}
+// Helper function to get category icon
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'crypto': return Bitcoin;
+    case 'sports': return Trophy;
+    case 'politics': return Building;
+    case 'economics': return DollarSign;
+    case 'technology': return Activity;
+    case 'entertainment': return Tv;
+    default: return Globe;
+  }
+};
 
 export function Markets() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -69,17 +58,28 @@ export function Markets() {
   const [riskFilter, setRiskFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [featuredOnly, setFeaturedOnly] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+
+  // Fetch markets data from API
+  const { 
+    markets: apiMarkets, 
+    loading, 
+    error, 
+    refetch: refreshMarkets 
+  } = useMarkets({
+    category: selectedCategory === 'all' ? undefined : selectedCategory,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+    featured: featuredOnly || undefined,
+    search: searchTerm || undefined
+  });
 
   // Auto-refresh market data
   useEffect(() => {
     const interval = setInterval(() => {
-      setLastUpdate(new Date());
-      // In real app, this would fetch fresh market data
+      refreshMarkets();
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshMarkets]);
 
   const categories = [
     { id: 'all', name: 'All Markets', count: 1584, icon: Globe },
@@ -91,208 +91,11 @@ export function Markets() {
     { id: 'entertainment', name: 'Entertainment', count: 225, icon: Tv }
   ];
 
-  const markets: Market[] = [
-    {
-      id: '1',
-      title: 'Bitcoin to reach ₹84L by December 2024?',
-      category: 'crypto',
-      description: 'Will Bitcoin price reach ₹84,00,000 INR by December 31, 2024?',
-      traders: 4521,
-      volume: '₹8.7L',
-      volume24h: 870000,
-      yesPrice: 42,
-      noPrice: 58,
-      priceChange: 2.3,
-      priceChangePercent: 5.8,
-      lastUpdate: '1 min ago',
-      trending: true,
-      icon: Bitcoin,
-      status: 'active',
-      expiryDate: new Date('2024-12-31'),
-      totalLiquidity: 1250000,
-      marketCap: 2100000,
-      createdAt: new Date('2024-01-15'),
-      tags: ['crypto', 'bitcoin', 'price-prediction'],
-      featured: true,
-      riskLevel: 'medium',
-      probability: 42
-    },
-    {
-      id: '2', 
-      title: 'India to win World Cup 2024?',
-      category: 'sports',
-      description: 'Will Team India win the ICC T20 World Cup 2024?',
-      traders: 8912,
-      volume: '₹15.3L',
-      volume24h: 1530000,
-      yesPrice: 67,
-      noPrice: 33,
-      priceChange: -1.5,
-      priceChangePercent: -2.2,
-      lastUpdate: '30 sec ago',
-      trending: true,
-      icon: Trophy,
-      status: 'active',
-      expiryDate: new Date('2024-06-29'),
-      totalLiquidity: 2890000,
-      marketCap: 4200000,
-      createdAt: new Date('2024-02-01'),
-      tags: ['sports', 'cricket', 'world-cup'],
-      featured: true,
-      riskLevel: 'high',
-      probability: 67
-    },
-    {
-      id: '3',
-      title: 'Apple to announce iPhone 16 in September 2024?',
-      category: 'technology',
-      description: 'Will Apple officially announce iPhone 16 series in September 2024?',
-      traders: 2156,
-      volume: '₹4.2L',
-      volume24h: 420000,
-      yesPrice: 89,
-      noPrice: 11,
-      priceChange: 3.2,
-      priceChangePercent: 3.7,
-      lastUpdate: '2 min ago',
-      trending: false,
-      icon: Activity,
-      status: 'closing_soon',
-      expiryDate: new Date('2024-09-30'),
-      totalLiquidity: 680000,
-      marketCap: 890000,
-      createdAt: new Date('2024-03-10'),
-      tags: ['technology', 'apple', 'iphone'],
-      featured: false,
-      riskLevel: 'low',
-      probability: 89
-    },
-    {
-      id: '4',
-      title: 'Tesla stock to cross ₹25,000 by Q1 2025?',
-      category: 'economics',
-      description: 'Will Tesla (TSLA) stock price exceed ₹25,000 INR by March 31, 2025?',
-      traders: 3247,
-      volume: '₹6.8L',
-      volume24h: 680000,
-      yesPrice: 54,
-      noPrice: 46,
-      priceChange: 4.1,
-      priceChangePercent: 8.2,
-      lastUpdate: '45 sec ago',
-      trending: true,
-      icon: DollarSign,
-      status: 'active',
-      expiryDate: new Date('2025-03-31'),
-      totalLiquidity: 1420000,
-      marketCap: 1890000,
-      createdAt: new Date('2024-01-20'),
-      tags: ['stocks', 'tesla', 'electric-vehicles'],
-      featured: true,
-      riskLevel: 'medium',
-      probability: 54
-    },
-    {
-      id: '5',
-      title: 'AI to achieve AGI by 2025?',
-      category: 'technology',
-      description: 'Will artificial general intelligence be achieved by any company by 2025?',
-      traders: 5689,
-      volume: '₹12.1L',
-      volume24h: 1210000,
-      yesPrice: 28,
-      noPrice: 72,
-      priceChange: -2.8,
-      priceChangePercent: -9.1,
-      lastUpdate: '3 min ago',
-      trending: true,
-      icon: Activity,
-      status: 'active',
-      expiryDate: new Date('2025-12-31'),
-      totalLiquidity: 2350000,
-      marketCap: 3100000,
-      createdAt: new Date('2023-12-01'),
-      tags: ['ai', 'agi', 'technology'],
-      featured: true,
-      riskLevel: 'high',
-      probability: 28
-    },
-    {
-      id: '6',
-      title: 'Avengers 5 to be highest grossing movie of 2025?',
-      category: 'entertainment',
-      description: 'Will Avengers 5 become the highest grossing movie worldwide in 2025?',
-      traders: 1847,
-      volume: '₹3.1L',
-      volume24h: 310000,
-      yesPrice: 73,
-      noPrice: 27,
-      priceChange: 1.8,
-      priceChangePercent: 2.5,
-      lastUpdate: '4 min ago',
-      trending: false,
-      icon: Tv,
-      status: 'active',
-      expiryDate: new Date('2025-12-31'),
-      totalLiquidity: 520000,
-      marketCap: 780000,
-      createdAt: new Date('2024-02-15'),
-      tags: ['movies', 'marvel', 'box-office'],
-      featured: false,
-      riskLevel: 'medium',
-      probability: 73
-    },
-    {
-      id: '7',
-      title: 'US Elections 2024: Democrat to win presidency?',
-      category: 'politics',
-      description: 'Will the Democratic Party candidate win the 2024 US Presidential Election?',
-      traders: 12456,
-      volume: '₹24.7L',
-      volume24h: 2470000,
-      yesPrice: 51,
-      noPrice: 49,
-      priceChange: 0.8,
-      priceChangePercent: 1.6,
-      lastUpdate: '15 sec ago',
-      trending: true,
-      icon: Building,
-      status: 'active',
-      expiryDate: new Date('2024-11-05'),
-      totalLiquidity: 4200000,
-      marketCap: 6800000,
-      createdAt: new Date('2023-11-01'),
-      tags: ['politics', 'us-elections', 'presidency'],
-      featured: true,
-      riskLevel: 'high',
-      probability: 51
-    },
-    {
-      id: '8',
-      title: 'Ethereum to reach ₹4.2L by end of 2024?',
-      category: 'crypto',
-      description: 'Will Ethereum price reach ₹4,20,000 INR by December 31, 2024?',
-      traders: 2891,
-      volume: '₹5.4L',
-      volume24h: 540000,
-      yesPrice: 38,
-      noPrice: 62,
-      priceChange: -1.2,
-      priceChangePercent: -3.1,
-      lastUpdate: '2 min ago',
-      trending: false,
-      icon: Bitcoin,
-      status: 'active',
-      expiryDate: new Date('2024-12-31'),
-      totalLiquidity: 890000,
-      marketCap: 1200000,
-      createdAt: new Date('2024-01-10'),
-      tags: ['crypto', 'ethereum', 'price-prediction'],
-      featured: false,
-      riskLevel: 'medium',
-      probability: 38
-    }
-  ];
+  // Transform API markets to match frontend interface by adding icon
+  const markets = apiMarkets.map(market => ({
+    ...market,
+    icon: getCategoryIcon(market.category)
+  }));
 
   // Utility functions
   const formatNumber = (num: number) => {
@@ -374,7 +177,7 @@ export function Markets() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Markets</h1>
             <p className="text-gray-600">Trade on real-world events and outcomes</p>
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-              <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+              <span>Last updated: {new Date().toLocaleTimeString()}</span>
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span>Live data</span>
@@ -408,7 +211,7 @@ export function Markets() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => setLastUpdate(new Date())}
+                onClick={() => refreshMarkets()}
                 className="flex items-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
@@ -655,10 +458,42 @@ export function Markets() {
             </h2>
           </div>
 
-          {viewMode === 'list' ? (
-            /* List View */
-            <div className="space-y-4">
-              {filteredMarkets.map((market) => {
+          {/* Loading State */}
+          {loading && (
+            <Card className="p-8 bg-white border-0 shadow-sm">
+              <div className="text-center">
+                <RefreshCw className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading markets...</h3>
+                <p className="text-gray-600">Fetching the latest market data for you</p>
+              </div>
+            </Card>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <Card className="p-8 bg-white border-0 shadow-sm border-red-200">
+              <div className="text-center">
+                <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Error loading markets</h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <Button 
+                  onClick={refreshMarkets}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Try Again
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* Markets Data */}
+          {!loading && !error && (
+            <>
+              {viewMode === 'list' ? (
+                /* List View */
+                <div className="space-y-4">
+                  {filteredMarkets.map((market) => {
                 const Icon = market.icon;
                 return (
                   <Card key={market.id} className="p-6 bg-white border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group">
@@ -876,41 +711,43 @@ export function Markets() {
             </div>
           )}
 
-          {/* Empty State */}
-          {filteredMarkets.length === 0 && (
-            <Card className="p-12 bg-white border-0 shadow-sm">
-              <div className="text-center">
-                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No markets found</h3>
-                <p className="text-gray-600 mb-4">
-                  Try adjusting your search or filter criteria to find more markets.
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCategory('all');
-                    setStatusFilter('all');
-                    setRiskFilter('all');
-                    setFeaturedOnly(false);
-                  }}
-                >
-                  Clear All Filters
-                </Button>
-              </div>
-            </Card>
+              {/* Empty State */}
+              {filteredMarkets.length === 0 && (
+                <Card className="p-12 bg-white border-0 shadow-sm">
+                  <div className="text-center">
+                    <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No markets found</h3>
+                    <p className="text-gray-600 mb-4">
+                      Try adjusting your search or filter criteria to find more markets.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSearchTerm('');
+                        setSelectedCategory('all');
+                        setStatusFilter('all');
+                        setRiskFilter('all');
+                        setFeaturedOnly(false);
+                      }}
+                    >
+                      Clear All Filters
+                    </Button>
+                  </div>
+                </Card>
+              )}
+
+              {/* Load More */}
+              {filteredMarkets.length > 0 && (
+                <div className="text-center pt-8">
+                  <Button variant="outline" className="px-8 py-3">
+                    <Zap className="h-4 w-4 mr-2" />
+                    Load More Markets
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
-
-        {/* Load More */}
-        {filteredMarkets.length > 0 && (
-          <div className="text-center pt-8">
-            <Button variant="outline" className="px-8 py-3">
-              <Zap className="h-4 w-4 mr-2" />
-              Load More Markets
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

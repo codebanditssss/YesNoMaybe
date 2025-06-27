@@ -8,7 +8,8 @@ import {
   TrendingUp, 
   TrendingDown,
   Info,
-  ChevronDown
+  ChevronDown,
+  Loader2
 } from "lucide-react";
 
 interface OrderPlacementProps {
@@ -19,20 +20,24 @@ interface OrderPlacementProps {
     noPrice: number;
     availableQuantity: number;
   };
+  user_id?: string;
   onOrderPlace?: (order: {
     side: 'yes' | 'no';
     price: number;
     quantity: number;
     type: 'market' | 'limit';
   }) => void;
+  onOrderSuccess?: () => void;
 }
 
-export function OrderPlacement({ market, onOrderPlace }: OrderPlacementProps) {
+export function OrderPlacement({ market, user_id, onOrderPlace, onOrderSuccess }: OrderPlacementProps) {
   const [selectedSide, setSelectedSide] = useState<'yes' | 'no'>('yes');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('limit');
   const [price, setPrice] = useState(selectedSide === 'yes' ? market.yesPrice : market.noPrice);
   const [quantity, setQuantity] = useState(1);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   const totalCost = price * quantity;
   const potentialReturns = selectedSide === 'yes' 
@@ -65,14 +70,62 @@ export function OrderPlacement({ market, onOrderPlace }: OrderPlacementProps) {
     }
   };
 
-  const handlePlaceOrder = () => {
-    if (onOrderPlace) {
-      onOrderPlace({
-        side: selectedSide,
-        price,
-        quantity,
-        type: orderType
+  const handlePlaceOrder = async () => {
+    if (!user_id) {
+      setOrderError('Please log in to place orders');
+      return;
+    }
+
+    setIsPlacingOrder(true);
+    setOrderError(null);
+
+    try {
+      const orderData = {
+        market_id: market.id,
+        user_id: user_id,
+        side: selectedSide.toUpperCase(), // Convert to YES/NO
+        price: price,
+        quantity: quantity
+      };
+
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(orderData)
       });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to place order');
+      }
+
+      // Call the legacy callback for backward compatibility
+      if (onOrderPlace) {
+        onOrderPlace({
+          side: selectedSide,
+          price,
+          quantity,
+          type: orderType
+        });
+      }
+
+      // Call success callback
+      if (onOrderSuccess) {
+        onOrderSuccess();
+      }
+
+      // Reset form
+      setQuantity(1);
+      setOrderError(null);
+
+    } catch (error) {
+      console.error('Error placing order:', error);
+      setOrderError(error instanceof Error ? error.message : 'Failed to place order');
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -255,16 +308,31 @@ export function OrderPlacement({ market, onOrderPlace }: OrderPlacementProps) {
           </div>
         )}
 
+        {/* Error Message */}
+        {orderError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{orderError}</p>
+          </div>
+        )}
+
         {/* Place Order Button */}
         <Button
           onClick={handlePlaceOrder}
+          disabled={isPlacingOrder || !user_id}
           className={`w-full py-3 text-base font-semibold rounded-lg ${
             selectedSide === 'yes'
-              ? 'bg-blue-600 hover:bg-blue-700 text-white'
-              : 'bg-gray-900 hover:bg-gray-800 text-white'
+              ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400'
+              : 'bg-gray-900 hover:bg-gray-800 text-white disabled:bg-gray-600'
           }`}
         >
-          Place order
+          {isPlacingOrder ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Placing order...
+            </>
+          ) : (
+            'Place order'
+          )}
         </Button>
 
         {/* Disclaimer */}
