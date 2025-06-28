@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useMarkets } from '@/hooks/useMarkets';
+import { OrderPlacement } from './OrderPlacement';
 import type { Market } from '@/lib/supabase';
 import { 
   TrendingUp, 
@@ -54,10 +55,15 @@ export function Markets() {
   const [sortBy, setSortBy] = useState<'trending' | 'volume' | 'newest' | 'closing' | 'alphabetical'>('trending');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [showFilters, setShowFilters] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closing_soon' | 'resolved'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closing_soon' | 'resolved'>('active');
   const [riskFilter, setRiskFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
   const [featuredOnly, setFeaturedOnly] = useState(false);
+  
+  // Order placement modal state
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+  const [selectedSide, setSelectedSide] = useState<'yes' | 'no'>('yes');
 
   // Fetch markets data from API
   const { 
@@ -167,6 +173,20 @@ export function Markets() {
   const totalVolume = markets.reduce((sum, market) => sum + market.volume24h, 0);
   const activeMarkets = markets.filter(m => m.status === 'active').length;
   const totalTraders = markets.reduce((sum, market) => sum + market.traders, 0);
+
+  // Handle order placement
+  const handleOrderClick = (market: Market, side: 'yes' | 'no') => {
+    setSelectedMarket(market);
+    setSelectedSide(side);
+    setShowOrderModal(true);
+  };
+
+  const handleOrderSuccess = () => {
+    setShowOrderModal(false);
+    setSelectedMarket(null);
+    // Optionally refresh markets data
+    refreshMarkets();
+  };
 
   return (
     <div className="p-8 bg-gray-50 min-h-full">
@@ -583,6 +603,10 @@ export function Markets() {
                               <Button 
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium"
                                 size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOrderClick(market, 'yes');
+                                }}
                               >
                                 Yes ₹{market.yesPrice}
                               </Button>
@@ -590,6 +614,10 @@ export function Markets() {
                                 variant="outline" 
                                 className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 text-sm font-medium"
                                 size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOrderClick(market, 'no');
+                                }}
                               >
                                 No ₹{market.noPrice}
                               </Button>
@@ -687,6 +715,10 @@ export function Markets() {
                         <Button 
                           className="bg-blue-600 hover:bg-blue-700 text-white flex-1 text-sm"
                           size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOrderClick(market, 'yes');
+                          }}
                         >
                           Yes ₹{market.yesPrice}
                         </Button>
@@ -694,6 +726,10 @@ export function Markets() {
                           variant="outline" 
                           className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1 text-sm"
                           size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOrderClick(market, 'no');
+                          }}
                         >
                           No ₹{market.noPrice}
                         </Button>
@@ -748,6 +784,46 @@ export function Markets() {
             </>
           )}
         </div>
+
+        {/* Order Placement Modal */}
+        {showOrderModal && selectedMarket && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Place Order - {selectedSide.toUpperCase()}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowOrderModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                  {selectedMarket.title}
+                </p>
+              </div>
+              
+              <div className="p-4">
+                                 <OrderPlacement
+                   market={{
+                     id: selectedMarket.id,
+                     title: selectedMarket.title,
+                     yesPrice: selectedMarket.yesPrice,
+                     noPrice: selectedMarket.noPrice,
+                     availableQuantity: 1000 // TODO: Get from market data
+                   }}
+                   initialSide={selectedSide}
+                   onOrderSuccess={handleOrderSuccess}
+                 />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

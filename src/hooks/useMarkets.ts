@@ -43,7 +43,7 @@ interface UseMarketsReturn {
 }
 
 export function useMarkets({
-  status = 'all',
+  status = 'active', // Default to active markets only
   category = 'all',
   featured,
   limit = 50,

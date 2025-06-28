@@ -61,12 +61,12 @@ export function TradingDashboard() {
   ];
 
   const mockMarket = {
-    id: '1',
-    title: 'Bitcoin to reach ₹84L by 2024?',
-    yesPrice: 4.2,
-    noPrice: 5.8,
+    id: 'db4e5160-07f2-4edc-9a25-7a1ebbc4985f',
+    title: 'Will Bitcoin reach $150k in 2025?',
+    yesPrice: 6.2,
+    noPrice: 3.8,
     availableQuantity: 1000,
-    lastPrice: 4.2,
+    lastPrice: 6.2,
     change: 0.3,
     changePercent: 7.8
   };

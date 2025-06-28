@@ -22,6 +22,7 @@ interface OrderPlacementProps {
     availableQuantity: number;
   };
   user_id?: string;
+  initialSide?: 'yes' | 'no';
   onOrderPlace?: (order: {
     side: 'yes' | 'no';
     price: number;
@@ -31,10 +32,10 @@ interface OrderPlacementProps {
   onOrderSuccess?: () => void;
 }
 
-export function OrderPlacement({ market, user_id, onOrderPlace, onOrderSuccess }: OrderPlacementProps) {
-  const [selectedSide, setSelectedSide] = useState<'yes' | 'no'>('yes');
+export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPlace, onOrderSuccess }: OrderPlacementProps) {
+  const [selectedSide, setSelectedSide] = useState<'yes' | 'no'>(initialSide);
   const [orderType, setOrderType] = useState<'market' | 'limit'>('limit');
-  const [price, setPrice] = useState(selectedSide === 'yes' ? market.yesPrice : market.noPrice);
+  const [price, setPrice] = useState(initialSide === 'yes' ? market.yesPrice : market.noPrice);
   const [quantity, setQuantity] = useState(1);
   const [showAdvanced, setShowAdvanced] = useState(false);
   
@@ -77,9 +78,11 @@ export function OrderPlacement({ market, user_id, onOrderPlace, onOrderSuccess }
       const orderData = {
         marketId: market.id,
         side: selectedSide.toUpperCase() as 'YES' | 'NO',
-        price: price * 10, // Convert to cents (API expects 0-100 range)
+        price: price, // Price is already in correct 0-100 scale from markets API
         quantity: quantity
       };
+
+
 
       const newOrder = await placeOrder(orderData);
 
@@ -289,7 +292,12 @@ export function OrderPlacement({ market, user_id, onOrderPlace, onOrderSuccess }
         {/* Error Message */}
         {orderError && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{orderError}</p>
+            <p className="text-sm text-red-600 font-medium">
+              {orderError === 'Market is not active' 
+                ? 'This market is closed for trading. It may be resolved or expired.'
+                : orderError
+              }
+            </p>
           </div>
         )}
 
