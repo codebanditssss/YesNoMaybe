@@ -11,11 +11,8 @@ import {
   Shield,
   Palette,
   Globe,
-  DollarSign,
   Eye,
-  EyeOff,
   Mail,
-  Phone,
   Camera,
   Lock,
   Key,
@@ -26,25 +23,34 @@ import {
   Settings as SettingsIcon,
   Moon,
   Sun,
-  Monitor,
-  Volume2,
-  VolumeX,
   ToggleLeft,
   ToggleRight,
   Edit3,
   Save,
-  X
+  X,
+  Twitter,
+  AlertCircle
 } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
 
-interface UserProfile {
-  name: string;
-  email: string;
-  phone: string;
-  avatar: string;
-  joinDate: string;
-  verified: boolean;
-  tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond';
+type EditableProfileFields = {
+  full_name: string;
+  twitter_handle: string;
+  username: string;
+  bio: string;
+  location: string;
+  website: string;
 }
+
+// interface UserProfile {
+//   name: string;
+//   email: string;
+//   phone: string;
+//   avatar: string;
+//   joinDate: string;
+//   verified: boolean;
+//   tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond';
+// }
 
 interface NotificationSettings {
   email: boolean;
@@ -80,32 +86,26 @@ export function Settings() {
   const { user, signOut } = useAuth();
   const [activeSection, setActiveSection] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
-    email: user?.email || '',
-    phone: user?.user_metadata?.phone || '',
-    avatar: user?.user_metadata?.avatar_url || '',
-    joinDate: user?.created_at ? new Date(user.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-    verified: user?.email_confirmed_at ? true : false,
-    tier: 'Bronze' // Default tier, could be fetched from user balance/activity
+  // const [showPassword, setShowPassword] = useState(false);
+  const { profile, loading, saving, error, updateProfile } = useProfile();
+  const [tempProfile, setTempProfile] = useState<EditableProfileFields>({
+    full_name: '',
+    twitter_handle: '',
+    username: '',
+    bio: '',
+    location: '',
+    website: '',
   });
 
-  // Update profile when user data changes
-  useEffect(() => {
-    if (user) {
-      setUserProfile(prev => ({
-        ...prev,
-        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-        email: user.email || '',
-        phone: user.user_metadata?.phone || '',
-        avatar: user.user_metadata?.avatar_url || '',
-        joinDate: user.created_at ? new Date(user.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        verified: user.email_confirmed_at ? true : false,
-      }));
-    }
-  }, [user]);
+  // const [userProfile, setUserProfile] = useState<UserProfile>({
+  //   name: 'Khushi Diwan',
+  //   email: 'khushi@example.com',
+  //   phone: '+91 98765 43210',
+  //   avatar: '',
+  //   joinDate: '2024-01-15',
+  //   verified: true,
+  //   tier: 'Diamond'
+  // });
 
   const [notifications, setNotifications] = useState<NotificationSettings>({
     email: true,
@@ -137,8 +137,6 @@ export function Settings() {
     refreshInterval: 30
   });
 
-  const [tempProfile, setTempProfile] = useState(userProfile);
-
   const settingsSections = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
@@ -161,23 +159,57 @@ export function Settings() {
     { code: 'EUR', name: 'Euro (€)' }
   ];
 
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'Diamond': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-      case 'Platinum': return 'bg-slate-100 text-slate-800 border-slate-200';
-      case 'Gold': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'Silver': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-orange-100 text-orange-800 border-orange-200';
+  // const getTierColor = (tier: string) => {
+  //   switch (tier) {
+  //     case 'Diamond': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+  //     case 'Platinum': return 'bg-slate-100 text-slate-800 border-slate-200';
+  //     case 'Gold': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+  //     case 'Silver': return 'bg-gray-100 text-gray-800 border-gray-200';
+  //     default: return 'bg-orange-100 text-orange-800 border-orange-200';
+  //   }
+  // };
+
+  useEffect(() => {
+    if (profile) {
+      setTempProfile({
+        full_name: profile.full_name || '',
+        twitter_handle: profile.twitter_handle || '',
+        username: profile.username || '',
+        bio: profile.bio || '',
+        location: profile.location || '',
+        website: profile.website || '',
+      });
+    }
+  }, [profile]);
+
+  const handleSaveProfile = async () => {
+    try {
+      const updated = await updateProfile({
+        full_name: tempProfile.full_name,
+        twitter_handle: tempProfile.twitter_handle,
+        username: tempProfile.username,
+        bio: tempProfile.bio,
+        location: tempProfile.location,
+        website: tempProfile.website,
+      });
+  
+      if (updated) {
+        setIsEditing(false);
+      }
+    } catch (err) {
+      console.error("Save profile error:", err);
     }
   };
 
-  const handleSaveProfile = () => {
-    setUserProfile(tempProfile);
-    setIsEditing(false);
-  };
-
   const handleCancelEdit = () => {
-    setTempProfile(userProfile);
+    setTempProfile({
+      full_name: profile?.full_name || '',
+      twitter_handle: profile?.twitter_handle || '',
+      username: profile?.username || '',
+      bio: profile?.bio || '',
+      location: profile?.location || '',
+      website: profile?.website || '',
+    });
     setIsEditing(false);
   };
 
@@ -195,122 +227,222 @@ export function Settings() {
 
   const renderProfileSection = () => (
     <div className="space-y-6">
+      {/* Error Display */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              <span className="font-medium">Error: {error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Profile Information
-            <Badge className={`ml-auto ${getTierColor(userProfile.tier)}`}>
+            {/* <Badge className={`ml-auto ${getTierColor(userProfile.tier)}`}>
               {userProfile.tier} Tier
-            </Badge>
+            </Badge> */}
           </CardTitle>
           <CardDescription>
             Manage your personal information and account details
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Profile Picture */}
-          <div className="flex items-center gap-6">
-            <div className="relative">
-              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                {userProfile.name.split(' ').map(n => n[0]).join('')}
+          {/* Loading State */}
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading profile...</span>
+            </div>
+          ) : (
+            <>
+              {/* Profile Picture */}
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                    {profile?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
+                  </div>
+                  <button className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-md border hover:bg-gray-50">
+                    <Camera className="h-4 w-4 text-gray-600" />
+                  </button>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg">{profile?.full_name || 'User'}</h3>
+                  <p className="text-gray-600">{profile?.email}</p>
+                  <p className="text-sm text-gray-500">
+                    Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-IN', { 
+                      month: 'long', year: 'numeric' 
+                    }) : 'N/A'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {/* {userProfile.verified && (
+                    <Badge className="bg-green-100 text-green-800">Verified</Badge>
+                  )} */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(!isEditing)}
+                    disabled={saving}
+                  >
+                    {isEditing ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
+                    {isEditing ? 'Cancel' : 'Edit'}
+                  </Button>
+                </div>
               </div>
-              <button className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-md border hover:bg-gray-50">
-                <Camera className="h-4 w-4 text-gray-600" />
-              </button>
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg">{userProfile.name}</h3>
-              <p className="text-gray-600">{userProfile.email}</p>
-              <p className="text-sm text-gray-500">
-                Member since {new Date(userProfile.joinDate).toLocaleDateString('en-IN', { 
-                  month: 'long', year: 'numeric' 
-                })}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {userProfile.verified && (
-                <Badge className="bg-green-100 text-green-800">Verified</Badge>
+
+              {/* Profile Fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Full Name</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={tempProfile.full_name}
+                      onChange={(e) => setTempProfile(prev => ({ ...prev, full_name: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile?.full_name || 'Not set'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email Address
+                  </label>
+                  <p className="text-gray-900">{profile?.email || "Not set"}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Username</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={tempProfile.username}
+                      onChange={(e) => setTempProfile(prev => ({ ...prev, username: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile?.username || 'Not set'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Bio</label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={tempProfile.bio}
+                      onChange={(e) => setTempProfile(prev => ({ ...prev, bio: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile?.bio || 'Not set'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Location
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={tempProfile.location}
+                      onChange={(e) => setTempProfile(prev => ({ ...prev, location: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile?.location || 'Not set'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    Website
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={tempProfile.website}
+                      onChange={(e) => setTempProfile(prev => ({ ...prev, website: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile?.website || 'Not set'}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Twitter className="h-4 w-4" />
+                    Twitter Handle
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={tempProfile.twitter_handle}
+                      onChange={(e) => setTempProfile(prev => ({ ...prev, twitter_handle: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={saving}
+                    />
+                  ) : (
+                    <p className="text-gray-900">{profile?.twitter_handle || 'Not set'}</p>
+                  )}
+                </div>
+
+                {/* <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Account Tier</label>
+                  <Badge className={getTierColor(userProfile.tier)}>
+                    {userProfile.tier} Tier
+                  </Badge>
+                </div> */}
+              </div>
+
+              {isEditing && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button 
+                    onClick={handleSaveProfile} 
+                    className="flex items-center gap-2"
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                {isEditing ? <X className="h-4 w-4" /> : <Edit3 className="h-4 w-4" />}
-                {isEditing ? 'Cancel' : 'Edit'}
-              </Button>
-            </div>
-          </div>
-
-          {/* Profile Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Full Name</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={tempProfile.name}
-                  onChange={(e) => setTempProfile(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              ) : (
-                <p className="text-gray-900">{userProfile.name}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Email Address
-              </label>
-              {isEditing ? (
-                <input
-                  type="email"
-                  value={tempProfile.email}
-                  onChange={(e) => setTempProfile(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              ) : (
-                <p className="text-gray-900">{userProfile.email}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                Phone Number
-              </label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  value={tempProfile.phone}
-                  onChange={(e) => setTempProfile(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              ) : (
-                <p className="text-gray-900">{userProfile.phone}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Account Tier</label>
-              <Badge className={getTierColor(userProfile.tier)}>
-                {userProfile.tier} Tier
-              </Badge>
-            </div>
-          </div>
-
-          {isEditing && (
-            <div className="flex gap-3 pt-4 border-t">
-              <Button onClick={handleSaveProfile} className="flex items-center gap-2">
-                <Save className="h-4 w-4" />
-                Save Changes
-              </Button>
-              <Button variant="outline" onClick={handleCancelEdit}>
-                Cancel
-              </Button>
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -339,7 +471,6 @@ export function Settings() {
               {[
                 { value: 'light', icon: Sun, label: 'Light' },
                 { value: 'dark', icon: Moon, label: 'Dark' },
-                { value: 'system', icon: Monitor, label: 'System' }
               ].map(({ value, icon: Icon, label }) => (
                 <Button
                   key={value}
@@ -355,7 +486,7 @@ export function Settings() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <div>
               <label className="font-medium">Sound Effects</label>
               <p className="text-sm text-gray-600">Enable audio feedback for actions</p>
@@ -370,9 +501,9 @@ export function Settings() {
                 <VolumeX className="h-5 w-5 text-gray-400" />
               )}
             </button>
-          </div>
+          </div> */}
 
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <div>
               <label className="font-medium">Animations</label>
               <p className="text-sm text-gray-600">Enable smooth transitions and animations</p>
@@ -386,9 +517,9 @@ export function Settings() {
                 <ToggleLeft className="h-6 w-6 text-gray-400" />
               )}
             </button>
-          </div>
+          </div> */}
 
-          <div className="flex items-center justify-between">
+          {/* <div className="flex items-center justify-between">
             <div>
               <label className="font-medium">Compact View</label>
               <p className="text-sm text-gray-600">Show more information in less space</p>
@@ -402,7 +533,7 @@ export function Settings() {
                 <ToggleLeft className="h-6 w-6 text-gray-400" />
               )}
             </button>
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 
@@ -512,7 +643,7 @@ export function Settings() {
             {[
               { key: 'email', label: 'Email Notifications', desc: 'Receive notifications via email' },
               { key: 'push', label: 'Push Notifications', desc: 'Get browser/app notifications' },
-              { key: 'sms', label: 'SMS Notifications', desc: 'Receive text messages for urgent updates' }
+              // { key: 'sms', label: 'SMS Notifications', desc: 'Receive text messages for urgent updates' }
             ].map(({ key, label, desc }) => (
               <div key={key} className="flex items-center justify-between">
                 <div>
@@ -536,7 +667,7 @@ export function Settings() {
             <h4 className="font-medium text-gray-900 mb-4">Notification Types</h4>
             {[
               { key: 'marketAlerts', label: 'Market Alerts', desc: 'Price movements and market events' },
-              { key: 'priceAlerts', label: 'Price Alerts', desc: 'Custom price threshold notifications' },
+              // { key: 'priceAlerts', label: 'Price Alerts', desc: 'Custom price threshold notifications' },
               { key: 'tradeConfirmations', label: 'Trade Confirmations', desc: 'Order executions and settlements' },
               { key: 'weeklyReport', label: 'Weekly Reports', desc: 'Performance summaries and insights' },
               { key: 'promotions', label: 'Promotions', desc: 'Special offers and new features' }
@@ -584,7 +715,7 @@ export function Settings() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="public">Public - Anyone can see your profile</option>
-              <option value="friends">Friends - Only connections can see</option>
+              {/* <option value="friends">Friends - Only connections can see</option> */}
               <option value="private">Private - Only you can see</option>
             </select>
           </div>
@@ -654,10 +785,10 @@ export function Settings() {
               <Smartphone className="h-4 w-4 mr-2" />
               Manage Connected Devices
             </Button>
-            <Button variant="outline" className="w-full justify-start">
+            {/* <Button variant="outline" className="w-full justify-start">
               <Key className="h-4 w-4 mr-2" />
               API Keys & Integrations
-            </Button>
+            </Button> */}
           </div>
         </CardContent>
       </Card>
@@ -685,10 +816,10 @@ export function Settings() {
             <Download className="h-4 w-4 mr-2" />
             Export Account Data
           </Button>
-          <Button variant="outline" className="w-full justify-start">
+          {/* <Button variant="outline" className="w-full justify-start">
             <Download className="h-4 w-4 mr-2" />
             Export Tax Reports
-          </Button>
+          </Button> */}
         </CardContent>
       </Card>
 
