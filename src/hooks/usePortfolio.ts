@@ -190,17 +190,17 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
   };
 
   const getActivePositions = () => {
-    if (!portfolio) return [];
+    if (!portfolio?.positions) return [];
     return portfolio.positions.filter(pos => pos.marketStatus === 'active');
   };
 
   const getResolvedPositions = () => {
-    if (!portfolio) return [];
+    if (!portfolio?.positions) return [];
     return portfolio.positions.filter(pos => pos.marketStatus === 'resolved');
   };
 
   const getPositionByMarket = (marketId: string) => {
-    if (!portfolio) return null;
+    if (!portfolio?.positions) return null;
     return portfolio.positions.find(pos => pos.marketId === marketId) || null;
   };
 

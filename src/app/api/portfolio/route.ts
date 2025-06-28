@@ -1,6 +1,17 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
+
+const serviceRoleClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
   try {
@@ -14,97 +25,32 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       return NextResponse.json({ error: 'History limit must be between 1 and 100' }, { status: 400 })
     }
 
-    // First try to fetch existing balance
-    const { data: existingBalance, error: fetchError } = await supabase
+    // Get or initialize user balance using service role client to bypass RLS
+    const { data: userBalance, error: balanceError } = await serviceRoleClient
       .from('user_balances')
+      .upsert({
+        user_id: user.id,
+        available_balance: 1000,
+        locked_balance: 0,
+        total_deposited: 0,
+        total_withdrawn: 0,
+        total_trades: 0,
+        winning_trades: 0,
+        total_volume: 0,
+        total_profit_loss: 0
+      }, {
+        onConflict: 'user_id'
+      })
       .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
+      .single()
 
-    let userBalance = existingBalance
-
-    // If no balance exists, try to initialize it
-    if (!existingBalance && !fetchError) {
-      try {
-        // First try to insert directly
-        const { data: directInsert, error: insertError } = await supabase
-          .from('user_balances')
-          .insert({
-            user_id: user.id,
-            available_balance: 1000,
-            locked_balance: 0,
-            total_deposited: 1000,
-            total_withdrawn: 0,
-            total_trades: 0,
-            winning_trades: 0,
-            total_volume: 0,
-            total_profit_loss: 0
-          })
-          .select()
-          .maybeSingle()
-
-        if (!insertError && directInsert) {
-          userBalance = directInsert
-        } else {
-          // If direct insert fails, try the RPC function
-          const { data: newBalance, error: initError } = await supabase
-            .rpc('initialize_user_balance', {
-              p_user_id: user.id
-            })
-            .maybeSingle()
-
-          if (initError) {
-            console.error('Error initializing user balance:', {
-              error: initError,
-              userId: user.id,
-              email: user.email
-            })
-            return NextResponse.json({ 
-              error: 'Failed to initialize user balance',
-              details: initError.message,
-              hint: 'Please try the following steps:\n1. Sign out\n2. Clear your browser cache\n3. Sign in again\n4. If the issue persists, contact support'
-            }, { status: 500 })
-          }
-
-          userBalance = newBalance
-        }
-      } catch (initError) {
-        console.error('Error initializing user balance:', {
-          error: initError,
-          userId: user.id,
-          email: user.email
-        })
-        return NextResponse.json({ 
-          error: 'Failed to initialize user balance',
-          details: initError instanceof Error ? initError.message : 'Unknown error',
-          hint: 'Please try the following steps:\n1. Sign out\n2. Clear your browser cache\n3. Sign in again\n4. If the issue persists, contact support'
-        }, { status: 500 })
-      }
-    } else if (fetchError) {
-      console.error('Error fetching existing balance:', {
-        error: fetchError,
-        userId: user.id,
-        email: user.email
-      })
-      return NextResponse.json({ 
-        error: 'Failed to fetch user balance',
-        details: fetchError.message
-      }, { status: 500 })
-    }
-
-    if (!userBalance) {
-      console.error('No balance found for user:', {
-        userId: user.id,
-        email: user.email
-      })
-      return NextResponse.json({ 
-        error: 'User balance not found',
-        hint: 'Please ensure you are logged in with the correct account'
-      }, { status: 404 })
+    if (balanceError) {
+      console.error('Error initializing user balance:', { error: balanceError, userId: user.id, email: user.email })
+      return NextResponse.json({ error: 'Failed to initialize user balance' }, { status: 500 })
     }
 
     // Fetch active positions (orders that have been partially or fully filled)
-    const { data: positions, error: positionsError } = await supabase
+    const { data: positions, error: positionsError } = await serviceRoleClient
       .from('orders')
       .select(`
         *,
@@ -193,7 +139,7 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
     // Fetch trade history if requested (from filled orders since we don't have matched trades yet)
     let tradeHistory = []
     if (includeHistory) {
-      const { data: orderHistory, error: orderError } = await supabase
+      const { data: orderHistory, error: orderError } = await serviceRoleClient
         .from('orders')
         .select(`
           id,

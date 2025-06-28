@@ -56,7 +56,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
     : (price / 100) * quantity;            // NO: pay (100-price)%, get price% profit if NO wins
 
   // Check if user has sufficient balance
-  const hasInsufficientBalance = !!(balance && totalCost > balance.available);
+  const hasInsufficientBalance = !!(balance && totalCost > balance.available_balance);
 
   const handleSideChange = (side: 'yes' | 'no') => {
     setSelectedSide(side);
@@ -96,7 +96,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
     });
 
     // Check if user has sufficient balance
-    if (balance && totalCost > balance.available) {
+    if (balance && totalCost > balance.available_balance) {
       console.log('❌ Insufficient balance, stopping order placement');
       return; // Error will be shown in UI
     }
@@ -226,7 +226,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           </div>
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>{market.availableQuantity} qty available</span>
-            {balance && <span>Balance: ₹{balance.available.toFixed(2)}</span>}
+            {balance && <span>Balance: ₹{balance.available_balance.toFixed(2)}</span>}
           </div>
         </div>
 
@@ -267,7 +267,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
               <p className="text-xs text-gray-500">You pay</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold text-green-600">₹{quantity.toFixed(0)}</p>
+              <p className="text-2xl font-bold text-green-600">₹{quantity}</p>
               <p className="text-xs text-gray-500">You get if wins</p>
             </div>
           </div>
@@ -327,7 +327,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600 font-medium">
               {hasInsufficientBalance 
-                ? `Insufficient balance. You need ₹${totalCost.toFixed(2)} but only have ₹${balance?.available.toFixed(2) || 0}.`
+                ? `Insufficient balance. You need ₹${totalCost.toFixed(2)} but only have ₹${balance?.available_balance.toFixed(2) || 0}.`
                 : orderError === 'Market is not active' 
                   ? 'This market is closed for trading. It may be resolved or expired.'
                   : orderError
