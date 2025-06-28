@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { DashboardApp } from '@/components/dashboard/DashboardApp'
 import { LandingPage } from '@/components/landing/LandingPage'
@@ -8,7 +9,8 @@ import { AuthModal } from '@/components/auth/AuthModal'
 import ResizableNavbar from '@/components/ui/resizable-navbar'
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const router = useRouter();
+  const { user, loading, needsOnboarding } = useAuth();
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; tab: 'signin' | 'signup' }>({
     isOpen: false,
     tab: 'signin'
@@ -21,6 +23,13 @@ export default function Home() {
   const closeAuthModal = () => {
     setAuthModal({ isOpen: false, tab: 'signin' });
   };
+
+  // Redirect to onboarding
+  useEffect(() => {
+    if (user && needsOnboarding && !loading) {
+      router.push('/onboarding');
+    }
+  }, [user, needsOnboarding, loading, router]);
 
   // Show loading state
   if (loading) {
@@ -35,7 +44,7 @@ export default function Home() {
   }
 
   // Show Dashboard with sidebar layout for authenticated users
-  if (user) {
+  if (user && !needsOnboarding) {
     return <DashboardApp />;
   }
 
