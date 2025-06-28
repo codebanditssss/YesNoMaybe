@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   User,
   Bell,
@@ -76,19 +77,35 @@ interface AppPreferences {
 }
 
 export function Settings() {
+  const { user, signOut } = useAuth();
   const [activeSection, setActiveSection] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: 'Khushi Diwan',
-    email: 'khushi@example.com',
-    phone: '+91 98765 43210',
-    avatar: '',
-    joinDate: '2024-01-15',
-    verified: true,
-    tier: 'Diamond'
+    name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+    email: user?.email || '',
+    phone: user?.user_metadata?.phone || '',
+    avatar: user?.user_metadata?.avatar_url || '',
+    joinDate: user?.created_at ? new Date(user.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    verified: user?.email_confirmed_at ? true : false,
+    tier: 'Bronze' // Default tier, could be fetched from user balance/activity
   });
+
+  // Update profile when user data changes
+  useEffect(() => {
+    if (user) {
+      setUserProfile(prev => ({
+        ...prev,
+        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        phone: user.user_metadata?.phone || '',
+        avatar: user.user_metadata?.avatar_url || '',
+        joinDate: user.created_at ? new Date(user.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        verified: user.email_confirmed_at ? true : false,
+      }));
+    }
+  }, [user]);
 
   const [notifications, setNotifications] = useState<NotificationSettings>({
     email: true,
@@ -686,9 +703,13 @@ export function Settings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button variant="outline" className="w-full justify-start text-orange-600 border-orange-200 hover:bg-orange-50">
+          <Button 
+            variant="outline" 
+            className="w-full justify-start text-orange-600 border-orange-200 hover:bg-orange-50"
+            onClick={() => signOut()}
+          >
             <LogOut className="h-4 w-4 mr-2" />
-            Sign Out All Devices
+            Sign Out
           </Button>
           <Button variant="outline" className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50">
             <Trash2 className="h-4 w-4 mr-2" />

@@ -31,231 +31,55 @@ import {
   Zap,
   BookOpen
 } from "lucide-react";
-
-interface Trade {
-  id: string;
-  marketId: string;
-  marketTitle: string;
-  category: string;
-  type: 'buy' | 'sell';
-  side: 'yes' | 'no';
-  quantity: number;
-  price: number;
-  total: number;
-  fees: number;
-  netAmount: number;
-  timestamp: Date;
-  status: 'completed' | 'pending' | 'cancelled' | 'failed';
-  orderType: 'market' | 'limit';
-  pnl?: number;
-  pnlPercent?: number;
-  executionTime: number; // in seconds
-  liquidityProvider?: boolean;
-}
-
-interface TradeStats {
-  totalTrades: number;
-  totalVolume: number;
-  totalFees: number;
-  totalPnL: number;
-  winRate: number;
-  avgTradeSize: number;
-  bestTrade: number;
-  worstTrade: number;
-  avgExecutionTime: number;
-}
+import { useTradeHistory, type TradeHistoryEntry, type TradeHistoryStats } from '@/hooks/useTradeHistory';
 
 export function TradeHistory() {
   const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'pending' | 'analytics'>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'timestamp' | 'volume' | 'pnl' | 'price'>('timestamp');
+  const [sortBy, setSortBy] = useState<'created_at' | 'total' | 'pnl' | 'price'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<'all' | 'buy' | 'sell'>('all');
   const [filterSide, setFilterSide] = useState<'all' | 'yes' | 'no'>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'pending' | 'cancelled'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'filled' | 'pending' | 'cancelled'>('all');
   const [dateRange, setDateRange] = useState<'all' | '1d' | '7d' | '30d' | '90d'>('all');
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
 
-  // Auto-refresh data
+  // Use real trade history data
+  const { 
+    trades, 
+    stats, 
+    loading, 
+    error, 
+    refresh,
+    loadMore,
+    hasData,
+    canLoadMore 
+  } = useTradeHistory({ 
+    status: filterStatus === 'all' ? undefined : filterStatus,
+    side: filterSide === 'all' ? undefined : filterSide,
+    dateRange: dateRange === 'all' ? undefined : dateRange,
+    sortBy,
+    sortOrder,
+    search: searchTerm,
+    autoRefresh: true,
+    refreshInterval: 60000 // 1 minute
+  });
+
+  // Auto-refresh timestamp
   useEffect(() => {
     const interval = setInterval(() => {
       setLastUpdate(new Date());
-    }, 30000); // 30 seconds
+    }, 60000); // Update timestamp every minute
     return () => clearInterval(interval);
   }, []);
 
-  // Mock trade data
-  const trades: Trade[] = [
-    {
-      id: '1',
-      marketId: 'btc-100k',
-      marketTitle: 'Bitcoin to reach ₹84L by December 2024?',
-      category: 'crypto',
-      type: 'buy',
-      side: 'yes',
-      quantity: 150,
-      price: 4.8,
-      total: 720.00,
-      fees: 7.20,
-      netAmount: 727.20,
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      status: 'completed',
-      orderType: 'market',
-      pnl: 90.00,
-      pnlPercent: 12.5,
-      executionTime: 0.8,
-      liquidityProvider: false
-    },
-    {
-      id: '2',
-      marketId: 'tesla-300',
-      marketTitle: 'Tesla stock to cross ₹25,000 by Q1 2025?',
-      category: 'economics',
-      type: 'sell',
-      side: 'no',
-      quantity: 20,
-      price: 4.6,
-      total: 92.00,
-      fees: 0.92,
-      netAmount: 91.08,
-      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      status: 'completed',
-      orderType: 'limit',
-      pnl: -8.50,
-      pnlPercent: -8.5,
-      executionTime: 120.5,
-      liquidityProvider: true
-    },
-    {
-      id: '3',
-      marketId: 'india-worldcup',
-      marketTitle: 'India to win World Cup 2024?',
-      category: 'sports',
-      type: 'buy',
-      side: 'yes',
-      quantity: 100,
-      price: 6.7,
-      total: 670.00,
-      fees: 6.70,
-      netAmount: 676.70,
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      status: 'completed',
-      orderType: 'market',
-      pnl: 45.20,
-      pnlPercent: 6.7,
-      executionTime: 1.2,
-      liquidityProvider: false
-    },
-    {
-      id: '4',
-      marketId: 'ai-agi-2025',
-      marketTitle: 'AI to achieve AGI by 2025?',
-      category: 'technology',
-      type: 'buy',
-      side: 'no',
-      quantity: 30,
-      price: 7.8,
-      total: 234.00,
-      fees: 2.34,
-      netAmount: 236.34,
-      timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000),
-      status: 'pending',
-      orderType: 'limit',
-      executionTime: 0,
-      liquidityProvider: false
-    },
-    {
-      id: '5',
-      marketId: 'apple-iphone16',
-      marketTitle: 'Apple to announce iPhone 16 in September 2024?',
-      category: 'technology',
-      type: 'sell',
-      side: 'yes',
-      quantity: 50,
-      price: 9.1,
-      total: 455.00,
-      fees: 4.55,
-      netAmount: 450.45,
-      timestamp: new Date(Date.now() - 72 * 60 * 60 * 1000),
-      status: 'cancelled',
-      orderType: 'limit',
-      pnl: 0,
-      pnlPercent: 0,
-      executionTime: 0,
-      liquidityProvider: false
-    },
-    {
-      id: '6',
-      marketId: 'meta-vr',
-      marketTitle: 'Meta to release affordable VR headset in 2024?',
-      category: 'technology',
-      type: 'buy',
-      side: 'yes',
-      quantity: 200,
-      price: 5.5,
-      total: 1100.00,
-      fees: 11.00,
-      netAmount: 1111.00,
-      timestamp: new Date(Date.now() - 120 * 60 * 60 * 1000),
-      status: 'completed',
-      orderType: 'market',
-      pnl: 165.00,
-      pnlPercent: 15.0,
-      executionTime: 0.9,
-      liquidityProvider: false
-    }
-  ];
-
-  // Calculate trade statistics
-  const completedTrades = trades.filter(trade => trade.status === 'completed');
-  const tradeStats: TradeStats = {
-    totalTrades: trades.length,
-    totalVolume: completedTrades.reduce((sum, trade) => sum + trade.total, 0),
-    totalFees: completedTrades.reduce((sum, trade) => sum + trade.fees, 0),
-    totalPnL: completedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0),
-    winRate: completedTrades.length > 0 ? (completedTrades.filter(t => (t.pnl || 0) > 0).length / completedTrades.length) * 100 : 0,
-    avgTradeSize: completedTrades.length > 0 ? completedTrades.reduce((sum, trade) => sum + trade.total, 0) / completedTrades.length : 0,
-    bestTrade: completedTrades.length > 0 ? Math.max(...completedTrades.map(t => t.pnl || 0)) : 0,
-    worstTrade: completedTrades.length > 0 ? Math.min(...completedTrades.map(t => t.pnl || 0)) : 0,
-    avgExecutionTime: completedTrades.length > 0 ? completedTrades.reduce((sum, trade) => sum + trade.executionTime, 0) / completedTrades.length : 0
-  };
-
-  // Filter trades based on current filters
-  const filteredTrades = trades
-    .filter(trade => {
-      const matchesSearch = trade.marketTitle.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = filterType === 'all' || trade.type === filterType;
-      const matchesSide = filterSide === 'all' || trade.side === filterSide;
-      const matchesStatus = filterStatus === 'all' || trade.status === filterStatus;
-      
-      let matchesDate = true;
-      if (dateRange !== 'all') {
-        const days = parseInt(dateRange.replace('d', ''));
-        const dateThreshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-        matchesDate = trade.timestamp >= dateThreshold;
-      }
-
-      return matchesSearch && matchesType && matchesSide && matchesStatus && matchesDate;
-    })
-    .sort((a, b) => {
-      let comparison = 0;
-      switch (sortBy) {
-        case 'timestamp':
-          comparison = b.timestamp.getTime() - a.timestamp.getTime();
-          break;
-        case 'volume':
-          comparison = b.total - a.total;
-          break;
-        case 'pnl':
-          comparison = (b.pnl || 0) - (a.pnl || 0);
-          break;
-        case 'price':
-          comparison = b.price - a.price;
-          break;
-      }
-      return sortOrder === 'desc' ? comparison : -comparison;
-    });
+  // Filter trades client-side for tab functionality
+  const filteredTrades = trades.filter(trade => {
+    if (selectedTab === 'completed') return trade.status === 'completed';
+    if (selectedTab === 'pending') return trade.status === 'pending';
+    return true; // 'all' tab shows everything
+  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { 
@@ -298,6 +122,8 @@ export function TradeHistory() {
       case 'sports': return 'bg-blue-100 text-blue-800';
       case 'technology': return 'bg-purple-100 text-purple-800';
       case 'economics': return 'bg-green-100 text-green-800';
+      case 'politics': return 'bg-red-100 text-red-800';
+      case 'entertainment': return 'bg-pink-100 text-pink-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -331,10 +157,14 @@ export function TradeHistory() {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => setLastUpdate(new Date())}
+              onClick={() => {
+                setLastUpdate(new Date());
+                refresh();
+              }}
               className="flex items-center gap-2"
+              disabled={loading}
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
             
@@ -349,348 +179,467 @@ export function TradeHistory() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && trades.length === 0 && (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading trade history...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card className="p-6 bg-red-50 border-red-200">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <h3 className="text-sm font-medium text-red-800">Error loading trade history</h3>
+                <p className="text-sm text-red-600 mt-1">{error}</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refresh}
+                className="ml-auto"
+              >
+                Try again
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Trade Statistics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-blue-100 rounded">
-                  <Activity className="h-4 w-4 text-blue-600" />
+        {!loading && !error && (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-blue-100 rounded">
+                    <Activity className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-600">Total Trades</span>
                 </div>
-                <span className="text-sm font-medium text-gray-600">Total Trades</span>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalTrades}</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{tradeStats.totalTrades}</p>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-purple-100 rounded">
-                  <DollarSign className="h-4 w-4 text-purple-600" />
+            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-purple-100 rounded">
+                    <DollarSign className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-600">Total Volume</span>
                 </div>
-                <span className="text-sm font-medium text-gray-600">Total Volume</span>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalVolume)}</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(tradeStats.totalVolume)}</p>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className={`p-1 rounded ${tradeStats.totalPnL >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                  {tradeStats.totalPnL >= 0 ? (
-                    <TrendingUp className={`h-4 w-4 ${tradeStats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                  ) : (
-                    <TrendingDown className={`h-4 w-4 ${tradeStats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                  )}
+            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className={`p-1 rounded ${stats.totalPnL >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                    {stats.totalPnL >= 0 ? (
+                      <TrendingUp className={`h-4 w-4 ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                    ) : (
+                      <TrendingDown className={`h-4 w-4 ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-gray-600">Total P&L</span>
                 </div>
-                <span className="text-sm font-medium text-gray-600">Total P&L</span>
+                <p className={`text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(stats.totalPnL)}
+                </p>
               </div>
-              <p className={`text-2xl font-bold ${tradeStats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(tradeStats.totalPnL)}
-              </p>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-green-100 rounded">
-                  <Target className="h-4 w-4 text-green-600" />
+            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-green-100 rounded">
+                    <Target className="h-4 w-4 text-green-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-600">Win Rate</span>
                 </div>
-                <span className="text-sm font-medium text-gray-600">Win Rate</span>
+                <p className="text-2xl font-bold text-gray-900">{stats.winRate.toFixed(1)}%</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{tradeStats.winRate.toFixed(1)}%</p>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-orange-100 rounded">
-                  <BarChart3 className="h-4 w-4 text-orange-600" />
+            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-orange-100 rounded">
+                    <BookOpen className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-600">Avg Trade</span>
                 </div>
-                <span className="text-sm font-medium text-gray-600">Avg Size</span>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.avgTradeSize)}</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(tradeStats.avgTradeSize)}</p>
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-gray-100 rounded">
-                  <Clock className="h-4 w-4 text-gray-600" />
+            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 bg-indigo-100 rounded">
+                    <Zap className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <span className="text-sm font-medium text-gray-600">Total Fees</span>
                 </div>
-                <span className="text-sm font-medium text-gray-600">Avg Speed</span>
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalFees)}</p>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{tradeStats.avgExecutionTime.toFixed(1)}s</p>
-            </div>
-          </Card>
-        </div>
-
-        {/* Filters and Controls */}
-        <Card className="p-6 bg-white border-0 shadow-sm">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Filter & Search</h3>
+            </Card>
           </div>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-            {/* Search */}
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search markets..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            {/* Trade Type Filter */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Types</option>
-              <option value="buy">Buy Orders</option>
-              <option value="sell">Sell Orders</option>
-            </select>
-
-            {/* Side Filter */}
-            <select
-              value={filterSide}
-              onChange={(e) => setFilterSide(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Sides</option>
-              <option value="yes">YES Positions</option>
-              <option value="no">NO Positions</option>
-            </select>
-
-            {/* Status Filter */}
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-
-            {/* Date Range Filter */}
-            <select
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="all">All Time</option>
-              <option value="1d">Last 24 Hours</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="90d">Last 90 Days</option>
-            </select>
-          </div>
-
-          {/* Sort Options */}
-          <div className="flex items-center gap-4 mt-4 pt-4 border-t border-gray-200">
-            <span className="text-sm font-medium text-gray-700">Sort by:</span>
-            <div className="flex gap-2">
+        {/* Navigation Tabs */}
+        {!loading && !error && (
+          <Card className="p-1 bg-white border-0 shadow-sm">
+            <div className="flex rounded-lg bg-gray-100 p-1">
               {[
-                { value: 'timestamp', label: 'Date' },
-                { value: 'volume', label: 'Volume' },
-                { value: 'pnl', label: 'P&L' },
-                { value: 'price', label: 'Price' }
-              ].map(({ value, label }) => (
+                { id: 'all', label: 'All Trades', icon: Activity },
+                { id: 'completed', label: 'Completed', icon: CheckCircle },
+                { id: 'pending', label: 'Pending', icon: Clock },
+                { id: 'analytics', label: 'Analytics', icon: PieChart }
+              ].map(({ id, label, icon: Icon }) => (
                 <button
-                  key={value}
-                  onClick={() => {
-                    if (sortBy === value) {
-                      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
-                    } else {
-                      setSortBy(value as any);
-                      setSortOrder('desc');
-                    }
-                  }}
-                  className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    sortBy === value
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  key={id}
+                  onClick={() => setSelectedTab(id as any)}
+                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors flex-1 justify-center ${
+                    selectedTab === id
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
+                  <Icon className="h-4 w-4" />
                   {label}
-                  {sortBy === value && (
-                    <ArrowUpDown className="h-3 w-3" />
+                  {id === 'completed' && (
+                    <Badge variant="secondary" className="ml-1 bg-green-100 text-green-800">
+                      {stats.completedTrades}
+                    </Badge>
+                  )}
+                  {id === 'pending' && (
+                    <Badge variant="secondary" className="ml-1 bg-yellow-100 text-yellow-800">
+                      {stats.pendingTrades}
+                    </Badge>
                   )}
                 </button>
               ))}
             </div>
-            
-            <div className="ml-auto text-sm text-gray-600">
-              {filteredTrades.length} of {trades.length} trades
-            </div>
-          </div>
-        </Card>
+          </Card>
+        )}
 
-        {/* Trade List */}
-        <Card className="bg-white border-0 shadow-sm">
-          <div className="p-6">
-            {filteredTrades.length === 0 ? (
-              <div className="text-center py-12">
-                <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No trades found</h3>
-                <p className="text-gray-600 mb-4">
-                  Try adjusting your filters or search criteria.
-                </p>
-                <Button onClick={() => {
-                  setSearchTerm('');
-                  setFilterType('all');
-                  setFilterSide('all');
-                  setFilterStatus('all');
-                  setDateRange('all');
-                }}>
-                  Clear All Filters
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredTrades.map((trade) => (
-                  <div key={trade.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge className={getCategoryColor(trade.category)} variant="outline">
-                            {trade.category.charAt(0).toUpperCase() + trade.category.slice(1)}
-                          </Badge>
-                          <Badge className={getStatusColor(trade.status)}>
-                            <div className="flex items-center gap-1">
-                              {getStatusIcon(trade.status)}
-                              {trade.status.toUpperCase()}
-                            </div>
-                          </Badge>
-                          <Badge variant={trade.type === 'buy' ? 'default' : 'outline'} className={
-                            trade.type === 'buy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }>
-                            {trade.type.toUpperCase()}
-                          </Badge>
-                          <Badge variant={trade.side === 'yes' ? 'default' : 'outline'} className={
-                            trade.side === 'yes' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                          }>
-                            {trade.side.toUpperCase()}
-                          </Badge>
-                          {trade.liquidityProvider && (
-                            <Badge className="bg-purple-100 text-purple-800">
-                              LP
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        <h4 className="font-semibold text-gray-900 mb-2">{trade.marketTitle}</h4>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                          <div>
-                            <p className="text-gray-500">Quantity</p>
-                            <p className="font-medium">{trade.quantity}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Price</p>
-                            <p className="font-medium">{formatCurrency(trade.price)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Total</p>
-                            <p className="font-medium">{formatCurrency(trade.total)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Fees</p>
-                            <p className="font-medium">{formatCurrency(trade.fees)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Date</p>
-                            <p className="font-medium">{trade.timestamp.toLocaleDateString()}</p>
-                            <p className="text-xs text-gray-500">{trade.timestamp.toLocaleTimeString()}</p>
-                          </div>
+        {/* Tab Content */}
+        {!loading && !error && (
+          <>
+            {(selectedTab === 'all' || selectedTab === 'completed' || selectedTab === 'pending') && (
+              <div className="space-y-6">
+                {/* Filters and Search */}
+                <Card className="p-6 bg-white border-0 shadow-sm">
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Search */}
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search by market title..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Filter Controls */}
+                    <div className="flex flex-wrap gap-3">
+                      {/* Status Filter */}
+                      <select 
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value as any)}
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="filled">Completed</option>
+                        <option value="pending">Pending</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+
+                      {/* Side Filter */}
+                      <select 
+                        value={filterSide}
+                        onChange={(e) => setFilterSide(e.target.value as any)}
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All Sides</option>
+                        <option value="yes">YES</option>
+                        <option value="no">NO</option>
+                      </select>
+
+                      {/* Date Range Filter */}
+                      <select 
+                        value={dateRange}
+                        onChange={(e) => setDateRange(e.target.value as any)}
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="all">All Time</option>
+                        <option value="1d">Last 24 hours</option>
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                        <option value="90d">Last 90 days</option>
+                      </select>
+
+                      {/* Sort Controls */}
+                      <select 
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="created_at">Date</option>
+                        <option value="total">Volume</option>
+                        <option value="pnl">P&L</option>
+                        <option value="price">Price</option>
+                      </select>
+
+                      <button
+                        onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
+                        className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500"
+                      >
+                        <ArrowUpDown className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Trades List */}
+                {!hasData ? (
+                  <Card className="p-12 bg-white border-0 shadow-sm">
+                    <div className="text-center">
+                      <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No trades found</h3>
+                      <p className="text-gray-600 mb-4">
+                        {searchTerm || filterStatus !== 'all' || filterSide !== 'all' || dateRange !== 'all'
+                          ? "No trades match your current filters. Try adjusting your search criteria."
+                          : "You haven't made any trades yet. Start trading to see your activity here!"
+                        }
+                      </p>
+                      {(searchTerm || filterStatus !== 'all' || filterSide !== 'all' || dateRange !== 'all') && (
+                        <Button onClick={() => {
+                          setSearchTerm('');
+                          setFilterStatus('all');
+                          setFilterSide('all');
+                          setDateRange('all');
+                        }}>
+                          Clear All Filters
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                ) : (
+                  <Card className="bg-white border-0 shadow-sm">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {selectedTab === 'all' ? 'All Trades' : 
+                           selectedTab === 'completed' ? 'Completed Trades' : 'Pending Trades'}
+                        </h3>
+                        <div className="text-sm text-gray-600">
+                          {filteredTrades.length} {filteredTrades.length === 1 ? 'trade' : 'trades'}
                         </div>
                       </div>
                       
-                      <div className="text-right ml-4">
-                        {trade.status === 'completed' && trade.pnl !== undefined && (
-                          <div>
-                            <p className="text-sm text-gray-500">P&L</p>
-                            <div className={`text-lg font-bold flex items-center ${
-                              trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {trade.pnl >= 0 ? (
-                                <TrendingUp className="h-4 w-4 mr-1" />
-                              ) : (
-                                <TrendingDown className="h-4 w-4 mr-1" />
-                              )}
-                              {formatCurrency(Math.abs(trade.pnl))}
-                            </div>
-                            <p className={`text-sm ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              ({trade.pnlPercent !== undefined ? (trade.pnlPercent >= 0 ? '+' : '') + trade.pnlPercent.toFixed(1) + '%' : 'N/A'})
-                            </p>
-                          </div>
-                        )}
-                        
-                        {trade.status === 'pending' && (
-                          <div className="text-center">
-                            <div className="inline-flex items-center gap-2 text-yellow-600">
-                              <Clock className="h-4 w-4 animate-spin" />
-                              <span className="text-sm font-medium">Processing...</span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {trade.status === 'cancelled' && (
-                          <div className="text-center">
-                            <div className="inline-flex items-center gap-2 text-gray-600">
-                              <XCircle className="h-4 w-4" />
-                              <span className="text-sm font-medium">Cancelled</span>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="flex gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              // View trade details
-                            }}
+                      <div className="space-y-4">
+                        {filteredTrades.map((trade) => (
+                          <div 
+                            key={trade.id} 
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                           >
-                            <Eye className="h-3 w-3 mr-1" />
-                            Details
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge className={getCategoryColor(trade.category)} variant="outline">
+                                    {trade.category.charAt(0).toUpperCase() + trade.category.slice(1)}
+                                  </Badge>
+                                  <Badge className={getStatusColor(trade.status)} variant="outline">
+                                    <div className="flex items-center gap-1">
+                                      {getStatusIcon(trade.status)}
+                                      {trade.status.toUpperCase()}
+                                    </div>
+                                  </Badge>
+                                  <Badge variant={trade.side === 'yes' ? 'default' : 'outline'} className={
+                                    trade.side === 'yes' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                  }>
+                                    {trade.side.toUpperCase()}
+                                  </Badge>
+                                  <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                                    {trade.orderType.toUpperCase()}
+                                  </Badge>
+                                </div>
+                                
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                  {trade.marketTitle}
+                                </h3>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-gray-500">Quantity:</span>
+                                    <p className="font-medium">{trade.quantity}</p>
+                                    {trade.isPartiallyFilled && (
+                                      <p className="text-xs text-orange-600">
+                                        Filled: {trade.filledQuantity}/{trade.originalQuantity}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Price:</span>
+                                    <p className="font-medium">₹{trade.price.toFixed(2)}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Total:</span>
+                                    <p className="font-medium">{formatCurrency(trade.total)}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500">Date:</span>
+                                    <p className="font-medium">{trade.timestamp.toLocaleDateString()}</p>
+                                    <p className="text-xs text-gray-500">{trade.timestamp.toLocaleTimeString()}</p>
+                                  </div>
+                                </div>
+                              </div>
 
-                    {/* Additional trade details */}
-                    <div className="pt-3 border-t border-gray-100">
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <div className="flex items-center gap-4">
-                          <span>Order: {trade.orderType.toUpperCase()}</span>
-                          {trade.status === 'completed' && (
-                            <span>Execution: {trade.executionTime.toFixed(1)}s</span>
-                          )}
-                          <span>Net: {formatCurrency(trade.netAmount)}</span>
-                        </div>
-                        <span>ID: {trade.id}</span>
+                              <div className="text-right space-y-2">
+                                <div>
+                                  <p className="text-sm text-gray-500">Net Amount</p>
+                                  <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.netAmount)}</p>
+                                </div>
+                                
+                                {trade.status === 'completed' && trade.pnl !== undefined && (
+                                  <div>
+                                    <p className="text-sm text-gray-500">P&L</p>
+                                    <div className={`flex items-center gap-1 ${
+                                      trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                                    }`}>
+                                      {trade.pnl >= 0 ? (
+                                        <TrendingUp className="h-4 w-4" />
+                                      ) : (
+                                        <TrendingDown className="h-4 w-4" />
+                                      )}
+                                      <span className="font-bold">
+                                        {formatCurrency(Math.abs(trade.pnl))}
+                                        {trade.pnlPercent !== undefined && (
+                                          <span className="text-xs ml-1">
+                                            ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                <div className="text-xs text-gray-500">
+                                  <p>Fees: {formatCurrency(trade.fees)}</p>
+                                  {trade.status === 'completed' && trade.executionTime > 0 && (
+                                    <p>Exec: {trade.executionTime.toFixed(1)}s</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {/* Load More Button */}
+                        {canLoadMore && (
+                          <div className="text-center pt-6">
+                            <Button 
+                              variant="outline" 
+                              onClick={loadMore}
+                              disabled={loading}
+                            >
+                              {loading ? (
+                                <>
+                                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                  Loading...
+                                </>
+                              ) : (
+                                'Load More Trades'
+                              )}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  </Card>
+                )}
               </div>
             )}
-          </div>
-        </Card>
+
+            {selectedTab === 'analytics' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="p-6 bg-white border-0 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Trading Performance</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Total Trades</span>
+                      <span className="font-bold text-gray-900">{stats.totalTrades}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Completed</span>
+                      <span className="font-bold text-green-600">{stats.completedTrades}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Pending</span>
+                      <span className="font-bold text-yellow-600">{stats.pendingTrades}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Cancelled</span>
+                      <span className="font-bold text-gray-600">{stats.cancelledTrades}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Win Rate</span>
+                      <span className="font-bold text-gray-900">{stats.winRate.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Avg Execution Time</span>
+                      <span className="font-bold text-gray-900">{stats.avgExecutionTime.toFixed(2)}s</span>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-6 bg-white border-0 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Summary</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Total Volume</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(stats.totalVolume)}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Total Fees</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(stats.totalFees)}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Total P&L</span>
+                      <span className={`font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(stats.totalPnL)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Average Trade Size</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(stats.avgTradeSize)}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Best Trade</span>
+                      <span className="font-bold text-green-600">{formatCurrency(stats.bestTrade)}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-600">Worst Trade</span>
+                      <span className="font-bold text-red-600">{formatCurrency(stats.worstTrade)}</span>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
