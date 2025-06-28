@@ -32,7 +32,7 @@ import {
   BookOpen
 } from "lucide-react";
 import { useTradeHistory, type TradeHistoryEntry, type TradeHistoryStats } from '@/hooks/useTradeHistory';
-import { exportTradeHistoryToCSV } from '@/utils/csvExport';
+import { exportTradeHistoryToCSV } from '@/lib/csvExport';
 
 export function TradeHistory() {
   const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'pending' | 'analytics'>('all');
