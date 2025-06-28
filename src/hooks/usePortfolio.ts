@@ -1,4 +1,7 @@
+"use client";
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 // Types for portfolio
 export interface PortfolioBalance {
@@ -22,9 +25,9 @@ export interface Position {
   marketId: string;
   marketTitle: string;
   marketCategory: string;
-  marketStatus: 'active' | 'resolved' | 'cancelled';
+  marketStatus: 'active' | 'closing_soon' | 'resolved';
   resolutionDate: string;
-  actualOutcome?: 'YES' | 'NO';
+  actualOutcome?: string;
   yesShares: number;
   noShares: number;
   totalInvested: number;
@@ -45,45 +48,93 @@ export interface TradeHistory {
 }
 
 export interface Portfolio {
-  balance: PortfolioBalance;
-  stats: PortfolioStats;
+  balance: {
+    id: string;
+    user_id: string;
+    available_balance: number;
+    locked_balance: number;
+    total_deposited: number;
+    total_withdrawn: number;
+    total_trades: number;
+    winning_trades: number;
+    total_volume: number;
+    total_profit_loss: number;
+  };
   positions: Position[];
-  tradeHistory?: TradeHistory[];
+  summary: {
+    totalValue: number;
+    totalInvested: number;
+    totalUnrealizedPnL: number;
+    totalRealizedPnL: number;
+    winRate: number;
+  };
+  history?: TradeHistory[];
 }
 
 interface UsePortfolioOptions {
   includeHistory?: boolean;
   historyLimit?: number;
   autoRefresh?: boolean;
-  refreshInterval?: number;
+  refreshInterval?: number; // in milliseconds
 }
 
 export function usePortfolio(options: UsePortfolioOptions = {}) {
   const {
     includeHistory = false,
     historyLimit = 20,
-    autoRefresh = true,
-    refreshInterval = 30000
+    autoRefresh = false,
+    refreshInterval = 30000 // 30 seconds
   } = options;
 
+  const { session, user } = useAuth();
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch portfolio data
+  // Function to get auth headers
+  const getAuthHeaders = useCallback(async () => {
+    if (!session?.access_token) {
+      throw new Error('No authentication token available');
+    }
+    
+    return {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json'
+    };
+  }, [session]);
+
   const fetchPortfolio = useCallback(async () => {
+    if (!user || !session) {
+      setError('User not authenticated');
+      setLoading(false);
+      return;
+    }
+
     try {
       setError(null);
       
+      const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      if (includeHistory) params.append('include_history', 'true');
-      if (historyLimit) params.append('history_limit', historyLimit.toString());
-
-      const response = await fetch(`/api/portfolio?${params.toString()}`);
       
+      if (includeHistory) {
+        params.append('include_history', 'true');
+        params.append('history_limit', historyLimit.toString());
+      }
+
+      const response = await fetch(`/api/portfolio?${params.toString()}`, {
+        method: 'GET',
+        headers
+      });
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch portfolio');
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please sign in again.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Failed to fetch portfolio: ${response.status}`;
+        const errorDetails = errorData.details ? `\n${errorData.details}` : '';
+        const errorHint = errorData.hint ? `\n${errorData.hint}` : '';
+        throw new Error(`${errorMessage}${errorDetails}${errorHint}`);
       }
 
       const data: Portfolio = await response.json();
@@ -94,7 +145,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [includeHistory, historyLimit]);
+  }, [user, session, includeHistory, historyLimit, getAuthHeaders]);
 
   // Refresh portfolio data
   const refresh = useCallback(() => {
@@ -105,59 +156,66 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
   // Auto-refresh setup
   useEffect(() => {
     if (autoRefresh && refreshInterval > 0) {
-      const interval = setInterval(fetchPortfolio, refreshInterval);
+      const interval = setInterval(refresh, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [autoRefresh, refreshInterval, fetchPortfolio]);
+  }, [autoRefresh, refreshInterval, refresh]);
 
   // Initial fetch
   useEffect(() => {
-    fetchPortfolio();
-  }, [fetchPortfolio]);
+    if (user && session) {
+      fetchPortfolio();
+    } else {
+      setPortfolio(null);
+      setLoading(false);
+      setError(null);
+    }
+  }, [user, session, fetchPortfolio]);
 
-  // Computed values
-  const activePositions = portfolio?.positions.filter(pos => pos.marketStatus === 'active') || [];
-  const resolvedPositions = portfolio?.positions.filter(pos => pos.marketStatus === 'resolved') || [];
-  const profitablePositions = portfolio?.positions.filter(pos => 
-    pos.unrealizedPnL > 0 || pos.realizedPnL > 0
-  ) || [];
-  
-  const totalPnL = (portfolio?.balance.unrealizedPnL || 0) + (portfolio?.balance.realizedPnL || 0);
-  const pnlPercentage = portfolio?.balance.invested 
-    ? (totalPnL / portfolio.balance.invested) * 100 
-    : 0;
+  // Helper functions
+  const getTotalValue = () => {
+    if (!portfolio) return 0;
+    return portfolio.summary.totalValue || 0;
+  };
 
-  // Position analysis
-  const largestPosition = portfolio?.positions.reduce((largest, current) => {
-    const currentValue = current.totalInvested;
-    const largestValue = largest ? largest.totalInvested : 0;
-    return currentValue > largestValue ? current : largest;
-  }, null as Position | null);
+  const getTotalPnL = () => {
+    if (!portfolio) return 0;
+    return (portfolio.summary.totalUnrealizedPnL || 0) + (portfolio.summary.totalRealizedPnL || 0);
+  };
 
-  const bestPerformingPosition = portfolio?.positions.reduce((best, current) => {
-    const currentPnL = current.unrealizedPnL + current.realizedPnL;
-    const bestPnL = best ? (best.unrealizedPnL + best.realizedPnL) : -Infinity;
-    return currentPnL > bestPnL ? current : best;
-  }, null as Position | null);
+  const getPnLPercentage = () => {
+    if (!portfolio || !portfolio.summary.totalInvested || portfolio.summary.totalInvested === 0) return 0;
+    const totalPnL = getTotalPnL();
+    return (totalPnL / portfolio.summary.totalInvested) * 100;
+  };
 
-  const worstPerformingPosition = portfolio?.positions.reduce((worst, current) => {
-    const currentPnL = current.unrealizedPnL + current.realizedPnL;
-    const worstPnL = worst ? (worst.unrealizedPnL + worst.realizedPnL) : Infinity;
-    return currentPnL < worstPnL ? current : worst;
-  }, null as Position | null);
+  const getActivePositions = () => {
+    if (!portfolio) return [];
+    return portfolio.positions.filter(pos => pos.marketStatus === 'active');
+  };
+
+  const getResolvedPositions = () => {
+    if (!portfolio) return [];
+    return portfolio.positions.filter(pos => pos.marketStatus === 'resolved');
+  };
+
+  const getPositionByMarket = (marketId: string) => {
+    if (!portfolio) return null;
+    return portfolio.positions.find(pos => pos.marketId === marketId) || null;
+  };
+
+  const getWinRate = () => {
+    if (!portfolio) return 0;
+    return portfolio.summary.winRate || 0;
+  };
 
   return {
     // Core data
     portfolio,
-    balance: portfolio?.balance,
-    stats: portfolio?.stats,
+    balance: portfolio?.balance || null,
+    summary: portfolio?.summary || null,
     positions: portfolio?.positions || [],
-    tradeHistory: portfolio?.tradeHistory || [],
-    
-    // Filtered positions
-    activePositions,
-    resolvedPositions,
-    profitablePositions,
+    history: portfolio?.history || [],
     
     // State
     loading,
@@ -166,22 +224,32 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     // Actions
     refresh,
     
-    // Computed metrics
-    totalPnL,
-    pnlPercentage: Math.round(pnlPercentage * 100) / 100,
-    hasPositions: (portfolio?.positions.length || 0) > 0,
-    hasActivePositions: activePositions.length > 0,
+    // Helper functions
+    getTotalValue,
+    getTotalPnL,
+    getPnLPercentage,
+    getActivePositions,
+    getResolvedPositions,
+    getPositionByMarket,
+    getWinRate,
     
-    // Position analysis
-    largestPosition,
-    bestPerformingPosition,
-    worstPerformingPosition,
-    
-    // Utility functions
-    getPositionPnL: (position: Position) => position.unrealizedPnL + position.realizedPnL,
-    getPositionValue: (position: Position) => position.totalInvested + position.unrealizedPnL + position.realizedPnL,
-    getPositionShares: (position: Position) => position.yesShares + position.noShares,
+    // Computed values
+    hasData: !!portfolio,
+    totalPositions: portfolio?.positions?.length || 0,
+    activePositionsCount: getActivePositions().length,
+    resolvedPositionsCount: getResolvedPositions().length,
+    isLoading: loading,
+    hasError: !!error
   };
+}
+
+// Hook for portfolio summary only (lighter weight)
+export function usePortfolioSummary() {
+  return usePortfolio({ 
+    includeHistory: false,
+    autoRefresh: true,
+    refreshInterval: 15000 // More frequent updates for summary
+  });
 }
 
 // Hook for tracking specific position
@@ -197,13 +265,4 @@ export function usePosition(marketId: string) {
     error,
     refresh
   };
-}
-
-// Hook for portfolio summary only (lighter weight)
-export function usePortfolioSummary() {
-  return usePortfolio({ 
-    includeHistory: false,
-    autoRefresh: true,
-    refreshInterval: 15000 // More frequent updates for summary
-  });
 } 

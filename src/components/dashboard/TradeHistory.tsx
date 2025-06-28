@@ -456,8 +456,8 @@ export function TradeHistory() {
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Badge className={getCategoryColor(trade.category)} variant="outline">
-                                    {trade.category.charAt(0).toUpperCase() + trade.category.slice(1)}
+                                  <Badge className={getCategoryColor(trade.category || 'general')} variant="outline">
+                                    {(trade.category || 'general').charAt(0).toUpperCase() + (trade.category || 'general').slice(1)}
                                   </Badge>
                                   <Badge className={getStatusColor(trade.status)} variant="outline">
                                     <div className="flex items-center gap-1">

@@ -56,7 +56,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
     : (price / 100) * quantity;            // NO: pay (100-price)%, get price% profit if NO wins
 
   // Check if user has sufficient balance
-  const hasInsufficientBalance = balance && totalCost > balance.available;
+  const hasInsufficientBalance = !!(balance && totalCost > balance.available);
 
   const handleSideChange = (side: 'yes' | 'no') => {
     setSelectedSide(side);
@@ -85,9 +85,26 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   };
 
   const handlePlaceOrder = async () => {
+    console.log('🚀 Place Order clicked!', { 
+      balance, 
+      totalCost, 
+      hasInsufficientBalance,
+      marketId: market.id,
+      side: selectedSide,
+      price: actualPrice,
+      quantity
+    });
+
     // Check if user has sufficient balance
     if (balance && totalCost > balance.available) {
+      console.log('❌ Insufficient balance, stopping order placement');
       return; // Error will be shown in UI
+    }
+
+    // Check if balance is still loading
+    if (!balance) {
+      console.log('⏳ Balance not loaded yet, cannot place order');
+      return;
     }
 
     try {
@@ -98,6 +115,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
         quantity: quantity
       };
 
+      console.log('📤 Sending order to API...', orderData);
       const newOrder = await placeOrder(orderData);
 
       // Call the legacy callback for backward compatibility
@@ -321,7 +339,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
         {/* Place Order Button */}
         <Button
           onClick={handlePlaceOrder}
-          disabled={placing || hasInsufficientBalance}
+          disabled={placing || hasInsufficientBalance || !balance}
           className={`w-full py-3 text-base font-semibold rounded-lg ${
             selectedSide === 'yes'
               ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400'
@@ -332,6 +350,11 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Placing order...
+            </>
+          ) : !balance ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Loading balance...
             </>
           ) : (
             'Place order'

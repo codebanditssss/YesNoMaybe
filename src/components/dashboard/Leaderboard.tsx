@@ -157,7 +157,7 @@ export function Leaderboard() {
                   <span className="text-sm font-medium text-gray-600">Top Performer</span>
                 </div>
                 <p className="text-lg font-bold text-gray-900">
-                  {stats.topPerformer?.displayName || 'N/A'}
+                  {stats.topPerformer?.name || 'N/A'}
                 </p>
                 {stats.topPerformer && (
                   <p className="text-sm text-green-600 font-medium">
@@ -176,7 +176,7 @@ export function Leaderboard() {
                   <span className="text-sm font-medium text-gray-600">Avg Win Rate</span>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
-                  {stats.avgWinRate.toFixed(1)}%
+                  {(stats.avgWinRate || 0).toFixed(1)}%
                 </p>
               </div>
             </Card>
@@ -190,7 +190,7 @@ export function Leaderboard() {
                   <span className="text-sm font-medium text-gray-600">Total Trades</span>
                 </div>
                 <p className="text-2xl font-bold text-gray-900">
-                  {stats.totalTrades.toLocaleString()}
+                  {(stats.activeTrades || 0).toLocaleString()}
                 </p>
               </div>
             </Card>
@@ -255,14 +255,14 @@ export function Leaderboard() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-gray-900">{trader.displayName}</h4>
+                              <h4 className="font-bold text-gray-900">{trader.name}</h4>
                               {trader.rank <= 3 && (
                                 <Badge variant="outline" className={getRankBadgeColor(trader.rank)}>
                                   Top {trader.rank}
                                 </Badge>
                               )}
                             </div>
-                            <p className="text-sm text-gray-600">@{trader.username}</p>
+                            <p className="text-sm text-gray-600">@{trader.name}</p>
                           </div>
                         </div>
                         

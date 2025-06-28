@@ -90,8 +90,8 @@ export function Portfolio() {
     error, 
     refresh,
     positions,
-    totalPnL,
-    pnlPercentage 
+    getTotalPnL,
+    getPnLPercentage
   } = usePortfolio({ 
     includeHistory: true, // Always include history for recent activity section
     historyLimit: selectedTab === 'history' ? 50 : 5, // Only get 5 for overview, 50 for history tab
@@ -109,16 +109,16 @@ export function Portfolio() {
 
   // Build portfolio stats from real data with safe defaults
   const portfolioStats: PortfolioStats = {
-    totalValue: portfolio?.balance?.total || 0,
-    totalInvested: portfolio?.balance?.invested || 0,
-    totalPnl: totalPnL || 0,
-    totalPnlPercent: pnlPercentage || 0,
+    totalValue: portfolio?.summary?.totalValue || 0,
+    totalInvested: portfolio?.summary?.totalInvested || 0,
+    totalPnl: getTotalPnL(),
+    totalPnlPercent: getPnLPercentage(),
     dayChange: 0, // TODO: Calculate daily change
     dayChangePercent: 0, // TODO: Calculate daily change %
-    winRate: portfolio?.stats?.winRate || 0,
-    totalTrades: portfolio?.stats?.totalTrades || 0,
-    activePositions: portfolio?.stats?.activePositions || 0,
-    availableBalance: portfolio?.balance?.available || 0
+    winRate: portfolio?.summary?.winRate || 0,
+    totalTrades: portfolio?.balance?.total_trades || 0,
+    activePositions: positions?.filter(p => p.marketStatus === 'active').length || 0,
+    availableBalance: portfolio?.balance?.available_balance || 0
   };
 
   // Transform real portfolio positions to match component interface with safe defaults
@@ -150,7 +150,7 @@ export function Portfolio() {
   });
 
   // Transform real trade history to match component interface with safe defaults
-  const transformedTrades: Trade[] = (portfolio?.tradeHistory || []).map(trade => ({
+  const transformedTrades: Trade[] = (portfolio?.history || []).map(trade => ({
     id: trade.id,
     marketId: trade.marketId,
     marketTitle: trade.marketTitle || 'Unknown Market',

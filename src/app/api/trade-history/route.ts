@@ -1,11 +1,11 @@
 import { supabase } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
+import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
 
-export async function GET(request: NextRequest) {
+async function tradeHistoryHandler(request: NextRequest, user: AuthenticatedUser) {
   try {
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-    const limit = parseInt(searchParams.get('limit') || '50')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100) // Cap at 100
     const offset = parseInt(searchParams.get('offset') || '0')
     const status = searchParams.get('status') // 'all', 'filled', 'pending', 'cancelled'
     const type = searchParams.get('type') // 'all', 'buy', 'sell'
@@ -14,6 +14,21 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'created_at'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
     const search = searchParams.get('search') || ''
+
+    // Validate sortBy parameter
+    const allowedSortFields = ['created_at', 'updated_at', 'price', 'quantity', 'filled_quantity']
+    if (!allowedSortFields.includes(sortBy)) {
+      return NextResponse.json({ 
+        error: `Invalid sortBy field. Allowed values: ${allowedSortFields.join(', ')}` 
+      }, { status: 400 })
+    }
+
+    // Validate sortOrder parameter
+    if (!['asc', 'desc'].includes(sortOrder)) {
+      return NextResponse.json({ 
+        error: 'Invalid sortOrder. Must be asc or desc' 
+      }, { status: 400 })
+    }
 
     // Base query for orders with market information
     let query = supabase
@@ -36,18 +51,12 @@ export async function GET(request: NextRequest) {
           status,
           resolution_date
         )
-      `)
+      `, { count: 'exact' })
+      .eq('user_id', user.id)
       .order(sortBy, { ascending: sortOrder === 'asc' })
-      .limit(limit)
       .range(offset, offset + limit - 1)
 
-    // Apply filters
-    if (userId) {
-      query = query.eq('user_id', userId)
-    }
-    // For testing purposes, if no userId is provided, we'll fetch all orders
-    // In production, you'd want to require authentication and filter by the authenticated user
-
+    // Apply status filter
     if (status && status !== 'all') {
       if (status === 'filled') {
         query = query.gt('filled_quantity', 0)
@@ -56,110 +65,117 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Apply side filter
     if (side && side !== 'all') {
-      query = query.eq('side', side.toUpperCase())
+      query = query.eq('side', side)
     }
 
-    // Date range filter
+    // Apply date range filter
     if (dateRange && dateRange !== 'all') {
-      const days = parseInt(dateRange.replace('d', ''))
-      const dateThreshold = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
-      query = query.gte('created_at', dateThreshold.toISOString())
-    }
+      const now = new Date()
+      let startDate: Date
 
-    // Search filter - we'll do this client-side for now due to PostgREST limitations with nested searches
-    // if (search) {
-    //   query = query.like('markets.title', `%${search}%`)
-    // }
+      switch (dateRange) {
+        case '1d':
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+          break
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          break
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+          break
+        case '90d':
+          startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+          break
+        default:
+          startDate = new Date(0) // Beginning of time
+      }
+
+      query = query.gte('created_at', startDate.toISOString())
+    }
 
     const { data: orders, error, count } = await query
 
     if (error) {
       console.error('Error fetching trade history:', error)
-      console.error('Error details:', { code: error.code, message: error.message, details: error.details })
-      return NextResponse.json({ 
-        error: 'Failed to fetch trade history', 
-        details: error.message 
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to fetch trade history' }, { status: 500 })
     }
 
-    console.log(`Fetched ${(orders || []).length} orders successfully`)
+    // Transform orders to trade history format
+    let trades = (orders || []).map(order => ({
+      id: order.id,
+      userId: order.user_id,
+      marketId: order.market_id,
+      marketTitle: order.markets?.title || 'Unknown Market',
+      marketCategory: order.markets?.category || 'other',
+      marketStatus: order.markets?.status || 'unknown',
+      resolutionDate: order.markets?.resolution_date,
+      side: order.side,
+      orderType: order.order_type || 'limit',
+      quantity: order.quantity,
+      price: order.price,
+      filledQuantity: order.filled_quantity || 0,
+      status: order.status,
+      total: ((order.price || 0) * (order.filled_quantity || 0)) / 100,
+      fees: ((order.price || 0) * (order.filled_quantity || 0)) / 100 * 0.01, // 1% fee
+      timestamp: order.created_at,
+      updatedAt: order.updated_at
+    }))
 
-    // Transform orders data to trade history format
-    let transformedTrades = (orders || []).map(order => {
-      const market = order.markets
-      const isPartiallyFilled = (order.filled_quantity || 0) > 0 && (order.filled_quantity || 0) < (order.quantity || 0)
-      const isFilled = (order.filled_quantity || 0) > 0
-      const actualQuantity = order.filled_quantity || order.quantity || 0
-      const actualTotal = ((order.price || 0) * actualQuantity) / 100
-      const fees = actualTotal * 0.01 // Calculate 1% fee
-      const netAmount = actualTotal + fees
-
-      return {
-        id: order.id,
-        marketId: order.market_id,
-        marketTitle: market?.title || 'Unknown Market',
-        category: market?.category || 'other',
-        type: 'buy' as const, // All orders in our system are buy orders
-        side: (order.side || 'YES').toLowerCase() as 'yes' | 'no',
-        quantity: actualQuantity,
-        price: order.price || 0,
-        total: actualTotal,
-        fees: fees,
-        netAmount: netAmount,
-        timestamp: new Date(order.created_at || Date.now()),
-        status: isFilled ? 'completed' : (
-          order.status === 'cancelled' ? 'cancelled' : 'pending'
-        ),
-        orderType: (order.order_type || 'market').toLowerCase() as 'market' | 'limit',
-        pnl: isFilled ? 0 : undefined, // TODO: Calculate P&L based on current market price
-        pnlPercent: isFilled ? 0 : undefined,
-        executionTime: isFilled ? Math.random() * 2 : 0, // Mock execution time for now
-        liquidityProvider: false,
-        isPartiallyFilled,
-        originalQuantity: order.quantity || 0,
-        filledQuantity: order.filled_quantity || 0,
-        marketStatus: market?.status || 'active',
-        resolutionDate: market?.resolution_date ? new Date(market.resolution_date) : null
-      }
-    })
-
-    // Apply client-side search filter if provided
+    // Apply client-side search filter (since PostgREST doesn't support nested field search easily)
     if (search) {
-      transformedTrades = transformedTrades.filter(trade => 
-        trade.marketTitle.toLowerCase().includes(search.toLowerCase())
+      const searchLower = search.toLowerCase()
+      trades = trades.filter(trade => 
+        trade.marketTitle.toLowerCase().includes(searchLower) ||
+        trade.marketCategory.toLowerCase().includes(searchLower) ||
+        trade.side.toLowerCase().includes(searchLower) ||
+        trade.status.toLowerCase().includes(searchLower)
       )
     }
 
-    // Calculate trade statistics
-    const completedTrades = transformedTrades.filter(trade => trade.status === 'completed')
-    const totalVolume = completedTrades.reduce((sum, trade) => sum + trade.total, 0)
-    const totalFees = completedTrades.reduce((sum, trade) => sum + trade.fees, 0)
-    const totalPnL = completedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0)
-    const winningTrades = completedTrades.filter(trade => (trade.pnl || 0) > 0)
-    
+    // Calculate statistics
+    const filledTrades = trades.filter(trade => (trade.filledQuantity || 0) > 0)
+    const completedTrades = trades.filter(trade => trade.status === 'filled')
+    const pendingTrades = trades.filter(trade => trade.status === 'pending')
+    const cancelledTrades = trades.filter(trade => trade.status === 'cancelled')
+
+    const totalVolume = filledTrades.reduce((sum, trade) => sum + (trade.filledQuantity || 0), 0)
+    const totalFees = filledTrades.reduce((sum, trade) => sum + (trade.fees || 0), 0)
+    const totalValue = filledTrades.reduce((sum, trade) => sum + (trade.total || 0), 0)
+
+    // Calculate P&L (simplified - would need more complex logic for actual P&L)
+    const totalPnL = 0 // TODO: Implement actual P&L calculation
+
+    // Calculate win rate (simplified)
+    const winRate = completedTrades.length > 0 ? (completedTrades.length / filledTrades.length) * 100 : 0
+
+    // Calculate average trade size
+    const avgTradeSize = filledTrades.length > 0 ? totalVolume / filledTrades.length : 0
+
+    // Calculate execution time (simplified)
+    const avgExecutionTime = 0 // TODO: Calculate actual execution time
+
     const stats = {
-      totalTrades: transformedTrades.length,
+      totalTrades: trades.length,
       completedTrades: completedTrades.length,
-      pendingTrades: transformedTrades.filter(t => t.status === 'pending').length,
-      cancelledTrades: transformedTrades.filter(t => t.status === 'cancelled').length,
+      pendingTrades: pendingTrades.length,
+      cancelledTrades: cancelledTrades.length,
       totalVolume,
       totalFees,
       totalPnL,
-      winRate: completedTrades.length > 0 ? (winningTrades.length / completedTrades.length) * 100 : 0,
-      avgTradeSize: completedTrades.length > 0 ? totalVolume / completedTrades.length : 0,
-      bestTrade: completedTrades.length > 0 ? Math.max(...completedTrades.map(t => t.pnl || 0)) : 0,
-      worstTrade: completedTrades.length > 0 ? Math.min(...completedTrades.map(t => t.pnl || 0)) : 0,
-      avgExecutionTime: completedTrades.length > 0 
-        ? completedTrades.reduce((sum, trade) => sum + trade.executionTime, 0) / completedTrades.length 
-        : 0
+      winRate: Math.round(winRate * 100) / 100,
+      avgTradeSize: Math.round(avgTradeSize * 100) / 100,
+      bestTrade: 0, // TODO: Calculate best trade
+      worstTrade: 0, // TODO: Calculate worst trade
+      avgExecutionTime
     }
 
     const response = {
-      trades: transformedTrades,
+      trades,
       stats,
       pagination: {
-        total: count || transformedTrades.length,
+        total: count || 0,
         limit,
         offset,
         hasMore: (count || 0) > offset + limit
@@ -172,4 +188,7 @@ export async function GET(request: NextRequest) {
     console.error('Trade history API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-} 
+}
+
+// Export the protected handler
+export const GET = withAuth(tradeHistoryHandler) 

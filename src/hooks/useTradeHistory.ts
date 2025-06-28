@@ -1,29 +1,25 @@
+"use client";
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface TradeHistoryEntry {
   id: string;
+  userId: string;
   marketId: string;
   marketTitle: string;
-  category: string;
-  type: 'buy' | 'sell';
-  side: 'yes' | 'no';
+  marketCategory: string;
+  marketStatus: string;
+  resolutionDate?: string;
+  side: 'YES' | 'NO';
+  orderType: string;
   quantity: number;
   price: number;
+  filledQuantity: number;
+  status: string;
   total: number;
   fees: number;
-  netAmount: number;
-  timestamp: Date;
-  status: 'completed' | 'pending' | 'cancelled' | 'failed';
-  orderType: 'market' | 'limit';
-  pnl?: number;
-  pnlPercent?: number;
-  executionTime: number;
-  liquidityProvider?: boolean;
-  isPartiallyFilled?: boolean;
-  originalQuantity?: number;
-  filledQuantity?: number;
-  marketStatus?: string;
-  resolutionDate?: Date | null;
+  timestamp: string;
+  updatedAt: string;
 }
 
 export interface TradeHistoryStats {
@@ -55,23 +51,21 @@ export interface TradeHistoryData {
 }
 
 interface UseTradeHistoryOptions {
-  userId?: string;
   limit?: number;
   offset?: number;
   status?: 'all' | 'filled' | 'pending' | 'cancelled';
   type?: 'all' | 'buy' | 'sell';
-  side?: 'all' | 'yes' | 'no';
+  side?: 'all' | 'YES' | 'NO';
   dateRange?: 'all' | '1d' | '7d' | '30d' | '90d';
-  sortBy?: 'created_at' | 'total' | 'pnl' | 'price';
+  sortBy?: 'created_at' | 'updated_at' | 'price' | 'quantity' | 'filled_quantity';
   sortOrder?: 'asc' | 'desc';
   search?: string;
   autoRefresh?: boolean;
-  refreshInterval?: number;
+  refreshInterval?: number; // in milliseconds
 }
 
 export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
   const {
-    userId,
     limit = 50,
     offset = 0,
     status = 'all',
@@ -81,58 +75,95 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
     sortBy = 'created_at',
     sortOrder = 'desc',
     search = '',
-    autoRefresh = true,
-    refreshInterval = 60000 // 1 minute
+    autoRefresh = false,
+    refreshInterval = 30000 // 30 seconds
   } = options;
 
+  const { session, user } = useAuth();
   const [data, setData] = useState<TradeHistoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch trade history data
+  // Function to get auth headers
+  const getAuthHeaders = useCallback(async () => {
+    if (!session?.access_token) {
+      throw new Error('No authentication token available');
+    }
+    
+    return {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json'
+    };
+  }, [session]);
+
   const fetchTradeHistory = useCallback(async () => {
+    if (!user || !session) {
+      setError('User not authenticated');
+      setLoading(false);
+      return;
+    }
+
     try {
       setError(null);
-      
+
+      const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      if (userId) params.append('userId', userId);
-      if (limit) params.append('limit', limit.toString());
-      if (offset) params.append('offset', offset.toString());
-      if (status) params.append('status', status);
-      if (type) params.append('type', type);
-      if (side) params.append('side', side);
-      if (dateRange) params.append('dateRange', dateRange);
+      
+      params.append('limit', limit.toString());
+      params.append('offset', offset.toString());
+      if (status !== 'all') params.append('status', status);
+      if (type !== 'all') params.append('type', type);
+      if (side !== 'all') params.append('side', side);
+      if (dateRange !== 'all') params.append('dateRange', dateRange);
       if (sortBy) params.append('sortBy', sortBy);
       if (sortOrder) params.append('sortOrder', sortOrder);
       if (search) params.append('search', search);
 
-      const response = await fetch(`/api/trade-history?${params.toString()}`);
+      const response = await fetch(`/api/trade-history?${params.toString()}`, {
+        method: 'GET',
+        headers
+      });
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch trade history');
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please sign in again.');
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to fetch trade history: ${response.status}`);
       }
 
-      const tradeHistoryData: TradeHistoryData = await response.json();
+      const result: TradeHistoryData = await response.json();
       
-      // Transform timestamp strings to Date objects
-      const transformedData = {
-        ...tradeHistoryData,
-        trades: tradeHistoryData.trades.map(trade => ({
-          ...trade,
-          timestamp: new Date(trade.timestamp),
-          resolutionDate: trade.resolutionDate ? new Date(trade.resolutionDate) : null
-        }))
-      };
-      
-      setData(transformedData);
+      // Transform trades to match component expectations
+      const transformedTrades = result.trades.map(trade => ({
+        ...trade,
+        // Add missing fields for component compatibility
+        category: trade.marketCategory || 'general',
+        marketTitle: trade.marketTitle || 'Unknown Market',
+        timestamp: new Date(trade.timestamp),
+        updatedAt: trade.updatedAt,
+        resolutionDate: trade.resolutionDate || null,
+        // Computed fields for component
+        netAmount: trade.total || 0,
+        pnl: 0, // TODO: Calculate actual P&L
+        pnlPercent: 0,
+        executionTime: 0,
+        isPartiallyFilled: (trade.filledQuantity || 0) > 0 && (trade.filledQuantity || 0) < trade.quantity,
+        originalQuantity: trade.quantity
+      }));
+
+      setData({
+        ...result,
+        trades: transformedTrades
+      });
+
     } catch (err) {
       console.error('Error fetching trade history:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch trade history');
     } finally {
       setLoading(false);
     }
-  }, [userId, limit, offset, status, type, side, dateRange, sortBy, sortOrder, search]);
+  }, [user, session, limit, offset, status, type, side, dateRange, sortBy, sortOrder, search, getAuthHeaders]);
 
   // Refresh trade history data
   const refresh = useCallback(() => {
@@ -142,25 +173,32 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
 
   // Load more trades (for pagination)
   const loadMore = useCallback(async () => {
-    if (!data || loading || !data.pagination.hasMore) return;
+    if (!data || loading || !data.pagination.hasMore || !user || !session) return;
 
     try {
       const nextOffset = data.pagination.offset + data.pagination.limit;
+      const headers = await getAuthHeaders();
       const params = new URLSearchParams();
-      if (userId) params.append('userId', userId);
+      
       params.append('limit', limit.toString());
       params.append('offset', nextOffset.toString());
-      if (status) params.append('status', status);
-      if (type) params.append('type', type);
-      if (side) params.append('side', side);
-      if (dateRange) params.append('dateRange', dateRange);
+      if (status !== 'all') params.append('status', status);
+      if (type !== 'all') params.append('type', type);
+      if (side !== 'all') params.append('side', side);
+      if (dateRange !== 'all') params.append('dateRange', dateRange);
       if (sortBy) params.append('sortBy', sortBy);
       if (sortOrder) params.append('sortOrder', sortOrder);
       if (search) params.append('search', search);
 
-      const response = await fetch(`/api/trade-history?${params.toString()}`);
+      const response = await fetch(`/api/trade-history?${params.toString()}`, {
+        method: 'GET',
+        headers
+      });
       
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please sign in again.');
+        }
         throw new Error('Failed to load more trades');
       }
 
@@ -169,8 +207,19 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
       // Transform and append new trades
       const transformedNewTrades = newData.trades.map(trade => ({
         ...trade,
+        // Add missing fields for component compatibility
+        category: trade.marketCategory || 'general',
+        marketTitle: trade.marketTitle || 'Unknown Market',
         timestamp: new Date(trade.timestamp),
-        resolutionDate: trade.resolutionDate ? new Date(trade.resolutionDate) : null
+        updatedAt: trade.updatedAt,
+        resolutionDate: trade.resolutionDate || null,
+        // Computed fields for component
+        netAmount: trade.total || 0,
+        pnl: 0, // TODO: Calculate actual P&L
+        pnlPercent: 0,
+        executionTime: 0,
+        isPartiallyFilled: (trade.filledQuantity || 0) > 0 && (trade.filledQuantity || 0) < trade.quantity,
+        originalQuantity: trade.quantity
       }));
 
       setData(prevData => ({
@@ -178,40 +227,44 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
         trades: [...(prevData?.trades || []), ...transformedNewTrades],
         pagination: newData.pagination
       }));
+
     } catch (err) {
       console.error('Error loading more trades:', err);
       setError(err instanceof Error ? err.message : 'Failed to load more trades');
     }
-  }, [data, loading, userId, limit, status, type, side, dateRange, sortBy, sortOrder, search]);
+  }, [data, loading, user, session, limit, status, type, side, dateRange, sortBy, sortOrder, search, getAuthHeaders]);
 
   // Auto-refresh setup
   useEffect(() => {
     if (autoRefresh && refreshInterval > 0) {
-      const interval = setInterval(fetchTradeHistory, refreshInterval);
+      const interval = setInterval(refresh, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [autoRefresh, refreshInterval, fetchTradeHistory]);
+  }, [autoRefresh, refreshInterval, refresh]);
 
-  // Initial fetch and refetch when options change
+  // Initial fetch
   useEffect(() => {
-    fetchTradeHistory();
-  }, [fetchTradeHistory]);
+    if (user && session) {
+      fetchTradeHistory();
+    } else {
+      setData(null);
+      setLoading(false);
+      setError(null);
+    }
+  }, [user, session, fetchTradeHistory]);
 
   // Helper functions
-  const getTradeById = useCallback((tradeId: string): TradeHistoryEntry | null => {
-    if (!data?.trades) return null;
-    return data.trades.find(trade => trade.id === tradeId) || null;
-  }, [data?.trades]);
+  const getTradeById = useCallback((tradeId: string) => {
+    return data?.trades.find(trade => trade.id === tradeId) || null;
+  }, [data]);
 
-  const getTradesByMarket = useCallback((marketId: string): TradeHistoryEntry[] => {
-    if (!data?.trades) return [];
-    return data.trades.filter(trade => trade.marketId === marketId);
-  }, [data?.trades]);
+  const getTradesByMarket = useCallback((marketId: string) => {
+    return data?.trades.filter(trade => trade.marketId === marketId) || [];
+  }, [data]);
 
-  const getTradesByStatus = useCallback((tradeStatus: string): TradeHistoryEntry[] => {
-    if (!data?.trades) return [];
-    return data.trades.filter(trade => trade.status === tradeStatus);
-  }, [data?.trades]);
+  const getTradesByStatus = useCallback((status: string) => {
+    return data?.trades.filter(trade => trade.status === status) || [];
+  }, [data]);
 
   return {
     // Core data
@@ -253,6 +306,8 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
     // Computed values
     hasData: (data?.trades?.length || 0) > 0,
     totalTrades: data?.trades?.length || 0,
-    canLoadMore: data?.pagination?.hasMore || false
+    canLoadMore: data?.pagination?.hasMore || false,
+    isLoading: loading,
+    hasError: !!error
   };
 } 
