@@ -22,8 +22,8 @@ export const exportTradeHistoryToCSV = (trades: TradeHistoryEntry[], filename?: 
     headers.join(','),
     ...trades.map(trade => [
       trade.id,
-      new Date(trade.timestamp).toLocaleDateString(),
-      new Date(trade.timestamp).toLocaleTimeString(),
+      new Date(trade.timestamp).toLocaleDateString() || "--",
+      new Date(trade.timestamp).toLocaleTimeString() || "--",
       `"${trade.marketTitle}"`,
       trade.marketCategory,
       trade.side,
@@ -56,4 +56,4 @@ export const downloadCSV = (csvContent: string, filename: string) => {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url); 
-}; 
+};

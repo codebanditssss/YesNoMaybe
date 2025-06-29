@@ -41,7 +41,7 @@ export function TradeHistory() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<'all' | 'buy' | 'sell'>('all');
   const [filterSide, setFilterSide] = useState<'all' | 'YES' | 'NO'>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'filled' | 'pending' | 'cancelled'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'filled' | 'open' | 'cancelled'>('all');
   const [dateRange, setDateRange] = useState<'all' | '1d' | '7d' | '30d' | '90d'>('all');
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
@@ -78,7 +78,7 @@ export function TradeHistory() {
   // Filter trades client-side for tab functionality
   const filteredTrades = trades.filter(trade => {
     if (selectedTab === 'completed') return trade.status === 'completed';
-    if (selectedTab === 'pending') return trade.status === 'pending';
+    if (selectedTab === 'pending') return trade.status === 'open';
     return true; // 'all' tab shows everything
   });
 
@@ -100,6 +100,7 @@ export function TradeHistory() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800';
+      case 'open': return 'bg-yellow-100 text-yellow-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'cancelled': return 'bg-gray-100 text-gray-800';
       case 'failed': return 'bg-red-100 text-red-800';
@@ -110,6 +111,7 @@ export function TradeHistory() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="h-4 w-4" />;
+      case 'open': return <Clock className="h-4 w-4" />;
       case 'pending': return <Clock className="h-4 w-4" />;
       case 'cancelled': return <XCircle className="h-4 w-4" />;
       case 'failed': return <AlertCircle className="h-4 w-4" />;
@@ -362,7 +364,7 @@ export function TradeHistory() {
                       >
                         <option value="all">All Status</option>
                         <option value="filled">Completed</option>
-                        <option value="pending">Pending</option>
+                        <option value="open">Pending</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
 
@@ -458,8 +460,8 @@ export function TradeHistory() {
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Badge className={getCategoryColor(trade.category || 'general')} variant="outline">
-                                    {(trade.category || 'general').charAt(0).toUpperCase() + (trade.category || 'general').slice(1)}
+                                  <Badge className={getCategoryColor(trade.category || trade.marketCategory || 'general')} variant="outline">
+                                    {(trade.category || trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.category || trade.marketCategory || 'general').slice(1)}
                                   </Badge>
                                   <Badge className={getStatusColor(trade.status)} variant="outline">
                                     <div className="flex items-center gap-1">
@@ -487,7 +489,7 @@ export function TradeHistory() {
                                     <p className="font-medium">{trade.quantity}</p>
                                     {trade.isPartiallyFilled && (
                                       <p className="text-xs text-orange-600">
-                                        Filled: {trade.filledQuantity}/{trade.originalQuantity}
+                                        Filled: {trade.filledQuantity}/{trade.originalQuantity || trade.quantity}
                                       </p>
                                     )}
                                   </div>
@@ -510,7 +512,7 @@ export function TradeHistory() {
                               <div className="text-right space-y-2">
                                 <div>
                                   <p className="text-sm text-gray-500">Net Amount</p>
-                                  <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.netAmount)}</p>
+                                  <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.netAmount || 0)}</p>
                                 </div>
                                 
                                 {trade.status === 'completed' && trade.pnl !== undefined && (
@@ -538,7 +540,7 @@ export function TradeHistory() {
                                 
                                 <div className="text-xs text-gray-500">
                                   <p>Fees: {formatCurrency(trade.fees)}</p>
-                                  {trade.status === 'completed' && trade.executionTime > 0 && (
+                                  {trade.status === 'completed' && trade.executionTime && trade.executionTime > 0 && (
                                     <p>Exec: {trade.executionTime.toFixed(1)}s</p>
                                   )}
                                 </div>

@@ -137,7 +137,7 @@ async function tradeHistoryHandler(request: NextRequest, user: AuthenticatedUser
     // Calculate statistics
     const filledTrades = trades.filter(trade => (trade.filledQuantity || 0) > 0)
     const completedTrades = trades.filter(trade => trade.status === 'filled')
-    const pendingTrades = trades.filter(trade => trade.status === 'pending')
+    const pendingTrades = trades.filter(trade => trade.status === 'open')
     const cancelledTrades = trades.filter(trade => trade.status === 'cancelled')
 
     const totalVolume = filledTrades.reduce((sum, trade) => sum + (trade.filledQuantity || 0), 0)

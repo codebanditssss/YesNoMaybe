@@ -9,7 +9,7 @@ export interface TradeHistoryEntry {
   marketTitle: string;
   marketCategory: string;
   marketStatus: string;
-  resolutionDate?: string;
+  resolutionDate?: string | null;
   side: 'YES' | 'NO';
   orderType: string;
   quantity: number;
@@ -18,7 +18,7 @@ export interface TradeHistoryEntry {
   status: string;
   total: number;
   fees: number;
-  timestamp: string;
+  timestamp: string | Date;
   updatedAt: string;
 }
 
@@ -53,7 +53,7 @@ export interface TradeHistoryData {
 interface UseTradeHistoryOptions {
   limit?: number;
   offset?: number;
-  status?: 'all' | 'filled' | 'pending' | 'cancelled';
+  status?: 'all' | 'filled' | 'open' | 'cancelled';
   type?: 'all' | 'buy' | 'sell';
   side?: 'all' | 'YES' | 'NO';
   dateRange?: 'all' | '1d' | '7d' | '30d' | '90d';
