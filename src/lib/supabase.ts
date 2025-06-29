@@ -354,7 +354,17 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     flowType: 'pkce',
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     multiTab: true,
-    storageKey: 'supabase.auth.token'
+    storageKey: 'supabase.auth.token',
+    debug: false
+  },
+  global: {
+    headers: {}
+  },
+  logger: {
+    error: () => {},
+    warn: () => {},
+    info: () => {},
+    debug: () => {}
   }
 })
 
@@ -364,7 +374,14 @@ export const supabaseAdmin = supabaseServiceRoleKey
       auth: { 
         autoRefreshToken: false,
         persistSession: false,
-        multiTab: true
+        multiTab: true,
+        debug: false
+      },
+      logger: {
+        error: () => {},
+        warn: () => {},
+        info: () => {},
+        debug: () => {}
       }
     })
   : supabase;
