@@ -16,10 +16,14 @@ import {
   Crown
 } from "lucide-react";
 import { useLeaderboard } from '@/hooks/useLeaderboard';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Leaderboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [lastUpdate, setLastUpdate] = useState(new Date());
+  
+  // Get auth status for debugging
+  const { user, session, loading: authLoading } = useAuth();
   
   // Use real leaderboard data
   const { 
@@ -34,6 +38,8 @@ export function Leaderboard() {
     autoRefresh: true,
     refreshInterval: 60000 // 1 minute
   });
+
+
 
   // Auto-refresh timestamp
   useEffect(() => {
@@ -229,6 +235,7 @@ export function Leaderboard() {
                       : "No trading data available yet. Start trading to appear on the leaderboard!"
                     }
                   </p>
+
                   {searchTerm && (
                     <Button onClick={() => setSearchTerm('')}>
                       Clear Search

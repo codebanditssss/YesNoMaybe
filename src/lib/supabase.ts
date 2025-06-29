@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export type Json =
   | string
@@ -344,7 +345,33 @@ export type Database = {
   }
 }
 
+// Client-side Supabase client (for browser)
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+// Server-side Supabase client (for API routes) - bypasses RLS when using service role
+export const supabaseAdmin = supabaseServiceRoleKey 
+  ? createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { 
+        autoRefreshToken: false,
+        persistSession: false 
+      }
+    })
+  : supabase; // Fallback to regular client if no service role key
+
+// Function to create authenticated supabase client for API routes
+export const createAuthenticatedSupabaseClient = (authToken?: string) => {
+  if (authToken) {
+    const client = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      }
+    });
+    return client;
+  }
+  return supabase;
+};
 
 // Helpful type exports
 export type Market = Database['public']['Tables']['markets']['Row']

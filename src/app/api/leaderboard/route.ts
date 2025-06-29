@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
 
@@ -20,7 +20,7 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
     }
 
     // First fetch user balances
-    const { data: leaderboardData, error: balanceError, count } = await supabase
+    const { data: leaderboardData, error: balanceError, count } = await supabaseAdmin
       .from('user_balances')
       .select('*', { count: 'exact' })
       .order(sortBy, { ascending: false })
@@ -33,7 +33,7 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
 
     // Then fetch profiles for these users
     const userIds = leaderboardData?.map(entry => entry.user_id) || []
-    const { data: profilesData, error: profilesError } = await supabase
+    const { data: profilesData, error: profilesError } = await supabaseAdmin
       .from('profiles')
       .select('id, full_name, email, avatar_url')
       .in('id', userIds)
@@ -94,7 +94,7 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
     // Find current user's position if not in current page
     let currentUserRank = null
     if (!leaderboardEntries.some(entry => entry.isCurrentUser)) {
-      const { data: userRankData, error: rankError } = await supabase
+      const { data: userRankData, error: rankError } = await supabaseAdmin
         .from('user_balances')
         .select('user_id, total_profit_loss')
         .order(sortBy, { ascending: false })
