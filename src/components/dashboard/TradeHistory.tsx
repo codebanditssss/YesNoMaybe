@@ -32,6 +32,7 @@ import {
   BookOpen
 } from "lucide-react";
 import { useTradeHistory, type TradeHistoryEntry, type TradeHistoryStats } from '@/hooks/useTradeHistory';
+import { exportTradeHistoryToCSV } from '@/lib/csvExport';
 
 export function TradeHistory() {
   const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'pending' | 'analytics'>('all');
@@ -39,7 +40,7 @@ export function TradeHistory() {
   const [sortBy, setSortBy] = useState<'created_at' | 'total' | 'pnl' | 'price'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<'all' | 'buy' | 'sell'>('all');
-  const [filterSide, setFilterSide] = useState<'all' | 'yes' | 'no'>('all');
+  const [filterSide, setFilterSide] = useState<'all' | 'YES' | 'NO'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'filled' | 'pending' | 'cancelled'>('all');
   const [dateRange, setDateRange] = useState<'all' | '1d' | '7d' | '30d' | '90d'>('all');
   const [lastUpdate, setLastUpdate] = useState(new Date());
@@ -59,7 +60,7 @@ export function TradeHistory() {
     status: filterStatus === 'all' ? undefined : filterStatus,
     side: filterSide === 'all' ? undefined : filterSide,
     dateRange: dateRange === 'all' ? undefined : dateRange,
-    sortBy,
+    sortBy: sortBy === 'total' ? 'quantity' : sortBy === 'pnl' ? 'quantity' : sortBy,
     sortOrder,
     search: searchTerm,
     autoRefresh: true,
@@ -172,6 +173,7 @@ export function TradeHistory() {
               variant="outline" 
               size="sm"
               className="flex items-center gap-2"
+              onClick={() => exportTradeHistoryToCSV(trades)}
             >
               <Download className="h-4 w-4" />
               Export CSV
@@ -371,8 +373,8 @@ export function TradeHistory() {
                         className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="all">All Sides</option>
-                        <option value="yes">YES</option>
-                        <option value="no">NO</option>
+                        <option value="YES">YES</option>
+                        <option value="NO">NO</option>
                       </select>
 
                       {/* Date Range Filter */}
@@ -465,8 +467,8 @@ export function TradeHistory() {
                                       {trade.status.toUpperCase()}
                                     </div>
                                   </Badge>
-                                  <Badge variant={trade.side === 'yes' ? 'default' : 'outline'} className={
-                                    trade.side === 'yes' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                  <Badge variant={trade.side === 'YES' ? 'default' : 'outline'} className={
+                                    trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
                                   }>
                                     {trade.side.toUpperCase()}
                                   </Badge>
