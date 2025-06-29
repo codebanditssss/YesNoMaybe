@@ -73,11 +73,6 @@ interface PrivacySettings {
 
 interface AppPreferences {
   theme: 'light' | 'dark' | 'system';
-  language: 'en' | 'hi' | 'ta' | 'te' | 'bn';
-  currency: 'INR' | 'USD' | 'EUR';
-  soundEffects: boolean;
-  animations: boolean;
-  compactView: boolean;
   autoRefresh: boolean;
   refreshInterval: number;
 }
@@ -128,11 +123,6 @@ export function Settings() {
 
   const [preferences, setPreferences] = useState<AppPreferences>({
     theme: 'system',
-    language: 'en',
-    currency: 'INR',
-    soundEffects: true,
-    animations: true,
-    compactView: false,
     autoRefresh: true,
     refreshInterval: 30
   });
@@ -144,30 +134,6 @@ export function Settings() {
     { id: 'privacy', label: 'Privacy & Security', icon: Shield },
     { id: 'account', label: 'Account', icon: Key }
   ];
-
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'hi', name: 'हिंदी' },
-    { code: 'ta', name: 'தமிழ்' },
-    { code: 'te', name: 'తెలుగు' },
-    { code: 'bn', name: 'বাংলা' }
-  ];
-
-  const currencies = [
-    { code: 'INR', name: 'Indian Rupee (₹)' },
-    { code: 'USD', name: 'US Dollar ($)' },
-    { code: 'EUR', name: 'Euro (€)' }
-  ];
-
-  // const getTierColor = (tier: string) => {
-  //   switch (tier) {
-  //     case 'Diamond': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-  //     case 'Platinum': return 'bg-slate-100 text-slate-800 border-slate-200';
-  //     case 'Gold': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-  //     case 'Silver': return 'bg-gray-100 text-gray-800 border-gray-200';
-  //     default: return 'bg-orange-100 text-orange-800 border-orange-200';
-  //   }
-  // };
 
   useEffect(() => {
     if (profile) {
@@ -483,96 +449,6 @@ export function Settings() {
                   {label}
                 </Button>
               ))}
-            </div>
-          </div>
-
-          {/* <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium">Sound Effects</label>
-              <p className="text-sm text-gray-600">Enable audio feedback for actions</p>
-            </div>
-            <button
-              onClick={() => updatePreference('soundEffects', !preferences.soundEffects)}
-              className="flex items-center gap-2"
-            >
-              {preferences.soundEffects ? (
-                <Volume2 className="h-5 w-5 text-blue-600" />
-              ) : (
-                <VolumeX className="h-5 w-5 text-gray-400" />
-              )}
-            </button>
-          </div> */}
-
-          {/* <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium">Animations</label>
-              <p className="text-sm text-gray-600">Enable smooth transitions and animations</p>
-            </div>
-            <button
-              onClick={() => updatePreference('animations', !preferences.animations)}
-            >
-              {preferences.animations ? (
-                <ToggleRight className="h-6 w-6 text-blue-600" />
-              ) : (
-                <ToggleLeft className="h-6 w-6 text-gray-400" />
-              )}
-            </button>
-          </div> */}
-
-          {/* <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium">Compact View</label>
-              <p className="text-sm text-gray-600">Show more information in less space</p>
-            </div>
-            <button
-              onClick={() => updatePreference('compactView', !preferences.compactView)}
-            >
-              {preferences.compactView ? (
-                <ToggleRight className="h-6 w-6 text-blue-600" />
-              ) : (
-                <ToggleLeft className="h-6 w-6 text-gray-400" />
-              )}
-            </button>
-          </div> */}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
-            Localization
-          </CardTitle>
-          <CardDescription>
-            Set your language and regional preferences
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="font-medium">Language</label>
-              <select
-                value={preferences.language}
-                onChange={(e) => updatePreference('language', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {languages.map(lang => (
-                  <option key={lang.code} value={lang.code}>{lang.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="font-medium">Currency</label>
-              <select
-                value={preferences.currency}
-                onChange={(e) => updatePreference('currency', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {currencies.map(curr => (
-                  <option key={curr.code} value={curr.code}>{curr.name}</option>
-                ))}
-              </select>
             </div>
           </div>
         </CardContent>
