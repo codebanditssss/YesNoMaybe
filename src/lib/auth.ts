@@ -13,30 +13,38 @@ export interface AuthenticatedUser {
  */
 export async function getAuthenticatedUser(request: NextRequest): Promise<AuthenticatedUser | null> {
   try {
-    // Get the Authorization header
+    // First try to get the session token from the cookie
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (session?.user) {
+      return {
+        id: session.user.id,
+        email: session.user.email!,
+        role: session.user.user_metadata?.role || 'user'
+      }
+    }
+
+    // If no session from cookie, try the Authorization header
     const authHeader = request.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1]
+      const { data: { user }, error } = await supabase.auth.getUser(token)
+      
+      if (user) {
+        return {
+          id: user.id,
+          email: user.email!,
+          role: user.user_metadata?.role || 'user'
+        }
+      }
     }
 
-    // Extract the token
-    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
-    
-    // Verify the token with Supabase
-    const { data: { user }, error } = await supabase.auth.getUser(token)
-    
-    if (error || !user) {
-      console.error('Auth verification failed:', error)
-      return null
-    }
+    // No valid session found
+    console.warn('No valid session found')
+    return null
 
-    return {
-      id: user.id,
-      email: user.email!,
-      role: user.user_metadata?.role || 'user'
-    }
   } catch (error) {
-    console.error('Authentication error:', error)
+    console.error('Error in getAuthenticatedUser:', error)
     return null
   }
 }

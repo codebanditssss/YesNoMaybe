@@ -346,17 +346,31 @@ export type Database = {
 }
 
 // Client-side Supabase client (for browser)
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    // Enable multiple sessions
+    multiTab: true,
+    storageKey: 'supabase.auth.token',
+    debug: process.env.NODE_ENV === 'development'
+  }
+})
 
-// Server-side Supabase client (for API routes) - bypasses RLS when using service role
+// Server-side Supabase client (for API routes)
 export const supabaseAdmin = supabaseServiceRoleKey 
   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: { 
         autoRefreshToken: false,
-        persistSession: false 
+        persistSession: false,
+        multiTab: true, // Enable multiple sessions for admin client too
+        debug: process.env.NODE_ENV === 'development'
       }
     })
-  : supabase; // Fallback to regular client if no service role key
+  : supabase;
 
 // Function to create authenticated supabase client for API routes
 export const createAuthenticatedSupabaseClient = (authToken?: string) => {
