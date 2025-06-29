@@ -2,26 +2,28 @@ import { TradeHistoryEntry } from '@/hooks/useTradeHistory';
 
 export const exportTradeHistoryToCSV = (trades: TradeHistoryEntry[], filename?: string) => {
   const headers = [
-    'Trade ID', 'Date', 'Time', 'Market Title', 'Category', 'Side',
-    'Quantity', 'Price', 'Filled Quantity', 'Total', 'Fees', 'Status',
-    'Order Type', 'Resolution Date'
+    'Trade ID',
+    'Date',
+    'Time',
+    'Market Title',
+    'Category',
+    'Side',
+    'Quantity',
+    'Price',
+    'Filled Quantity',
+    'Total',
+    'Fees',
+    'Status',
+    'Order Type',
+    'Resolution Date'
   ];
 
-  const dateFormatter = new Intl.DateTimeFormat('en-IN');
-  const timeFormatter = new Intl.DateTimeFormat('en-IN', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-
-  const rows = trades.map(trade => {
-    const timestamp = new Date(trade.timestamp);
-    const resolution = trade.resolutionDate ? new Date(trade.resolutionDate) : null;
-
-    return [
+  const csvRows = [
+    headers.join(','),
+    ...trades.map(trade => [
       trade.id,
-      dateFormatter.format(timestamp),
-      timeFormatter.format(timestamp),
+      new Date(trade.timestamp).toLocaleDateString() || "--",
+      new Date(trade.timestamp).toLocaleTimeString() || "--",
       `"${trade.marketTitle}"`,
       trade.marketCategory,
       trade.side,
@@ -32,23 +34,26 @@ export const exportTradeHistoryToCSV = (trades: TradeHistoryEntry[], filename?: 
       trade.fees,
       trade.status,
       trade.orderType,
-      resolution ? dateFormatter.format(resolution) : ''
-    ].join(',');
-  });
+      trade.resolutionDate ? new Date(trade.resolutionDate).toLocaleDateString() : ''
+    ].join(','))
+  ];
 
-  const csvContent = [headers.join(','), ...rows].join('\n');
+  const csvContent = csvRows.join('\n');
   const defaultFilename = `trade_history_${new Date().toISOString().split('T')[0]}`;
-  downloadCSV(csvContent, filename || defaultFilename);
+  const finalFilename = filename || defaultFilename;
+
+  downloadCSV(csvContent, finalFilename);
 };
 
 export const downloadCSV = (csvContent: string, filename: string) => {
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;'});
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${filename}.csv`;
-  link.style.display = 'none';
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${filename}.csv`);
+  link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  URL.revokeObjectURL(url); 
 };
