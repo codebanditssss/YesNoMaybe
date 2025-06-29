@@ -8,7 +8,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  needsOnboarding: boolean;
   signOut: () => Promise<void>;
+  checkOnboardingStatus: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +19,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+
+  const checkOnboardingStatus = async () => {
+    if (!user) {
+      setNeedsOnboarding(false);
+      return;
+    }
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .single();
+
+      setNeedsOnboarding(!profile?.full_name || !profile?.username);
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setNeedsOnboarding(true);
+    }
+  };
 
   useEffect(() => {
     // Get initial session
@@ -41,6 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      checkOnboardingStatus();
+    } else {
+      setNeedsOnboarding(false);
+    }
+  }, [user]);
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -52,7 +83,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     session,
     loading,
+    needsOnboarding,
     signOut,
+    checkOnboardingStatus,
   };
 
   return (
