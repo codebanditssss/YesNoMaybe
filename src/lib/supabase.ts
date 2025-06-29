@@ -353,10 +353,8 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     flowType: 'pkce',
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    // Enable multiple sessions
     multiTab: true,
-    storageKey: 'supabase.auth.token',
-    debug: process.env.NODE_ENV === 'development'
+    storageKey: 'supabase.auth.token'
   }
 })
 
@@ -366,8 +364,7 @@ export const supabaseAdmin = supabaseServiceRoleKey
       auth: { 
         autoRefreshToken: false,
         persistSession: false,
-        multiTab: true, // Enable multiple sessions for admin client too
-        debug: process.env.NODE_ENV === 'development'
+        multiTab: true
       }
     })
   : supabase;
