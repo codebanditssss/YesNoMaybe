@@ -260,14 +260,14 @@ export function Portfolio() {
               Refresh
             </Button>
             
-            <Button 
+            {/* <Button 
               variant="outline" 
               size="sm"
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
               Export
-            </Button>
+            </Button> */}
           </div>
         </div>
 
@@ -614,7 +614,7 @@ export function Portfolio() {
                 {/* Position Controls */}
                 <Card className="p-4 bg-white border-0 shadow-sm">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
+                    {/* <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
                         <Target className="h-4 w-4 text-gray-500" />
                         <span className="text-sm font-medium text-gray-900">Sort by:</span>
@@ -639,7 +639,7 @@ export function Portfolio() {
                           </button>
                         ))}
                       </div>
-                    </div>
+                    </div> */}
 
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -761,14 +761,14 @@ export function Portfolio() {
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900">Trading History</h3>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
+                    {/* <Button variant="outline" size="sm">
                       <Filter className="h-4 w-4 mr-1" />
                       Filter
                     </Button>
                     <Button variant="outline" size="sm">
                       <Download className="h-4 w-4 mr-1" />
                       Export
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
                 
