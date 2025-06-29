@@ -77,7 +77,7 @@ export function TradeHistory() {
 
   // Filter trades client-side for tab functionality
   const filteredTrades = trades.filter(trade => {
-    if (selectedTab === 'completed') return trade.status === 'completed';
+    if (selectedTab === 'completed') return trade.status === 'filled';
     if (selectedTab === 'pending') return trade.status === 'open';
     return true; // 'all' tab shows everything
   });
@@ -99,6 +99,7 @@ export function TradeHistory() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'filled': return 'bg-green-100 text-green-800';
       case 'completed': return 'bg-green-100 text-green-800';
       case 'open': return 'bg-yellow-100 text-yellow-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -110,6 +111,7 @@ export function TradeHistory() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
+      case 'filled': return <CheckCircle className="h-4 w-4" />;
       case 'completed': return <CheckCircle className="h-4 w-4" />;
       case 'open': return <Clock className="h-4 w-4" />;
       case 'pending': return <Clock className="h-4 w-4" />;

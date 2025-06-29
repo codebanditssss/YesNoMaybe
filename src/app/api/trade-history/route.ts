@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
 
@@ -31,7 +31,7 @@ async function tradeHistoryHandler(request: NextRequest, user: AuthenticatedUser
     }
 
     // Base query for orders with market information
-    let query = supabase
+    let query = supabaseAdmin
       .from('orders')
       .select(`
         id,
