@@ -77,7 +77,7 @@ export function TradeHistory() {
 
   // Filter trades client-side for tab functionality
   const filteredTrades = trades.filter(trade => {
-    if (selectedTab === 'completed') return trade.status === 'completed';
+    if (selectedTab === 'completed') return trade.status === 'filled';
     if (selectedTab === 'pending') return trade.status === 'open';
     return true; // 'all' tab shows everything
   });
@@ -99,7 +99,8 @@ export function TradeHistory() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
+      case 'completed': 
+      case 'filled': return 'bg-green-100 text-green-800';
       case 'open': return 'bg-yellow-100 text-yellow-800';
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       case 'cancelled': return 'bg-gray-100 text-gray-800';
@@ -110,7 +111,8 @@ export function TradeHistory() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle className="h-4 w-4" />;
+      case 'completed': 
+      case 'filled': return <CheckCircle className="h-4 w-4" />;
       case 'open': return <Clock className="h-4 w-4" />;
       case 'pending': return <Clock className="h-4 w-4" />;
       case 'cancelled': return <XCircle className="h-4 w-4" />;
@@ -316,6 +318,11 @@ export function TradeHistory() {
                 >
                   <Icon className="h-4 w-4" />
                   {label}
+                  {id === 'all' && (
+                    <Badge variant="secondary" className="ml-1 bg-green-100 text-green-800">
+                    {stats.totalTrades}
+                  </Badge>
+                  )}
                   {id === 'completed' && (
                     <Badge variant="secondary" className="ml-1 bg-green-100 text-green-800">
                       {stats.completedTrades}
@@ -460,8 +467,8 @@ export function TradeHistory() {
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Badge className={getCategoryColor(trade.category || trade.marketCategory || 'general')} variant="outline">
-                                    {(trade.category || trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.category || trade.marketCategory || 'general').slice(1)}
+                                  <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
+                                    {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
                                   </Badge>
                                   <Badge className={getStatusColor(trade.status)} variant="outline">
                                     <div className="flex items-center gap-1">
@@ -487,11 +494,6 @@ export function TradeHistory() {
                                   <div>
                                     <span className="text-gray-500">Quantity:</span>
                                     <p className="font-medium">{trade.quantity}</p>
-                                    {trade.isPartiallyFilled && (
-                                      <p className="text-xs text-orange-600">
-                                        Filled: {trade.filledQuantity}/{trade.originalQuantity || trade.quantity}
-                                      </p>
-                                    )}
                                   </div>
                                   <div>
                                     <span className="text-gray-500">Price:</span>
@@ -503,8 +505,8 @@ export function TradeHistory() {
                                   </div>
                                   <div>
                                     <span className="text-gray-500">Date:</span>
-                                    <p className="font-medium">{trade.timestamp.toLocaleDateString()}</p>
-                                    <p className="text-xs text-gray-500">{trade.timestamp.toLocaleTimeString()}</p>
+                                    <p className="font-medium">{new Date(trade.timestamp).toLocaleDateString()}</p>
+                                    <p className="text-xs text-gray-500">{new Date(trade.timestamp).toLocaleTimeString()}</p>
                                   </div>
                                 </div>
                               </div>
@@ -512,27 +514,18 @@ export function TradeHistory() {
                               <div className="text-right space-y-2">
                                 <div>
                                   <p className="text-sm text-gray-500">Net Amount</p>
-                                  <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.netAmount || 0)}</p>
+                                  <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.total || 0)}</p>
                                 </div>
                                 
-                                {trade.status === 'completed' && trade.pnl !== undefined && (
+                                {trade.status === 'filled' && (
                                   <div>
                                     <p className="text-sm text-gray-500">P&L</p>
-                                    <div className={`flex items-center gap-1 ${
-                                      trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      {trade.pnl >= 0 ? (
-                                        <TrendingUp className="h-4 w-4" />
-                                      ) : (
-                                        <TrendingDown className="h-4 w-4" />
-                                      )}
+                                    <div className="flex items-center gap-1 text-gray-600">
                                       <span className="font-bold">
-                                        {formatCurrency(Math.abs(trade.pnl))}
-                                        {trade.pnlPercent !== undefined && (
-                                          <span className="text-xs ml-1">
-                                            ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
-                                          </span>
-                                        )}
+                                        {formatCurrency(0)}
+                                        <span className="text-xs ml-1">
+                                          (0.0%)
+                                        </span>
                                       </span>
                                     </div>
                                   </div>
@@ -540,9 +533,6 @@ export function TradeHistory() {
                                 
                                 <div className="text-xs text-gray-500">
                                   <p>Fees: {formatCurrency(trade.fees)}</p>
-                                  {trade.status === 'completed' && trade.executionTime && trade.executionTime > 0 && (
-                                    <p>Exec: {trade.executionTime.toFixed(1)}s</p>
-                                  )}
                                 </div>
                               </div>
                             </div>
