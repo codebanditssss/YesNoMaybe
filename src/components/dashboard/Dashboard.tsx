@@ -405,7 +405,7 @@ export function Dashboard() {
                                 {market.change}
                               </div>
                             </div>
-                            <div className="flex gap-2 mt-2 text-xs text-gray-600">
+                            {/* <div className="flex gap-2 mt-2 text-xs text-gray-600">
                               <div className="flex items-center gap-1">
                                 <span className="text-blue-600 font-medium">YES</span>
                                 <span>₹{market.yesPrice.toFixed(1)}</span>
@@ -415,7 +415,7 @@ export function Dashboard() {
                                 <span className="text-gray-600 font-medium">NO</span>
                                 <span>₹{market.noPrice.toFixed(1)}</span>
                               </div>
-                            </div>
+                            </div> */}
                           </div>
                         ))}
                       </div>
