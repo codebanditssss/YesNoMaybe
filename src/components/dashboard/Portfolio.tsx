@@ -562,53 +562,6 @@ export function Portfolio() {
                     )}
                   </Card>
                 </div>
-
-                {/* Recent Activity */}
-                <Card className="p-6 bg-white border-0 shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Recent Trading Activity</h3>
-                    <Button variant="outline" size="sm"> {/* direct to trade history */}
-                      View All
-                    </Button>
-                  </div>
-                  
-                  {transformedTrades.length > 0 ? (
-                    <div className="space-y-4">
-                      {transformedTrades.slice(0, 5).map((trade) => (
-                        <div key={trade.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-4">
-                            <div className={`p-2 rounded-lg ${
-                              trade.type === 'buy' ? 'bg-green-100' : 'bg-red-100'
-                            }`}>
-                              {trade.type === 'buy' ? (
-                                <Plus className="h-4 w-4 text-green-600" />
-                              ) : (
-                                <Minus className="h-4 w-4 text-red-600" />
-                              )}
-                            </div>
-                            
-                            <div>
-                              <p className="font-medium text-gray-900">{trade.marketTitle}</p>
-                              <p className="text-sm text-gray-600">
-                                {trade.type.toUpperCase()} {trade.quantity} {trade.side.toUpperCase()} @ ₹{trade.price}
-                              </p>
-                            </div>
-                          </div>
-                          
-                          <div className="text-right">
-                            <p className="font-medium text-gray-900">{formatCurrency(trade.total)}</p>
-                            <p className="text-sm text-gray-500">{trade.timestamp.toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-gray-500 text-sm">No trading activity yet</p>
-                    </div>
-                  )}
-                </Card>
               </div>
             )}
 
