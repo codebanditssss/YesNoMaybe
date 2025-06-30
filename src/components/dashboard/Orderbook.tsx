@@ -136,9 +136,6 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
           </div>
           
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-gray-500 bg-white px-3 py-2 rounded-lg border">
-              <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-              <span>Auto-refresh: {autoRefresh ? 'ON' : 'OFF'}</span>
             </div>
             <Button
               onClick={handleRefresh}
@@ -149,15 +146,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
-            <Button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              variant={autoRefresh ? "default" : "outline"}
-              size="sm"
-            >
-              {autoRefresh ? 'Disable' : 'Enable'} Auto-refresh
-            </Button>
           </div>
-        </div>
 
         {/* Market Selector */}
         <Card className="p-6 bg-white border-0 shadow-sm">
