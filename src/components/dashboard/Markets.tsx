@@ -775,15 +775,7 @@ export function Markets() {
             </Card>
           )}
 
-        {/* Load More */}
-        {filteredMarkets.length > 0 && (
-          <div className="text-center pt-8">
-            <Button variant="outline" className="px-8 py-3">
-              <Zap className="h-4 w-4 mr-2" />
-              Load More Markets
-            </Button>
-          </div>
-        )}
+      
             </>
           )}
         </div>
