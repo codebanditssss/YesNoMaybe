@@ -437,7 +437,11 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Clock className="h-4 w-4" />
-                  <span>Updated: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString() : 'Not loaded'}</span>
+                  <span>Updated: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: true 
+                  }) : 'Not loaded'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <User className="h-4 w-4" />
@@ -559,7 +563,11 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               <div className="flex items-center gap-6 text-sm text-gray-500">
                   <span>Expires: {new Date(currentMarket.expiryDate).toLocaleDateString()}</span>
                   <span>24h Volume: ₹{formatNumber(marketInfo?.volume24h || 0)}</span>
-                  <span>Last update: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString() : 'Not loaded'}</span>
+                  <span>Last update: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    hour12: true 
+                  }) : 'Not loaded'}</span>
               </div>
             </div>
 

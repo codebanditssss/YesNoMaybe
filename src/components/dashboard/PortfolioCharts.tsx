@@ -76,7 +76,7 @@ const formatDate = (date: string, timeframe: '1D' | '1W' | '1M' | '3M' | '1Y' | 
   
   switch (timeframe) {
     case '1D':
-      return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
     case '1W':
       return d.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit' });
     case '1M':

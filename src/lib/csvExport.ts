@@ -23,7 +23,7 @@ export const exportTradeHistoryToCSV = (trades: TradeHistoryEntry[], filename?: 
     ...trades.map(trade => [
       trade.id,
       new Date(trade.timestamp).toLocaleDateString() || "--",
-      new Date(trade.timestamp).toLocaleTimeString() || "--",
+      (new Date(trade.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })) || "--",
       `"${trade.marketTitle}"`,
       trade.marketCategory,
       trade.side,

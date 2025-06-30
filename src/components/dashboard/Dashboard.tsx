@@ -32,9 +32,25 @@ import {
   Info
 } from "lucide-react";
 
+// Add type definition for stat
+interface StatCardProps {
+  stat: {
+    title: string;
+    value: string;
+    change: string;
+    trend: 'up' | 'down' | 'neutral';
+    icon: any; // Using any for Lucide icons
+    description: string;
+    loading: boolean;
+  };
+}
+
+type StatType = StatCardProps['stat'];
+
 export function Dashboard() {
   const { user } = useAuth();
   const [activeView, setActiveView] = useState<'dashboard' | 'portfolio' | 'markets'>('dashboard');
+  const [lastUpdate, setLastUpdate] = useState(new Date());
   const router = useRouter();
 
   // Fetch real portfolio data
@@ -63,51 +79,53 @@ export function Dashboard() {
     limit: 8
   });
 
-
-
   // Calculate derived values
-  const totalPnL = getTotalPnL ? getTotalPnL() : 0;
-  const pnlPercentage = getPnLPercentage ? getPnLPercentage() : 0;
-  const activePositions = getActivePositions ? getActivePositions() : [];
+  const totalPnL = portfolioLoading ? null : (getTotalPnL ? getTotalPnL() : null);
+  const pnlPercentage = portfolioLoading ? null : (getPnLPercentage ? getPnLPercentage() : null);
+  const activePositions = portfolioLoading ? null : (getActivePositions ? getActivePositions() : null);
 
   // Portfolio performance metrics
-  const portfolioStats = [
+  const portfolioStats: StatType[] = [
     {
       title: "Portfolio Value",
-      value: portfolio?.summary?.totalValue ? `₹${portfolio.summary.totalValue.toLocaleString()}` : "₹0",
-      change: pnlPercentage >= 0 ? `+${pnlPercentage.toFixed(2)}%` : `${pnlPercentage.toFixed(2)}%`,
-      trend: pnlPercentage >= 0 ? "up" : "down",
+      value: portfolioLoading ? "Loading..." : (portfolio?.summary?.totalValue ? `₹${portfolio.summary.totalValue.toLocaleString()}` : "₹0"),
+      change: portfolioLoading ? "Loading..." : ((pnlPercentage || 0) >= 0 ? `+${(pnlPercentage || 0).toFixed(2)}%` : `${(pnlPercentage || 0).toFixed(2)}%`),
+      trend: portfolioLoading ? "neutral" : ((pnlPercentage || 0) >= 0 ? "up" : "down"),
       icon: DollarSign,
-      description: "Total balance"
+      description: "Total balance",
+      loading: portfolioLoading
     },
     {
       title: "Today's P&L",
-      value: totalPnL >= 0 ? `+₹${totalPnL.toLocaleString()}` : `-₹${Math.abs(totalPnL).toLocaleString()}`,
-      change: pnlPercentage >= 0 ? `+${pnlPercentage.toFixed(2)}%` : `${pnlPercentage.toFixed(2)}%`,
-      trend: totalPnL >= 0 ? "up" : "down",
-      icon: totalPnL >= 0 ? TrendingUp : Loss,
-      description: "Daily performance"
+      value: portfolioLoading ? "Loading..." : ((totalPnL || 0) >= 0 ? `+₹${(totalPnL || 0).toLocaleString()}` : `-₹${Math.abs(totalPnL || 0).toLocaleString()}`),
+      change: portfolioLoading ? "Loading..." : ((pnlPercentage || 0) >= 0 ? `+${(pnlPercentage || 0).toFixed(2)}%` : `${(pnlPercentage || 0).toFixed(2)}%`),
+      trend: portfolioLoading ? "neutral" : ((totalPnL || 0) >= 0 ? "up" : "down"),
+      icon: (totalPnL || 0) >= 0 ? TrendingUp : Loss,
+      description: "Daily performance",
+      loading: portfolioLoading
     },
     {
       title: "Active Positions",
-      value: activePositions.length.toString(),
-      change: activePositions.length > 0 ? "Positions open" : "No positions",
-      trend: activePositions.length > 0 ? "neutral" : "down",
+      value: portfolioLoading ? "Loading..." : ((activePositions?.length || 0).toString()),
+      change: portfolioLoading ? "Loading..." : ((activePositions?.length || 0) > 0 ? "Positions open" : "No positions"),
+      trend: portfolioLoading ? "neutral" : ((activePositions?.length || 0) > 0 ? "neutral" : "down"),
       icon: Target,
-      description: "Current trades"
+      description: "Current trades",
+      loading: portfolioLoading
     },
     {
       title: "Win Rate",
-      value: `${(portfolio?.summary?.winRate || 0).toFixed(1)}%`,
-      change: portfolio?.balance?.total_trades ? `${portfolio.balance.total_trades} total trades` : "No trading history",
-      trend: (portfolio?.summary?.winRate || 0) > 50 ? "up" : "down",
+      value: portfolioLoading ? "Loading..." : `${(portfolio?.summary?.winRate || 0).toFixed(1)}%`,
+      change: portfolioLoading ? "Loading..." : (portfolio?.balance?.total_trades ? `${portfolio.balance.total_trades} total trades` : "No trading history"),
+      trend: portfolioLoading ? "neutral" : ((portfolio?.summary?.winRate || 0) > 50 ? "up" : "down"),
       icon: Percent,
-      description: "Success ratio"
+      description: "Success ratio",
+      loading: portfolioLoading
     }
   ];
 
   // Active positions with detailed info
-  const transformedActivePositions = activePositions.slice(0, 6).map(position => {
+  const transformedActivePositions = portfolioLoading ? [] : (activePositions || []).slice(0, 6).map(position => {
     const pnl = (position.unrealizedPnL || 0) + (position.realizedPnL || 0);
     const pnlPercent = (position.totalInvested || 0) > 0 ? (pnl / (position.totalInvested || 1)) * 100 : 0;
     const totalShares = (position.yesShares || 0) + (position.noShares || 0);
@@ -128,7 +146,7 @@ export function Dashboard() {
   });
 
   // Market opportunities
-  const marketOpportunities = (markets || []).slice(0, 8).map(market => ({
+  const marketOpportunities = marketsLoading ? [] : (markets || []).slice(0, 8).map(market => ({
     title: market.title || 'Unknown Market',
     category: (market.category || 'other').charAt(0).toUpperCase() + (market.category || 'other').slice(1),
     volume: `₹${((market.volume24h || 0) / 100000).toFixed(1)}L`,
@@ -139,31 +157,126 @@ export function Dashboard() {
     id: market.id
   }));
 
-
-
   const isLoading = portfolioLoading || marketsLoading;
   const hasError = portfolioError || marketsError;
   const hasActivePositions = transformedActivePositions.length > 0;
 
   const handleRefreshAll = () => {
+    setLastUpdate(new Date());
     refreshPortfolio();
     refreshMarkets();
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-6 bg-white min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">Loading dashboard...</p>
+  // Loading skeleton for stats cards
+  const StatCardSkeleton = () => (
+    <Card className="p-4 sm:p-6 relative overflow-hidden">
+      <div className="animate-pulse">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-gray-200 to-gray-100 rounded-full"></div>
+            <div className="h-5 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-24"></div>
+          </div>
+          <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-100 rounded-full w-20"></div>
+        </div>
+        <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-32 mb-3"></div>
+        <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-24"></div>
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent skeleton-shimmer"></div>
+    </Card>
+  );
+
+  // Loading skeleton for positions
+  const PositionSkeleton = () => (
+    <div className="p-6 border border-gray-100 rounded-xl relative overflow-hidden">
+      <div className="animate-pulse">
+        <div className="flex items-center justify-between mb-6">
+          <div className="space-y-3 flex-1">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-gradient-to-br from-gray-200 to-gray-100 rounded-full"></div>
+              <div className="h-5 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-3/4"></div>
             </div>
+            <div className="flex items-center gap-4">
+              <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-20"></div>
+              <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-24"></div>
+              <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-32"></div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-24"></div>
+            <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-16"></div>
           </div>
         </div>
       </div>
-    );
-  }
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent skeleton-shimmer"></div>
+    </div>
+  );
+
+  // Loading skeleton for market opportunities
+  const MarketSkeleton = () => (
+    <div className="p-6 border border-gray-100 rounded-xl relative overflow-hidden">
+      <div className="animate-pulse">
+        <div className="flex items-center justify-between mb-6">
+          <div className="space-y-3 flex-1">
+            <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-3/4"></div>
+            <div className="flex items-center gap-3">
+              <div className="h-5 bg-gradient-to-r from-gray-200 to-gray-100 rounded-full w-20"></div>
+              <div className="h-5 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-24"></div>
+            </div>
+          </div>
+          <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-100 rounded-full w-8"></div>
+        </div>
+        <div className="flex justify-between items-end">
+          <div className="space-y-2">
+            <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-16"></div>
+            <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-24"></div>
+          </div>
+          <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-20"></div>
+        </div>
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent skeleton-shimmer"></div>
+    </div>
+  );
+
+  // Update the stats card to handle loading states
+  const StatCard = ({ stat }: StatCardProps) => (
+    <Card className={`p-2 sm:p-3 bg-white border border-gray-200 ${stat.loading ? 'animate-pulse' : ''}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {stat.icon && <stat.icon className="h-4 w-4 text-gray-600" />}
+          <span className="text-sm text-gray-600">{stat.title}</span>
+        </div>
+        {stat.loading ? (
+          <div className="h-5 bg-gray-200 rounded w-16"></div>
+        ) : (
+          <div className={`text-xs px-2 py-0.5 rounded ${
+            stat.trend === 'up' ? 'text-green-700 bg-green-50' : 
+            stat.trend === 'down' ? 'text-red-700 bg-red-50' : 'text-gray-700 bg-gray-50'
+          }`}>
+            {stat.change}
+          </div>
+        )}
+      </div>
+      {stat.loading ? (
+        <div className="h-7 bg-gray-200 rounded w-24 mb-1"></div>
+      ) : (
+        <div className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{stat.value}</div>
+      )}
+      <div className="text-xs text-gray-500">{stat.description}</div>
+    </Card>
+  );
+
+  // Update the portfolio metrics grid
+  const PortfolioMetrics = () => (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 flex-shrink-0">
+      {portfolioStats.map((stat, index) => (
+        <StatCard key={index} stat={stat} />
+      ))}
+    </div>
+  );
+
+  // Determine if we should show the loading state
+  const showLoading = isLoading || !portfolio;
+  const showEmptyState = !showLoading && !hasActivePositions;
 
   if (hasError) {
     return (
@@ -194,6 +307,49 @@ export function Dashboard() {
     );
   }
 
+  // Update the loading state layout
+  if (isLoading) {
+    return (
+      <div className="p-4 sm:p-6 bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex items-center justify-between border-b border-gray-100 pb-6">
+            <div className="space-y-3">
+              <div className="h-7 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-32"></div>
+              <div className="h-4 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-48"></div>
+            </div>
+            <div className="h-9 bg-gradient-to-r from-gray-200 to-gray-100 rounded-lg w-28"></div>
+          </div>
+
+          {/* Stats Grid Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <StatCardSkeleton key={i} />
+            ))}
+          </div>
+
+          {/* Main Content Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="h-6 bg-gradient-to-r from-gray-200 to-gray-100 rounded w-40"></div>
+                <div className="h-8 bg-gradient-to-r from-gray-200 to-gray-100 rounded-full w-8"></div>
+              </div>
+              {[...Array(3)].map((_, i) => (
+                <PositionSkeleton key={i} />
+              ))}
+            </div>
+            <div className="space-y-6">
+              {[...Array(2)].map((_, i) => (
+                <MarketSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-2 sm:p-4 bg-white min-h-screen">
       <div className="w-full flex flex-col space-y-2 sm:space-y-4">
@@ -204,48 +360,129 @@ export function Dashboard() {
               Dashboard
             </h1>
             <p className="text-sm text-gray-600 mt-0.5">
-              {user?.email?.split('@')[0] || 'Trader'} • Last updated: {new Date().toLocaleTimeString()}
+              {user?.email?.split('@')[0] || 'Trader'} • Last updated: {lastUpdate.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: true 
+              })}
             </p>
           </div>
           <Button
             onClick={handleRefreshAll}
             variant="outline"
             size="sm"
+            disabled={showLoading}
           >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh Data
+            {showLoading ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-2" />
+            )}
+            {showLoading ? "Loading..." : "Refresh Data"}
           </Button>
         </div>
 
         {/* Portfolio Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 flex-shrink-0">
-          {portfolioStats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index} className="p-2 sm:p-3 bg-white border border-gray-200">
-                <div className="flex items-center justify-between mb-2">
+        <PortfolioMetrics />
+
+        {/* Main Content */}
+        <div className="flex-1">
+          {showLoading ? (
+            /* Loading State */
+            <div className="space-y-4">
+              <Card className="p-4">
+                <h2 className="text-lg font-semibold mb-4">Loading Dashboard...</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {[...Array(3)].map((_, i) => (
+                    <PositionSkeleton key={i} />
+                  ))}
+                </div>
+              </Card>
+            </div>
+          ) : showEmptyState ? (
+            /* Empty State */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
+              {/* Portfolio Summary */}
+              <Card className="bg-white border border-gray-200 flex-shrink-0">
+                <div className="p-3 border-b border-gray-100">
                   <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 text-gray-600" />
-                    <span className="text-sm text-gray-600">{stat.title}</span>
-                  </div>
-                  <div className={`text-xs px-2 py-0.5 rounded ${
-                    stat.trend === 'up' ? 'text-green-700 bg-green-50' : 
-                    stat.trend === 'down' ? 'text-red-700 bg-red-50' : 'text-gray-700 bg-gray-50'
-                  }`}>
-                    {stat.change}
+                    <PieChart className="h-5 w-5 text-gray-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">Portfolio Summary</h2>
                   </div>
                 </div>
-                <div className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{stat.value}</div>
-                <div className="text-xs text-gray-500">{stat.description}</div>
+                
+                <div className="p-4">
+                  <div className="text-center py-4">
+                    <Target className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Start Trading</h3>
+                    <p className="text-gray-600 mb-4">You have no active positions. Explore markets to find trading opportunities.</p>
+                    
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <div className="text-center p-2 bg-gray-50 rounded-lg">
+                        <div className="text-lg font-semibold text-gray-900">
+                          {portfolio?.summary?.totalValue ? `₹${portfolio.summary.totalValue.toLocaleString()}` : "₹0"}
+                        </div>
+                        <div className="text-xs text-gray-600">Available Balance</div>
+                      </div>
+                      <div className="text-center p-2 bg-gray-50 rounded-lg">
+                        <div className="text-lg font-semibold text-gray-900">
+                          {portfolio?.balance?.total_trades || 0}
+                        </div>
+                        <div className="text-xs text-gray-600">Total Trades</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </Card>
-            );
-          })}
-        </div>
 
-        {/* Main Content - Dynamic Layout */}
-        <div className="flex-1">
-          {hasActivePositions ? (
-            /* Layout with Active Positions */
+              {/* Getting Started */}
+              <Card className="bg-white border border-gray-200 flex-shrink-0">
+                <div className="p-3 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Info className="h-5 w-5 text-gray-600" />
+                    <h3 className="text-lg font-semibold text-gray-900">Getting Started</h3>
+                  </div>
+                </div>
+                
+                <div className="p-3">
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2 p-2 bg-blue-50 rounded-lg">
+                      <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-blue-700 text-xs font-bold">1</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">Explore Markets</p>
+                        <p className="text-xs text-blue-700">Browse trending prediction markets to find opportunities</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-2 p-2 bg-green-50 rounded-lg">
+                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-green-700 text-xs font-bold">2</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-green-900">Make Predictions</p>
+                        <p className="text-xs text-green-700">Buy YES or NO shares based on your research</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-2 p-2 bg-purple-50 rounded-lg">
+                      <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-purple-700 text-xs font-bold">3</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-purple-900">Track Performance</p>
+                        <p className="text-xs text-purple-700">Monitor your positions and profits in real-time</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ) : (
+            /* Active Positions Layout */
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4">
               {/* Active Positions */}
               <div className="lg:col-span-2">
@@ -366,153 +603,6 @@ export function Dashboard() {
                 </Card>
 
 
-              </div>
-            </div>
-          ) : (
-            /* Layout without Active Positions - Better Space Utilization */
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
-              {/* Left Column - Portfolio Summary & Market Overview */}
-              <div className="space-y-2 sm:space-y-4">
-                {/* Portfolio Summary */}
-                <Card className="bg-white border border-gray-200 flex-shrink-0">
-                  <div className="p-3 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <PieChart className="h-5 w-5 text-gray-600" />
-                      <h2 className="text-lg font-semibold text-gray-900">Portfolio Summary</h2>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4">
-                    <div className="text-center py-4">
-                      <Target className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Start Trading</h3>
-                      <p className="text-gray-600 mb-4">You have no active positions. Explore markets to find trading opportunities.</p>
-                      
-                      {/* Quick Stats */}
-                      <div className="grid grid-cols-2 gap-3 mt-4">
-                        <div className="text-center p-2 bg-gray-50 rounded-lg">
-                          <div className="text-lg font-semibold text-gray-900">
-                            {portfolio?.summary?.totalValue ? `₹${portfolio.summary.totalValue.toLocaleString()}` : "₹0"}
-                          </div>
-                          <div className="text-xs text-gray-600">Available Balance</div>
-                        </div>
-                        <div className="text-center p-2 bg-gray-50 rounded-lg">
-                          <div className="text-lg font-semibold text-gray-900">
-                            {portfolio?.balance?.total_trades || 0}
-                          </div>
-                          <div className="text-xs text-gray-600">Total Trades</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Market Overview */}
-                <Card className="bg-white border border-gray-200">
-                  <div className="p-3 border-b border-gray-100 flex-shrink-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="h-5 w-5 text-gray-600" />
-                        <h3 className="text-lg font-semibold text-gray-900">Market Overview</h3>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => router.push('/Markets')}>
-                        <ExternalLink className="h-4 w-4 text-blue-600" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 flex-1 overflow-y-auto">
-                    {marketOpportunities.length > 0 ? (
-                      <div className="space-y-2">
-                        {marketOpportunities.slice(0, 8).map((market, index) => (
-                          <div key={index} className="border-b border-gray-100 last:border-b-0 pb-2 last:pb-0">
-                            <div className="flex items-start justify-between mb-1">
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
-                                  {market.title.length > 50 ? market.title.substring(0, 50) + '...' : market.title}
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-gray-600">
-                                  <span>{market.category}</span>
-                                  <span>•</span>
-                                  <span>Vol: {market.volume}</span>
-                                </div>
-                              </div>
-                              <div className={`text-xs font-medium ${
-                                market.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                {market.change}
-                              </div>
-                            </div>
-                            <div className="flex gap-3 text-xs text-gray-600">
-                              <div className="flex items-center gap-1">
-                                <span className="text-blue-600 font-medium">YES</span>
-                                <span>₹{market.yesPrice.toFixed(1)}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <span className="text-gray-600 font-medium">NO</span>
-                                <span>₹{market.noPrice.toFixed(1)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6">
-                        <BarChart3 className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-600">No markets available</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-2 sm:space-y-4">
-
-
-                {/* Trading Tips */}
-                <Card className="bg-white border border-gray-200 flex-shrink-0">
-                  <div className="p-3 border-b border-gray-100">
-                    <div className="flex items-center gap-2">
-                      <Info className="h-5 w-5 text-gray-600" />
-                      <h3 className="text-lg font-semibold text-gray-900">Getting Started</h3>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3">
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2 p-2 bg-blue-50 rounded-lg">
-                        <div className="w-5 h-5 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-blue-700 text-xs font-bold">1</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-blue-900">Explore Markets</p>
-                          <p className="text-xs text-blue-700">Browse trending prediction markets to find opportunities</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2 p-2 bg-green-50 rounded-lg">
-                        <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-green-700 text-xs font-bold">2</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-green-900">Make Predictions</p>
-                          <p className="text-xs text-green-700">Buy YES or NO shares based on your research</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-start gap-2 p-2 bg-purple-50 rounded-lg">
-                        <div className="w-5 h-5 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <span className="text-purple-700 text-xs font-bold">3</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-purple-900">Track Performance</p>
-                          <p className="text-xs text-purple-700">Monitor your positions and profits in real-time</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
               </div>
             </div>
           )}

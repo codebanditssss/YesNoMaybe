@@ -605,4 +605,17 @@
   padding: 0.75rem;
   font-size: 0.875rem;
   color: #333;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  animation: shimmer 2s infinite;
 } 

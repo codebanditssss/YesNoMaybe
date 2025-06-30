@@ -82,16 +82,14 @@ interface UsePortfolioOptions {
   refreshInterval?: number; // in milliseconds
 }
 
-export function usePortfolio(options: UsePortfolioOptions = {}) {
-  const {
-    includeHistory = false,
-    historyLimit = 100, // Increased default limit for charts
-    timeframe = 'ALL',
-    autoRefresh = true,
-    refreshInterval = 30000 // 30 seconds
-  } = options;
-
-  const { session, user } = useAuth();
+export function usePortfolio({ 
+  includeHistory = false, 
+  historyLimit = 10, 
+  timeframe = 'ALL',
+  autoRefresh = false,
+  refreshInterval = 30000 // 30 seconds
+}: UsePortfolioOptions) {
+  const { user, session } = useAuth();
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,24 +179,24 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
 
   // Helper functions
   const getTotalValue = () => {
-    if (!portfolio) return 0;
+    if (loading || !portfolio) return 0;
     return portfolio.summary.totalValue || 0;
   };
 
   const getTotalPnL = () => {
-    if (!portfolio) return 0;
+    if (loading || !portfolio) return 0;
     return (portfolio.summary.totalUnrealizedPnL || 0) + (portfolio.summary.totalRealizedPnL || 0);
   };
 
   const getPnLPercentage = () => {
-    if (!portfolio || !portfolio.summary.totalInvested || portfolio.summary.totalInvested === 0) return 0;
+    if (loading || !portfolio || !portfolio.summary.totalInvested || portfolio.summary.totalInvested === 0) return 0;
     const totalPnL = getTotalPnL();
     return (totalPnL / portfolio.summary.totalInvested) * 100;
   };
 
   const getActivePositions = () => {
-    if (!portfolio?.positions) return [];
-    return portfolio.positions.filter(pos => pos.marketStatus === 'active');
+    if (loading || !portfolio?.positions) return [];
+    return portfolio.positions.filter(p => p.marketStatus === 'active');
   };
 
   const getResolvedPositions = () => {
@@ -227,21 +225,11 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
   };
 
   return {
-    // Core data
-    portfolio,
-    balance: portfolio?.balance || null,
-    summary: portfolio?.summary || null,
-    positions: portfolio?.positions || [],
-    history: portfolio?.history || [],
-    
-    // State
+    portfolio: loading ? null : portfolio,
+    positions: loading ? [] : portfolio?.positions || [],
     loading,
     error,
-    
-    // Actions
     refresh,
-    
-    // Helper functions
     getTotalValue,
     getTotalPnL,
     getPnLPercentage,
@@ -250,8 +238,6 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     getPositionByMarket,
     getWinRate,
     getChartData,
-    
-    // Computed values
     hasData: !!portfolio,
     totalPositions: portfolio?.positions?.length || 0,
     activePositionsCount: getActivePositions().length,

@@ -509,7 +509,13 @@ export function TradeHistory() {
                                   <div>
                                     <span className="text-gray-500">Date:</span>
                                     <p className="font-medium">{new Date(trade.timestamp).toLocaleDateString()}</p>
-                                    <p className="text-xs text-gray-500">{new Date(trade.timestamp).toLocaleTimeString()}</p>
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(trade.timestamp).toLocaleTimeString('en-US', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit', 
+                                        hour12: true 
+                                      })}
+                                    </p>
                                   </div>
                                 </div>
                               </div>
