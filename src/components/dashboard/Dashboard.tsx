@@ -208,8 +208,8 @@ export function Dashboard() {
   }
 
   return (
-    <div className="p-4 bg-white h-screen overflow-hidden">
-      <div className="max-w-7xl mx-auto h-full flex flex-col space-y-4">
+    <div className="p-4 bg-white min-h-screen">
+      <div className="max-w-7xl mx-auto flex flex-col space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 pb-3 flex-shrink-0">
           <div>
@@ -256,13 +256,13 @@ export function Dashboard() {
         </div>
 
         {/* Main Content - Dynamic Layout */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1">
           {hasActivePositions ? (
             /* Layout with Active Positions */
-            <div className="grid lg:grid-cols-3 gap-4 h-auto">
+            <div className="grid lg:grid-cols-3 gap-4">
               {/* Active Positions */}
-              <div className="lg:col-span-2 h-full">
-                <Card className="bg-white border border-gray-200 h-full flex flex-col">
+              <div className="lg:col-span-2">
+                <Card className="bg-white border border-gray-200">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-900">Active Positions</h2>
@@ -316,9 +316,9 @@ export function Dashboard() {
               </div>
 
               {/* Right Sidebar */}
-              <div className="space-y-5 h-full flex flex-col">
+              <div className="space-y-5">
                 {/* Market Opportunities */}
-                <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col transition-shadow hover:shadow-lg">
+                <Card className="bg-white border border-gray-200 rounded-xl shadow-sm transition-shadow hover:shadow-lg">
                   <div className="p-4 border-b border-gray-100 flex-shrink-0 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-6 rounded-full mr-2"></div>
@@ -383,7 +383,7 @@ export function Dashboard() {
                 </Card>
 
                 {/* Recent Trading Activity */}
-                <Card className="bg-white border border-gray-200 flex flex-col">
+                <Card className="bg-white border border-gray-200">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
@@ -427,9 +427,9 @@ export function Dashboard() {
             </div>
           ) : (
             /* Layout without Active Positions - Better Space Utilization */
-            <div className="grid lg:grid-cols-2 gap-4 h-full">
+            <div className="grid lg:grid-cols-2 gap-4">
               {/* Left Column - Portfolio Summary & Market Overview */}
-              <div className="space-y-4 h-full flex flex-col">
+              <div className="space-y-4">
                 {/* Portfolio Summary */}
                 <Card className="bg-white border border-gray-200 flex-shrink-0">
                   <div className="p-3 border-b border-gray-100">
@@ -465,7 +465,7 @@ export function Dashboard() {
                 </Card>
 
                 {/* Market Overview */}
-                <Card className="bg-white border border-gray-200 flex-1 flex flex-col">
+                <Card className="bg-white border border-gray-200">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -522,9 +522,9 @@ export function Dashboard() {
               </div>
 
               {/* Right Column */}
-              <div className="space-y-4 h-full flex flex-col">
+              <div className="space-y-4">
                 {/* Recent Trading Activity */}
-                <Card className="bg-white border border-gray-200 flex-1 flex flex-col">
+                <Card className="bg-white border border-gray-200">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
