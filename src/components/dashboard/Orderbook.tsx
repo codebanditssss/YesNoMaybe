@@ -14,7 +14,6 @@ import {
   User,
   ArrowUpDown,
   RefreshCw,
-  Settings,
   Filter,
   Search,
   BookOpen,
@@ -134,189 +133,11 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Book</h1>
             <p className="text-gray-600">Real-time market depth and order flow</p>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-gray-500 bg-white px-3 py-2 rounded-lg border">
-              <div className={`w-2 h-2 rounded-full ${autoRefresh ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-              <span>Auto-refresh: {autoRefresh ? 'ON' : 'OFF'}</span>
-            </div>
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
-            <Button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              variant={autoRefresh ? "default" : "outline"}
-              size="sm"
-            >
-              {autoRefresh ? 'Disable' : 'Enable'} Auto-refresh
-            </Button>
           </div>
-        </div>
 
         {/* Market Selector */}
-        <Card className="p-6 bg-white border-0 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Select Market</h2>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search markets..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </div>
-          
-          {marketsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-600">Loading markets...</span>
-            </div>
-          ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredMarkets.map((market) => (
-              <div
-                key={market.id}
-                onClick={() => handleMarketChange(market)}
-                className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                    currentMarket?.id === market.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {market.category}
-                    </Badge>
-                    <Badge className={`text-xs ${getStatusColor(market.status)}`}>
-                      {market.status.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div className={`text-sm font-medium ${
-                      market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                      {market.priceChange >= 0 ? '+' : ''}{market.priceChange.toFixed(1)}%
-                  </div>
-                </div>
-                
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                  {market.title}
-                </h3>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex gap-3">
-                    <span className="text-blue-600 font-medium">Yes ₹{market.yesPrice.toFixed(1)}</span>
-                    <span className="text-gray-600 font-medium">No ₹{market.noPrice.toFixed(1)}</span>
-                  </div>
-                  <div className="text-gray-500">
-                      Vol: {market.volume}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          )}
-        </Card>
 
         {/* Current Market Info */}
-        {currentMarket && (
-        <Card className="p-6 bg-white border-0 shadow-sm">
-            {orderbookError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{orderbookError}</p>
-              </div>
-            )}
-            
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="text-xs">
-                  {currentMarket.category}
-                </Badge>
-                <Badge className={`text-xs ${getStatusColor(currentMarket.status)}`}>
-                  {currentMarket.status.replace('_', ' ').toUpperCase()}
-                </Badge>
-                <div className="flex items-center text-xs text-gray-500">
-                  <User className="h-3 w-3 mr-1" />
-                    {formatNumber(totalUsers)} active orders
-                </div>
-              </div>
-              
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                {currentMarket.title}
-              </h2>
-              
-              {currentMarket.description && (
-                <p className="text-gray-600 text-sm mb-3">{currentMarket.description}</p>
-              )}
-              
-              <div className="flex items-center gap-6 text-sm text-gray-500">
-                  <span>Expires: {new Date(currentMarket.expiryDate).toLocaleDateString()}</span>
-                  <span>24h Volume: ₹{formatNumber(marketInfo?.volume24h || 0)}</span>
-                  <span>Last update: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString() : 'Not loaded'}</span>
-              </div>
-            </div>
-
-            <div className="text-right">
-                <p className="text-sm text-gray-500">Current Price</p>
-              <div className="flex items-center gap-2">
-                <span className="text-3xl font-bold text-gray-900">
-                    ₹{marketInfo ? (marketInfo.currentPrice / 10).toFixed(1) : currentMarket.yesPrice.toFixed(1)}
-                </span>
-                <div className={`flex items-center text-sm font-medium ${
-                    (marketInfo?.priceChange24h || currentMarket.priceChange) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                    {(marketInfo?.priceChange24h || currentMarket.priceChange) >= 0 ? (
-                    <TrendingUp className="h-4 w-4 mr-1" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4 mr-1" />
-                  )}
-                    {(marketInfo?.priceChange24h || currentMarket.priceChange) >= 0 ? '+' : ''}{(marketInfo?.priceChange24h || currentMarket.priceChange).toFixed(1)}%
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Market Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Total Liquidity</p>
-              <p className="text-lg font-semibold text-gray-900">
-                  {marketStats ? formatNumber(marketStats.totalLiquidity) : '0'}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 mb-1">Active Orders</p>
-              <p className="text-lg font-semibold text-gray-900">
-                  {yesBids.length + noAsks.length}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 mb-1">Best Yes</p>
-              <p className="text-lg font-semibold text-blue-600">
-                  {bestPrices?.bestYesBid ? `₹${formatPrice(bestPrices.bestYesBid)}` : 'N/A'}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 mb-1">Best No</p>
-              <p className="text-lg font-semibold text-gray-600">
-                  {bestPrices?.bestNoAsk ? `₹${formatPrice(bestPrices.bestNoAsk)}` : 'N/A'}
-              </p>
-            </div>
-          </div>
-        </Card>
-        )}
 
         {/* Orderbook Controls */}
         <Card className="p-4 bg-white border-0 shadow-sm">
@@ -400,7 +221,6 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               <h3 className="text-lg font-semibold text-gray-900">Market Depth</h3>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <Volume2 className="h-4 w-4" />
                   <span>Live Orders</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
@@ -639,15 +459,6 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                   <RefreshCw className="h-4 w-4" />
                   <span>Refresh</span>
                 </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
-                </Button>
               </div>
             </div>
           </div>
@@ -714,44 +525,172 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
           </Card>
         </div>
 
+        {currentMarket && (
+        <Card className="p-6 bg-white border-0 shadow-sm">
+            {orderbookError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{orderbookError}</p>
+              </div>
+            )}
+            
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className="text-xs">
+                  {currentMarket.category}
+                </Badge>
+                <Badge className={`text-xs ${getStatusColor(currentMarket.status)}`}>
+                  {currentMarket.status.replace('_', ' ').toUpperCase()}
+                </Badge>
+                <div className="flex items-center text-xs text-gray-500">
+                  <User className="h-3 w-3 mr-1" />
+                    {formatNumber(totalUsers)} active orders
+                </div>
+              </div>
+              
+              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                {currentMarket.title}
+              </h2>
+              
+              {currentMarket.description && (
+                <p className="text-gray-600 text-sm mb-3">{currentMarket.description}</p>
+              )}
+              
+              <div className="flex items-center gap-6 text-sm text-gray-500">
+                  <span>Expires: {new Date(currentMarket.expiryDate).toLocaleDateString()}</span>
+                  <span>24h Volume: ₹{formatNumber(marketInfo?.volume24h || 0)}</span>
+                  <span>Last update: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString() : 'Not loaded'}</span>
+              </div>
+            </div>
+
+            <div className="text-right">
+                <p className="text-sm text-gray-500">Current Price</p>
+              <div className="flex items-center gap-2">
+                <span className="text-3xl font-bold text-gray-900">
+                    ₹{marketInfo ? (marketInfo.currentPrice / 10).toFixed(1) : currentMarket.yesPrice.toFixed(1)}
+                </span>
+                <div className={`flex items-center text-sm font-medium ${
+                    (marketInfo?.priceChange24h || currentMarket.priceChange) >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                    {(marketInfo?.priceChange24h || currentMarket.priceChange) >= 0 ? (
+                    <TrendingUp className="h-4 w-4 mr-1" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 mr-1" />
+                  )}
+                    {(marketInfo?.priceChange24h || currentMarket.priceChange) >= 0 ? '+' : ''}{(marketInfo?.priceChange24h || currentMarket.priceChange).toFixed(1)}%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Market Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-500 mb-1">Total Liquidity</p>
+              <p className="text-lg font-semibold text-gray-900">
+                  {marketStats ? formatNumber(marketStats.totalLiquidity) : '0'}
+              </p>
+            </div>
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500 mb-1">Active Orders</p>
+              <p className="text-lg font-semibold text-gray-900">
+                  {yesBids.length + noAsks.length}
+              </p>
+            </div>
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500 mb-1">Best Yes</p>
+              <p className="text-lg font-semibold text-blue-600">
+                  {bestPrices?.bestYesBid ? `₹${formatPrice(bestPrices.bestYesBid)}` : 'N/A'}
+              </p>
+            </div>
+            <div className="text-center p-3 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-500 mb-1">Best No</p>
+              <p className="text-lg font-semibold text-gray-600">
+                  {bestPrices?.bestNoAsk ? `₹${formatPrice(bestPrices.bestNoAsk)}` : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </Card>
+        )}
+
         {/* Trading Actions */}
+        
         <Card className="p-6 bg-white border-0 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <Zap className="h-4 w-4" />
-              <span>Instant trading</span>
+            <h2 className="text-lg font-semibold text-gray-900">Select Market</h2>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search markets..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              disabled={!bestPrices?.bestYesBid}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Buy YES {bestPrices?.bestYesBid ? `₹${formatPrice(bestPrices.bestYesBid)}` : 'N/A'}
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="border-gray-300 text-gray-700 hover:bg-gray-50"
-              disabled={!bestPrices?.bestNoAsk}
-            >
-              <TrendingDown className="h-4 w-4 mr-2" />
-              Buy NO {bestPrices?.bestNoAsk ? `₹${formatPrice(bestPrices.bestNoAsk)}` : 'N/A'}
-            </Button>
-            
-            <Button variant="outline">
-              <Eye className="h-4 w-4 mr-2" />
-              Watch Market
-            </Button>
-            
-            <Button variant="outline">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Set Alert
-            </Button>
+          {marketsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">Loading markets...</span>
+            </div>
+          ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredMarkets.map((market) => (
+              <div
+                key={market.id}
+                onClick={() => handleMarketChange(market)}
+                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    currentMarket?.id === market.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {market.category}
+                    </Badge>
+                    <Badge className={`text-xs ${getStatusColor(market.status)}`}>
+                      {market.status.replace('_', ' ').toUpperCase()}
+                    </Badge>
+                  </div>
+                  <div className={`text-sm font-medium ${
+                      market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                      {market.priceChange >= 0 ? '+' : ''}{market.priceChange.toFixed(1)}%
+                  </div>
+                </div>
+                
+                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                  {market.title}
+                </h3>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex gap-3">
+                    <span className="text-blue-600 font-medium">Yes ₹{market.yesPrice.toFixed(1)}</span>
+                    <span className="text-gray-600 font-medium">No ₹{market.noPrice.toFixed(1)}</span>
+                  </div>
+                  <div className="text-gray-500">
+                      Vol: {market.volume}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+          )}
         </Card>
       </div>
     </div>
