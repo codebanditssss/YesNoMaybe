@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push('/');
+      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
     }
