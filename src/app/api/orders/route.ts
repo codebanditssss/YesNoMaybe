@@ -279,24 +279,43 @@ export const POST = withAuth(async (req, user) => {
 
     console.log(`🎯 Processing order: ${side} ${quantity} @ ₹${price} for market ${marketId}`)
 
-    // Step 1: Get or create user balance
-    const { data: userBalance, error: balanceError } = await serviceRoleClient
-          .from('user_balances')
-          .upsert({
-            user_id: user.id,
-        available_balance: 10000, // Default balance for new users
-            locked_balance: 0,
-            total_deposited: 10000,
-        total_profit_loss: 0,
-        total_trades: 0,
-        winning_trades: 0,
-        total_volume: 0,
-        total_withdrawn: 0
-          }, {
-            onConflict: 'user_id'
-          })
-      .select()
+    // Step 1: Get user balance (don't overwrite existing balance!)
+    let { data: userBalance, error: balanceError } = await serviceRoleClient
+      .from('user_balances')
+      .select('*')
+      .eq('user_id', user.id)
       .single()
+
+    // Only create default balance for truly new users
+    if (balanceError && balanceError.code === 'PGRST116') {
+      console.log(`🆕 Creating new user balance for ${user.id}`)
+      const { data: newBalance, error: createError } = await serviceRoleClient
+        .from('user_balances')
+        .insert({
+          user_id: user.id,
+          available_balance: 10000, // Default balance for new users
+          locked_balance: 0,
+          total_deposited: 10000,
+          total_profit_loss: 0,
+          total_trades: 0,
+          winning_trades: 0,
+          total_volume: 0,
+          total_withdrawn: 0
+        })
+        .select()
+        .single()
+      
+      if (createError) {
+        console.error('Error creating user balance:', createError)
+        return NextResponse.json({ 
+          success: false,
+          error: 'Failed to create user balance' 
+        }, { status: 500 })
+      }
+      
+      userBalance = newBalance
+      balanceError = null
+    }
 
     if (balanceError) {
       console.error('Error getting user balance:', balanceError)
