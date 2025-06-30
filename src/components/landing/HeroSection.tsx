@@ -1,87 +1,110 @@
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { motion } from "framer-motion";
 
 interface HeroSectionProps {
-  onOpenAuth?: (tab: 'signin' | 'signup') => void;
+  onOpenAuth?: (tab: "signin" | "signup") => void;
 }
 
 export function HeroSection({ onOpenAuth }: HeroSectionProps) {
   const { user, loading } = useAuth();
 
   return (
-    <section className="pt-40 pb-24 px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center space-y-8">
-          {/* Dynamic badge based on auth state */}
-          <div className="inline-flex items-center px-4 py-2 rounded-full border border-gray-200 bg-white/80 backdrop-blur-sm">
-            <span className="text-sm font-medium text-gray-700">
-              {user ? "Welcome to your trading dashboard" : "Enterprise-Grade Opinion Trading"}
-            </span>
-          </div>
-          
-          {/* Clean, professional headline */}
-          <div className="space-y-6">
-            <h1 className="text-5xl md:text-7xl font-light tracking-tight text-black leading-[1.1]">
-              YesNoMaybe
-            </h1>
-            <h2 className="text-2xl md:text-3xl font-light text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              {user 
-                ? `Welcome back, ${user.email?.split('@')[0] || 'Trader'}` 
-                : "Professional prediction markets for institutional-grade opinion trading"
-              }
-            </h2>
-          </div>
-          
-          {/* Professional description */}
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
-            {user 
-              ? "Ready to explore new markets and manage your positions? Your trading dashboard awaits."
-              : "Execute strategic positions on future market outcomes with institutional-level precision and transparency."
-            }
-          </p>
-          
-          {/* Dynamic buttons based on auth state */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
-            {loading ? (
-              <div className="text-gray-500">Loading...</div>
-            ) : user ? (
-              <>
-                <Button 
-                  size="lg" 
-                  className="bg-black text-white hover:bg-gray-800 px-12 py-6 text-base font-normal border-0 rounded-sm transition-all duration-200"
-                >
-                  Browse Markets
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50 px-12 py-6 text-base font-normal rounded-sm transition-all duration-200"
-                >
-                  View Portfolio
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  size="lg" 
-                  onClick={() => onOpenAuth?.('signup')}
-                  className="bg-black text-white hover:bg-gray-800 px-12 py-6 text-base font-normal border-0 rounded-sm transition-all duration-200"
-                >
-                  Access Platform
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  onClick={() => onOpenAuth?.('signin')}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50 px-12 py-6 text-base font-normal rounded-sm transition-all duration-200"
-                >
-                  Sign In
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
+    <section className="pt-40 pb-28 px-6 bg-white">
+      <div className="max-w-6xl mx-auto text-center space-y-14">
+        {/* Animated Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          viewport={{ once: true }}
+          className="inline-flex items-center px-6 py-2 rounded-full border border-neutral-200 bg-neutral-50 shadow-sm"
+        >
+          <span className="text-sm font-semibold text-neutral-700 tracking-wider uppercase">
+            {user
+              ? "Welcome to your trading dashboard"
+              : "Enterprise-Grade Opinion Trading"}
+          </span>
+        </motion.div>
+
+        {/* Animated Title */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="space-y-6"
+        >
+          <h1 className="text-[48px] md:text-[72px] font-semibold leading-[1.05] tracking-tight text-black">
+            YesNoMaybe
+          </h1>
+          <h2 className="text-xl md:text-2xl font-normal text-neutral-600 max-w-3xl mx-auto leading-relaxed">
+            {user
+              ? `Welcome back, ${user.email?.split("@")[0] || "Trader"}`
+              : "Professional prediction markets for bold, institutional-grade opinion trading."}
+          </h2>
+        </motion.div>
+
+        {/* Animated Paragraph */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="text-base md:text-lg text-neutral-500 max-w-xl mx-auto leading-relaxed"
+        >
+          {user
+            ? "Your portfolio is ready. Dive in to analyze performance or uncover new market signals."
+            : "Predict future outcomes with transparency, speed, and strategic control — starting from just ₹1000."}
+        </motion.p>
+
+        {/* Animated CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          viewport={{ once: true }}
+          className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6"
+        >
+          {loading ? (
+            <div className="text-neutral-500 text-base">Loading...</div>
+          ) : user ? (
+            <>
+              <Button
+                size="lg"
+                className="bg-black text-white hover:bg-neutral-900 px-10 py-5 text-base font-medium rounded-md shadow-md transition-all"
+              >
+                Browse Markets
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-neutral-300 text-neutral-800 hover:bg-neutral-100 px-10 py-5 text-base font-medium rounded-md transition-all"
+              >
+                View Portfolio
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                size="lg"
+                onClick={() => onOpenAuth?.("signup")}
+                className="bg-black text-white hover:bg-neutral-900 px-10 py-5 text-base font-medium rounded-md shadow-md transition-all"
+              >
+                Access Platform
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => onOpenAuth?.("signin")}
+                className="border-neutral-300 text-neutral-800 hover:bg-neutral-100 px-10 py-5 text-base font-medium rounded-md transition-all"
+              >
+                Sign In
+              </Button>
+            </>
+          )}
+        </motion.div>
       </div>
     </section>
   );
-} 
+}
