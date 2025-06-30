@@ -101,28 +101,16 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   };
 
   const handlePlaceOrder = async () => {
-    console.log('🚀 Place Order clicked!', { 
-      selectedSide,
-      price,
-      quantity,
-      totalCost,
-      userPayPrice,
-      marketPrices: { yes: market.yesPrice, no: market.noPrice }
-    });
-
     // Validation checks
     if (isMarketInactive) {
-      console.log('❌ Market inactive, stopping order placement');
       return;
     }
 
     if (balance && totalCost > balance.available_balance) {
-      console.log('❌ Insufficient balance, stopping order placement');
       return;
     }
 
     if (!balance) {
-      console.log('⏳ Balance not loaded yet, cannot place order');
       return;
     }
 
@@ -135,7 +123,6 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
         quantity: quantity
       };
 
-      console.log('📤 Sending order to API...', orderData);
       const newOrder = await placeOrder(orderData);
 
       // Call callbacks
