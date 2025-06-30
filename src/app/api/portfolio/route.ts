@@ -1,3 +1,5 @@
+"use strict";
+
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
@@ -13,17 +15,49 @@ const serviceRoleClient = createClient(
   }
 )
 
+// Helper function to get date range based on timeframe
+function getDateRange(timeframe: string): { start: Date, end: Date } {
+  const end = new Date();
+  let start = new Date();
+
+  switch (timeframe) {
+    case '1D':
+      start.setDate(end.getDate() - 1);
+      break;
+    case '1W':
+      start.setDate(end.getDate() - 7);
+      break;
+    case '1M':
+      start.setMonth(end.getMonth() - 1);
+      break;
+    case '3M':
+      start.setMonth(end.getMonth() - 3);
+      break;
+    case '1Y':
+      start.setFullYear(end.getFullYear() - 1);
+      break;
+    default: // ALL
+      start = new Date(0); // Beginning of time
+  }
+
+  return { start, end };
+}
+
 async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
   try {
     const { searchParams } = new URL(request.url)
     
     const includeHistory = searchParams.get('include_history') === 'true'
     const historyLimit = parseInt(searchParams.get('history_limit') || '20')
+    const timeframe = searchParams.get('timeframe') || 'ALL'
 
     // Validate history limit
     if (historyLimit < 1 || historyLimit > 100) {
       return NextResponse.json({ error: 'History limit must be between 1 and 100' }, { status: 400 })
     }
+
+    // Get date range for filtering
+    const { start, end } = getDateRange(timeframe)
 
     // Get existing user balance or create new one if not exists
     let { data: userBalance, error: balanceError } = await serviceRoleClient
@@ -63,7 +97,7 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       return NextResponse.json({ error: 'Failed to initialize user balance' }, { status: 500 })
     }
 
-    // Fetch all orders (both filled and open) to get complete portfolio picture
+    // Fetch all orders within the time range
     const { data: positions, error: positionsError } = await serviceRoleClient
       .from('orders')
       .select(`
@@ -81,6 +115,8 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       `)
       .eq('user_id', user.id)
       .in('status', ['filled', 'partial', 'open'])
+      .gte('created_at', start.toISOString())
+      .lte('created_at', end.toISOString())
       .order('updated_at', { ascending: false })
 
     if (positionsError) {
@@ -176,6 +212,8 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
         `)
         .eq('user_id', user.id)
         .gt('filled_quantity', 0)
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString())
         .order('created_at', { ascending: false })
         .limit(historyLimit)
 
@@ -208,7 +246,8 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
         totalInvested,
         totalUnrealizedPnL,
         totalRealizedPnL,
-        winRate
+        winRate,
+        timeframe // Include the timeframe in the response
       },
       history: includeHistory ? tradeHistory : undefined
     })

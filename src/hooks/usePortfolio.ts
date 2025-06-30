@@ -74,6 +74,7 @@ export interface Portfolio {
 interface UsePortfolioOptions {
   includeHistory?: boolean;
   historyLimit?: number;
+  timeframe?: '1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL';
   autoRefresh?: boolean;
   refreshInterval?: number; // in milliseconds
 }
@@ -82,7 +83,8 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
   const {
     includeHistory = false,
     historyLimit = 20,
-    autoRefresh = false,
+    timeframe = 'ALL',
+    autoRefresh = true,
     refreshInterval = 30000 // 30 seconds
   } = options;
 
@@ -103,6 +105,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     };
   }, [session]);
 
+  // Fetch portfolio data
   const fetchPortfolio = useCallback(async () => {
     if (!user || !session) {
       setError('User not authenticated');
@@ -120,6 +123,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
         params.append('include_history', 'true');
         params.append('history_limit', historyLimit.toString());
       }
+      params.append('timeframe', timeframe);
 
       const response = await fetch(`/api/portfolio?${params.toString()}`, {
         method: 'GET',
@@ -145,7 +149,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [user, session, includeHistory, historyLimit, getAuthHeaders]);
+  }, [user, session, includeHistory, historyLimit, timeframe, getAuthHeaders]);
 
   // Refresh portfolio data
   const refresh = useCallback(() => {
