@@ -44,6 +44,8 @@ export interface TradeHistory {
   quantity: number;
   price: number;
   pnl: number;
+  volume: number;
+  totalValue: number;
   createdAt: string;
 }
 
@@ -67,6 +69,7 @@ export interface Portfolio {
     totalUnrealizedPnL: number;
     totalRealizedPnL: number;
     winRate: number;
+    volume: number;
   };
   history?: TradeHistory[];
 }
@@ -82,7 +85,7 @@ interface UsePortfolioOptions {
 export function usePortfolio(options: UsePortfolioOptions = {}) {
   const {
     includeHistory = false,
-    historyLimit = 20,
+    historyLimit = 100, // Increased default limit for charts
     timeframe = 'ALL',
     autoRefresh = true,
     refreshInterval = 30000 // 30 seconds
@@ -213,6 +216,16 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     return portfolio.summary.winRate || 0;
   };
 
+  const getChartData = () => {
+    if (!portfolio?.history) return [];
+    return portfolio.history.map(trade => ({
+      date: new Date(trade.createdAt).toISOString(),
+      totalValue: trade.totalValue || 0,
+      pnl: trade.pnl || 0,
+      volume: trade.volume || 0
+    }));
+  };
+
   return {
     // Core data
     portfolio,
@@ -236,6 +249,7 @@ export function usePortfolio(options: UsePortfolioOptions = {}) {
     getResolvedPositions,
     getPositionByMarket,
     getWinRate,
+    getChartData,
     
     // Computed values
     hasData: !!portfolio,

@@ -43,62 +43,96 @@ function getDateRange(timeframe: string): { start: Date, end: Date } {
   return { start, end };
 }
 
+// Helper function to calculate position value at a point in time
+function calculatePositionValue(trades: any[], marketData: any, timestamp: Date) {
+  const relevantTrades = trades.filter(t => new Date(t.created_at) <= timestamp);
+  
+  if (relevantTrades.length === 0) return 0;
+
+  let yesShares = 0;
+  let noShares = 0;
+  let totalInvested = 0;
+
+  relevantTrades.forEach(trade => {
+    if (trade.side === 'YES') {
+      yesShares += trade.filled_quantity || 0;
+    } else {
+      noShares += trade.filled_quantity || 0;
+    }
+    totalInvested += (trade.filled_quantity || 0) * (trade.price / 100);
+  });
+
+  // For resolved markets
+  if (marketData.status === 'resolved' && marketData.actual_outcome) {
+    const winningShares = marketData.actual_outcome === 'YES' ? yesShares : noShares;
+    return winningShares - totalInvested; // P&L
+  }
+
+  // For active markets
+  const totalVolume = (marketData.total_yes_volume || 0) + (marketData.total_no_volume || 0);
+  const currentYesPrice = totalVolume > 0 
+    ? (marketData.total_yes_volume || 0) / totalVolume * 100 
+    : 50;
+  const currentNoPrice = 100 - currentYesPrice;
+
+  const yesValue = yesShares * (currentYesPrice / 100);
+  const noValue = noShares * (currentNoPrice / 100);
+  const currentValue = yesValue + noValue;
+  
+  return currentValue - totalInvested; // P&L
+}
+
 async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
   try {
     const { searchParams } = new URL(request.url)
     
     const includeHistory = searchParams.get('include_history') === 'true'
-    const historyLimit = parseInt(searchParams.get('history_limit') || '20')
+    const historyLimit = parseInt(searchParams.get('history_limit') || '100')
     const timeframe = searchParams.get('timeframe') || 'ALL'
 
     // Validate history limit
-    if (historyLimit < 1 || historyLimit > 100) {
-      return NextResponse.json({ error: 'History limit must be between 1 and 100' }, { status: 400 })
+    if (historyLimit < 1 || historyLimit > 1000) {
+      return NextResponse.json({ error: 'History limit must be between 1 and 1000' }, { status: 400 })
     }
 
-    // Get date range for filtering
-    const { start, end } = getDateRange(timeframe)
+    // Get user creation date for proper filtering
+    const { data: userData, error: userError } = await serviceRoleClient
+      .from('auth.users')
+      .select('created_at')
+      .eq('id', user.id)
+      .single()
 
-    // Get existing user balance or create new one if not exists
-    let { data: userBalance, error: balanceError } = await serviceRoleClient
+    if (userError) {
+      console.error('Error fetching user data:', userError)
+    }
+
+    const userCreatedAt = userData?.created_at ? new Date(userData.created_at) : new Date('2025-06-25') // fallback
+    console.log(`User ${user.email} created at:`, userCreatedAt.toISOString())
+
+    // Get date range for filtering, but never go before user creation
+    const { start: timeframeStart, end } = getDateRange(timeframe)
+    const start = timeframeStart < userCreatedAt ? userCreatedAt : timeframeStart
+    
+    console.log(`Date range for timeframe ${timeframe}:`, { 
+      start: start.toISOString(), 
+      end: end.toISOString(),
+      userCreated: userCreatedAt.toISOString()
+    })
+
+    // Get user balance
+    const { data: userBalance, error: balanceError } = await serviceRoleClient
       .from('user_balances')
       .select('*')
       .eq('user_id', user.id)
       .single()
 
-    // Only create new record if user doesn't exist, don't overwrite existing data
-    if (balanceError && balanceError.code === 'PGRST116') {
-      const { data: newBalance, error: insertError } = await serviceRoleClient
-        .from('user_balances')
-        .insert({
-          user_id: user.id,
-          available_balance: 1000,
-          locked_balance: 0,
-          total_deposited: 1000,
-          total_withdrawn: 0,
-          total_trades: 0,
-          winning_trades: 0,
-          total_volume: 0,
-          total_profit_loss: 0
-        })
-        .select('*')
-        .single()
-
-      if (insertError) {
-        console.error('Error creating user balance:', { error: insertError, userId: user.id, email: user.email })
-        return NextResponse.json({ error: 'Failed to create user balance' }, { status: 500 })
-      }
-      userBalance = newBalance
-      balanceError = null
-    }
-
     if (balanceError) {
-      console.error('Error initializing user balance:', { error: balanceError, userId: user.id, email: user.email })
-      return NextResponse.json({ error: 'Failed to initialize user balance' }, { status: 500 })
+      console.error('Error fetching user balance:', { error: balanceError, userId: user.id, email: user.email })
+      return NextResponse.json({ error: 'Failed to fetch user balance' }, { status: 500 })
     }
 
-    // Fetch all orders within the time range
-    const { data: positions, error: positionsError } = await serviceRoleClient
+    // Fetch all orders for history (don't filter by timeframe for complete chart data)
+    const { data: allOrders, error: allOrdersError } = await serviceRoleClient
       .from('orders')
       .select(`
         *,
@@ -114,20 +148,46 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
         )
       `)
       .eq('user_id', user.id)
-      .in('status', ['filled', 'partial', 'open'])
-      .gte('created_at', start.toISOString())
-      .lte('created_at', end.toISOString())
-      .order('updated_at', { ascending: false })
+      .gte('created_at', userCreatedAt.toISOString()) // Filter out orders before user creation
+      .order('created_at', { ascending: true })
 
-    if (positionsError) {
-      console.error('Error fetching positions:', positionsError)
-      return NextResponse.json({ error: 'Failed to fetch positions' }, { status: 500 })
+    if (allOrdersError) {
+      console.error('Error fetching all orders:', allOrdersError)
+      return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 })
     }
 
-    // Calculate current positions by market
+    // Debug logging
+    console.log(`Found ${allOrders?.length || 0} total orders for user ${user.email} (after ${userCreatedAt.toDateString()})`)
+    if (allOrders && allOrders.length > 0) {
+      console.log('First order date:', allOrders[0].created_at)
+      console.log('Last order date:', allOrders[allOrders.length - 1].created_at)
+      console.log('Sample order:', JSON.stringify(allOrders[0], null, 2))
+    }
+
+    // For positions calculation, filter orders by timeframe
+    const orders = allOrders?.filter(order => {
+      const orderDate = new Date(order.updated_at);
+      return orderDate >= start && orderDate <= end;
+    }) || [];
+
+    // Calculate positions and P&L for the time period
     const positionsByMarket = new Map()
+    let periodTotalTrades = 0
+    let periodWinningTrades = 0
+    let periodTotalVolume = 0
     
-    positions?.forEach(order => {
+    // Group orders by market for P&L calculation
+    const ordersByMarket = new Map()
+    orders?.forEach(order => {
+      if (!ordersByMarket.has(order.market_id)) {
+        ordersByMarket.set(order.market_id, [])
+      }
+      ordersByMarket.get(order.market_id).push(order)
+    })
+    
+    orders?.forEach(order => {
+      if (order.status !== 'filled') return // Only consider filled orders
+      
       const marketId = order.market_id
       if (!positionsByMarket.has(marketId)) {
         positionsByMarket.set(marketId, {
@@ -141,105 +201,134 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
           noShares: 0,
           totalInvested: 0,
           unrealizedPnL: 0,
-          realizedPnL: 0
+          realizedPnL: 0,
+          trades: [] // Track individual trades for P&L calculation
         })
       }
 
       const position = positionsByMarket.get(marketId)
       
-      // For filled/partial orders, use filled_quantity; for open orders, use full quantity
-      const effectiveQuantity = order.status === 'open' ? order.quantity : order.filled_quantity
-      const investedAmount = order.status === 'open' 
-        ? order.quantity * order.price / 100  // Full order value for open orders
-        : order.filled_quantity * order.price / 100  // Only filled portion for completed orders
+      // Calculate effective quantity and investment
+      const effectiveQuantity = order.filled_quantity || 0
+      const investedAmount = effectiveQuantity * order.price / 100
 
+      // Update position
       if (order.side === 'YES') {
         position.yesShares += effectiveQuantity
       } else {
         position.noShares += effectiveQuantity
       }
       position.totalInvested += investedAmount
+      position.trades.push({
+        side: order.side,
+        quantity: effectiveQuantity,
+        price: order.price,
+        amount: investedAmount,
+        created_at: order.created_at
+      })
 
-      // Calculate current market price based on volume
-      const totalVolume = (order.markets?.total_yes_volume || 0) + (order.markets?.total_no_volume || 0)
-      const currentYesPrice = totalVolume > 0 
-        ? (order.markets?.total_yes_volume || 0) / totalVolume * 100 
-        : 50
+      // Update period statistics
+      periodTotalTrades++
+      periodTotalVolume += investedAmount
 
-      // Calculate unrealized P&L for active markets
-      if (order.markets?.status === 'active') {
-        const yesValue = position.yesShares * currentYesPrice / 100
-        const noValue = position.noShares * (100 - currentYesPrice) / 100
-        position.unrealizedPnL = (yesValue + noValue) - position.totalInvested
-      }
-
-      // Calculate realized P&L for resolved markets
+      // Calculate if this was a winning trade for resolved markets
       if (order.markets?.status === 'resolved' && order.markets?.actual_outcome) {
-        const winningShares = order.markets.actual_outcome === 'YES' 
-          ? position.yesShares 
-          : position.noShares
-        position.realizedPnL = winningShares - position.totalInvested
-        position.unrealizedPnL = 0 // No unrealized P&L for resolved markets
+        const isWinningTrade = order.side === order.markets.actual_outcome
+        if (isWinningTrade) {
+          periodWinningTrades++
+        }
       }
     })
 
+    // Calculate final P&L for each position
+    for (const position of positionsByMarket.values()) {
+      const market = orders?.find(o => o.market_id === position.marketId)?.markets
+      if (!market) continue
+
+      if (market.status === 'active') {
+        // For active markets, calculate P&L based on current market prices
+        const totalVolume = (market.total_yes_volume || 0) + (market.total_no_volume || 0)
+        const currentYesPrice = totalVolume > 0 
+          ? (market.total_yes_volume || 0) / totalVolume * 100 
+          : 50
+        const currentNoPrice = 100 - currentYesPrice
+
+        // Calculate unrealized P&L
+        const yesValue = position.yesShares * currentYesPrice / 100
+        const noValue = position.noShares * currentNoPrice / 100
+        const currentValue = yesValue + noValue
+        position.unrealizedPnL = currentValue - position.totalInvested
+        position.realizedPnL = 0
+      } else if (market.status === 'resolved' && market.actual_outcome) {
+        // For resolved markets, calculate realized P&L
+        const winningShares = market.actual_outcome === 'YES' ? position.yesShares : position.noShares
+        const winningValue = winningShares // Each winning share is worth ₹1
+        position.realizedPnL = winningValue - position.totalInvested
+        position.unrealizedPnL = 0
+      }
+    }
+
     const portfolioPositions = Array.from(positionsByMarket.values())
 
-    // Calculate portfolio summary
+    // Calculate period summary
     const totalUnrealizedPnL = portfolioPositions.reduce((sum, pos) => sum + pos.unrealizedPnL, 0)
     const totalRealizedPnL = portfolioPositions.reduce((sum, pos) => sum + pos.realizedPnL, 0)
     const totalInvested = portfolioPositions.reduce((sum, pos) => sum + pos.totalInvested, 0)
     
-    // Calculate total portfolio value: available + locked + unrealized P&L
-    const totalValue = (userBalance.available_balance || 0) + (userBalance.locked_balance || 0) + totalUnrealizedPnL
-
-    // Fetch trade history if requested (from filled orders since we don't have matched trades yet)
-    let tradeHistory = []
-    if (includeHistory) {
-      const { data: orderHistory, error: orderError } = await serviceRoleClient
-        .from('orders')
-        .select(`
-          id,
-          market_id,
-          side,
-          price,
-          filled_quantity,
-          created_at,
-          markets:market_id (
-            title,
-            category
-          )
-        `)
-        .eq('user_id', user.id)
-        .gt('filled_quantity', 0)
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(historyLimit)
-
-      if (!orderError && orderHistory) {
-        tradeHistory = orderHistory.map(order => ({
-          id: order.id,
-          marketId: order.market_id,
-          marketTitle: order.markets?.title,
-          marketCategory: order.markets?.category,
-          side: order.side,
-          quantity: order.filled_quantity,
-          price: order.price,
-          pnl: 0, // TODO: Calculate actual P&L when positions are closed
-          createdAt: order.created_at
-        }))
-      }
-    }
-
-    // Calculate win rate from user balance stats (more reliable than individual trades)
-    const winRate = userBalance.total_trades > 0 
-      ? (userBalance.winning_trades / userBalance.total_trades) * 100 
+    // Calculate period win rate
+    const winRate = periodTotalTrades > 0 
+      ? (periodWinningTrades / periodTotalTrades) * 100 
       : 0
 
+    // Calculate total value (invested + unrealized P&L)
+    const totalValue = totalInvested + totalUnrealizedPnL
+
+    // Prepare history data for charts (use all orders for complete history)
+    const historyData = allOrders
+      ?.filter(o => o.status === 'filled')
+      .map(order => {
+        // Calculate P&L for this individual trade
+        const tradeValue = (order.filled_quantity || 0) * order.price / 100;
+        
+        // For now, use simplified P&L calculation
+        // TODO: This should be more sophisticated based on market resolution
+        let tradePnL = 0;
+        const market = order.markets;
+        
+        if (market?.status === 'resolved' && market?.actual_outcome) {
+          // For resolved markets, calculate actual P&L
+          const isWinner = order.side === market.actual_outcome;
+          tradePnL = isWinner ? (order.filled_quantity || 0) - tradeValue : -tradeValue;
+        } else {
+          // For active markets, show investment as negative P&L for now
+          tradePnL = -tradeValue;
+        }
+
+        return {
+          id: order.id,
+          marketId: order.market_id,
+          marketTitle: order.markets?.title || 'Unknown Market',
+          marketCategory: order.markets?.category || 'other',
+          side: order.side,
+          quantity: order.filled_quantity || 0,
+          price: order.price,
+          volume: tradeValue,
+          pnl: tradePnL,
+          totalValue: tradeValue, // This will be recalculated cumulatively in frontend
+          createdAt: order.created_at
+        };
+      }) || [];
+
     // Return the response
-    return NextResponse.json({
-      balance: userBalance,
+    const response = {
+      balance: {
+        ...userBalance,
+        // Override with period-specific stats
+        total_trades: periodTotalTrades,
+        winning_trades: periodWinningTrades,
+        total_volume: periodTotalVolume,
+        total_profit_loss: totalRealizedPnL + totalUnrealizedPnL
+      },
       positions: portfolioPositions,
       summary: {
         totalValue,
@@ -247,17 +336,29 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
         totalUnrealizedPnL,
         totalRealizedPnL,
         winRate,
-        timeframe // Include the timeframe in the response
+        volume: periodTotalVolume
       },
-      history: includeHistory ? tradeHistory : undefined
-    })
+      history: historyData
+    };
+
+    console.log('API Response Summary:', {
+      historyCount: historyData.length,
+      totalTrades: periodTotalTrades,
+      totalValue: totalValue,
+      totalPnL: totalRealizedPnL + totalUnrealizedPnL,
+      winRate: winRate,
+      activePositions: portfolioPositions.filter(p => p.marketStatus === 'active').length,
+      availableBalance: userBalance.available_balance
+    });
+
+    return NextResponse.json(response)
 
   } catch (error) {
-    console.error('Unexpected error in portfolio handler:', error)
-    return NextResponse.json({ 
-      error: 'An unexpected error occurred',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    console.error('Portfolio handler error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' }, 
+      { status: 500 }
+    )
   }
 }
 
