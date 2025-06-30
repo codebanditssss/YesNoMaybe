@@ -25,31 +25,45 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       return NextResponse.json({ error: 'History limit must be between 1 and 100' }, { status: 400 })
     }
 
-    // Get or initialize user balance using service role client to bypass RLS
-    const { data: userBalance, error: balanceError } = await serviceRoleClient
+    // Get existing user balance or create new one if not exists
+    let { data: userBalance, error: balanceError } = await serviceRoleClient
       .from('user_balances')
-      .upsert({
-        user_id: user.id,
-        available_balance: 1000,
-        locked_balance: 0,
-        total_deposited: 0,
-        total_withdrawn: 0,
-        total_trades: 0,
-        winning_trades: 0,
-        total_volume: 0,
-        total_profit_loss: 0
-      }, {
-        onConflict: 'user_id'
-      })
       .select('*')
+      .eq('user_id', user.id)
       .single()
+
+    // Only create new record if user doesn't exist, don't overwrite existing data
+    if (balanceError && balanceError.code === 'PGRST116') {
+      const { data: newBalance, error: insertError } = await serviceRoleClient
+        .from('user_balances')
+        .insert({
+          user_id: user.id,
+          available_balance: 1000,
+          locked_balance: 0,
+          total_deposited: 1000,
+          total_withdrawn: 0,
+          total_trades: 0,
+          winning_trades: 0,
+          total_volume: 0,
+          total_profit_loss: 0
+        })
+        .select('*')
+        .single()
+
+      if (insertError) {
+        console.error('Error creating user balance:', { error: insertError, userId: user.id, email: user.email })
+        return NextResponse.json({ error: 'Failed to create user balance' }, { status: 500 })
+      }
+      userBalance = newBalance
+      balanceError = null
+    }
 
     if (balanceError) {
       console.error('Error initializing user balance:', { error: balanceError, userId: user.id, email: user.email })
       return NextResponse.json({ error: 'Failed to initialize user balance' }, { status: 500 })
     }
 
-    // Fetch active positions (orders that have been partially or fully filled)
+    // Fetch all orders (both filled and open) to get complete portfolio picture
     const { data: positions, error: positionsError } = await serviceRoleClient
       .from('orders')
       .select(`
@@ -66,7 +80,7 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
         )
       `)
       .eq('user_id', user.id)
-      .gt('filled_quantity', 0)
+      .in('status', ['filled', 'partial', 'open'])
       .order('updated_at', { ascending: false })
 
     if (positionsError) {
@@ -96,12 +110,17 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       }
 
       const position = positionsByMarket.get(marketId)
-      const investedAmount = order.filled_quantity * order.price / 100
+      
+      // For filled/partial orders, use filled_quantity; for open orders, use full quantity
+      const effectiveQuantity = order.status === 'open' ? order.quantity : order.filled_quantity
+      const investedAmount = order.status === 'open' 
+        ? order.quantity * order.price / 100  // Full order value for open orders
+        : order.filled_quantity * order.price / 100  // Only filled portion for completed orders
 
       if (order.side === 'YES') {
-        position.yesShares += order.filled_quantity
+        position.yesShares += effectiveQuantity
       } else {
-        position.noShares += order.filled_quantity
+        position.noShares += effectiveQuantity
       }
       position.totalInvested += investedAmount
 
@@ -134,7 +153,9 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
     const totalUnrealizedPnL = portfolioPositions.reduce((sum, pos) => sum + pos.unrealizedPnL, 0)
     const totalRealizedPnL = portfolioPositions.reduce((sum, pos) => sum + pos.realizedPnL, 0)
     const totalInvested = portfolioPositions.reduce((sum, pos) => sum + pos.totalInvested, 0)
-    const totalValue = totalInvested + totalUnrealizedPnL + totalRealizedPnL
+    
+    // Calculate total portfolio value: available + locked + unrealized P&L
+    const totalValue = (userBalance.available_balance || 0) + (userBalance.locked_balance || 0) + totalUnrealizedPnL
 
     // Fetch trade history if requested (from filled orders since we don't have matched trades yet)
     let tradeHistory = []
