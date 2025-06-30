@@ -4,7 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useMarkets } from "@/hooks/useMarkets";
-import { useTradeHistory, type TradeHistoryEntry } from "@/hooks/useTradeHistory";
+import { Portfolio } from "./Portfolio";
+import { Markets } from "./Markets";
+import { useState } from "react";
+
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -28,6 +31,7 @@ import {
 
 export function Dashboard() {
   const { user } = useAuth();
+  const [activeView, setActiveView] = useState<'dashboard' | 'portfolio' | 'markets'>('dashboard');
 
   // Fetch real portfolio data
   const { 
@@ -55,16 +59,7 @@ export function Dashboard() {
     limit: 8
   });
 
-  // Fetch recent trade history
-  const {
-    trades: recentTrades,
-    loading: tradesLoading,
-    error: tradesError,
-    refresh: refreshTrades
-  } = useTradeHistory({
-    limit: 10,
-    autoRefresh: true
-  });
+
 
   // Calculate derived values
   const totalPnL = getTotalPnL ? getTotalPnL() : 0;
@@ -140,27 +135,27 @@ export function Dashboard() {
     id: market.id
   }));
 
-  // Trading activity
-  const tradingActivity = recentTrades.slice(0, 8).map((trade: TradeHistoryEntry) => ({
-    id: trade.id,
-    type: trade.side || 'Trade',
-    market: trade.marketTitle || 'Unknown Market',
-    quantity: trade.quantity || 0,
-    price: `₹${(trade.price || 0).toFixed(2)}`,
-    total: `₹${((trade.price || 0) * (trade.quantity || 0)).toLocaleString()}`,
-    time: trade.timestamp ? new Date(trade.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--',
-    date: trade.timestamp ? new Date(trade.timestamp).toLocaleDateString() : '--',
-    status: trade.status === 'filled' ? 'Executed' : trade.status === 'cancelled' ? 'Cancelled' : 'Pending'
-  }));
 
-  const isLoading = portfolioLoading || marketsLoading || tradesLoading;
-  const hasError = portfolioError || marketsError || tradesError;
+
+  const isLoading = portfolioLoading || marketsLoading;
+  const hasError = portfolioError || marketsError;
   const hasActivePositions = transformedActivePositions.length > 0;
 
   const handleRefreshAll = () => {
     refreshPortfolio();
     refreshMarkets();
-    refreshTrades();
+  };
+
+  const navigateToMarkets = () => {
+    setActiveView('markets');
+  };
+
+  const navigateToPortfolio = () => {
+    setActiveView('portfolio');
+  };
+
+  const navigateToDashboard = () => {
+    setActiveView('dashboard');
   };
 
   if (isLoading) {
@@ -188,7 +183,7 @@ export function Dashboard() {
               <div>
                 <h3 className="text-sm font-medium text-red-800">Error loading dashboard</h3>
                 <p className="text-sm text-red-600 mt-1">
-                  {portfolioError || marketsError || tradesError}
+                  {portfolioError || marketsError}
                 </p>
               </div>
               <Button
@@ -207,13 +202,64 @@ export function Dashboard() {
     );
   }
 
+  // Render different views based on activeView
+  if (activeView === 'portfolio') {
+    return (
+      <div className="p-2 sm:p-4 bg-white min-h-screen">
+        <div className="w-full flex flex-col space-y-2 sm:space-y-4">
+          {/* Header with back button */}
+          <div className="flex items-center justify-between border-b border-gray-200 pb-3 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={navigateToDashboard}
+                variant="ghost"
+                size="sm"
+              >
+                ← Back to Dashboard
+              </Button>
+              <div>
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Portfolio</h1>
+              </div>
+            </div>
+          </div>
+          <Portfolio />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeView === 'markets') {
+    return (
+      <div className="p-2 sm:p-4 bg-white min-h-screen">
+        <div className="w-full flex flex-col space-y-2 sm:space-y-4">
+          {/* Header with back button */}
+          <div className="flex items-center justify-between border-b border-gray-200 pb-3 flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={navigateToDashboard}
+                variant="ghost"
+                size="sm"
+              >
+                ← Back to Dashboard
+              </Button>
+              <div>
+                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Markets</h1>
+              </div>
+            </div>
+          </div>
+          <Markets />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto flex flex-col space-y-4">
+    <div className="p-2 sm:p-4 bg-white min-h-screen">
+      <div className="w-full flex flex-col space-y-2 sm:space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200 pb-3 flex-shrink-0">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
               Portfolio Dashboard
             </h1>
             <p className="text-sm text-gray-600 mt-0.5">
@@ -231,11 +277,11 @@ export function Dashboard() {
         </div>
 
         {/* Portfolio Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 flex-shrink-0">
           {portfolioStats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card key={index} className="p-3 bg-white border border-gray-200">
+              <Card key={index} className="p-2 sm:p-3 bg-white border border-gray-200">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Icon className="h-4 w-4 text-gray-600" />
@@ -248,7 +294,7 @@ export function Dashboard() {
                     {stat.change}
                   </div>
                 </div>
-                <div className="text-lg font-semibold text-gray-900 mb-1">{stat.value}</div>
+                <div className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{stat.value}</div>
                 <div className="text-xs text-gray-500">{stat.description}</div>
               </Card>
             );
@@ -259,14 +305,14 @@ export function Dashboard() {
         <div className="flex-1">
           {hasActivePositions ? (
             /* Layout with Active Positions */
-            <div className="grid lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4">
               {/* Active Positions */}
               <div className="lg:col-span-2">
                 <Card className="bg-white border border-gray-200">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-900">Active Positions</h2>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={navigateToPortfolio}>
                         <ExternalLink className="h-4 w-4 text-blue-600" />
                       </Button>
                     </div>
@@ -316,7 +362,7 @@ export function Dashboard() {
               </div>
 
               {/* Right Sidebar */}
-              <div className="space-y-5">
+              <div className="space-y-2 sm:space-y-4">
                 {/* Market Opportunities */}
                 <Card className="bg-white border border-gray-200 rounded-xl shadow-sm transition-shadow hover:shadow-lg">
                   <div className="p-4 border-b border-gray-100 flex-shrink-0 flex items-center justify-between">
@@ -324,7 +370,7 @@ export function Dashboard() {
                       <div className="w-1.5 h-6 rounded-full mr-2"></div>
                       <h3 className="text-lg font-bold text-gray-900 tracking-tight">Market Opportunities</h3>
                     </div>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" onClick={navigateToMarkets}>
                       <ExternalLink className="h-5 w-5 text-blue-600" />
                     </Button>
                   </div>
@@ -355,20 +401,16 @@ export function Dashboard() {
                                 {market.change}
                               </div>
                             </div>
-                            <div className="flex gap-2 mt-2">
-                              <Button 
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-semibold rounded-lg shadow"
-                                size="sm"
-                              >
-                                YES ₹{market.yesPrice.toFixed(1)}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                className="border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 text-sm font-semibold rounded-lg"
-                                size="sm"
-                              >
-                                NO ₹{market.noPrice.toFixed(1)}
-                              </Button>
+                            <div className="flex gap-2 mt-2 text-xs text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <span className="text-blue-600 font-medium">YES</span>
+                                <span>₹{market.yesPrice.toFixed(1)}</span>
+                              </div>
+                              <span>•</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-600 font-medium">NO</span>
+                                <span>₹{market.noPrice.toFixed(1)}</span>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -382,54 +424,14 @@ export function Dashboard() {
                   </div>
                 </Card>
 
-                {/* Recent Trading Activity */}
-                <Card className="bg-white border border-gray-200">
-                  <div className="p-3 border-b border-gray-100 flex-shrink-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 flex-1 overflow-y-auto">
-                    {tradingActivity.length > 0 ? (
-                      <div className="space-y-1">
-                        {tradingActivity.map((trade, index) => (
-                          <div key={index} className="flex items-center justify-between text-xs border-b border-gray-50 last:border-b-0 pb-1 last:pb-0">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                                  trade.type === 'YES' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                                }`}>
-                                  {trade.type}
-                                </span>
-                                <span className="text-gray-900 font-medium">{trade.quantity}</span>
-                              </div>
-                              <p className="text-gray-600 truncate max-w-[140px]">
-                                {trade.market.length > 25 ? trade.market.substring(0, 25) + '...' : trade.market}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-gray-900 font-medium">{trade.total}</div>
-                              <div className="text-gray-500">{trade.time}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <Activity className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                        <p className="text-gray-600 text-sm">No recent activity</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
+
               </div>
             </div>
           ) : (
             /* Layout without Active Positions - Better Space Utilization */
-            <div className="grid lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
               {/* Left Column - Portfolio Summary & Market Overview */}
-              <div className="space-y-4">
+              <div className="space-y-2 sm:space-y-4">
                 {/* Portfolio Summary */}
                 <Card className="bg-white border border-gray-200 flex-shrink-0">
                   <div className="p-3 border-b border-gray-100">
@@ -472,7 +474,7 @@ export function Dashboard() {
                         <BarChart3 className="h-5 w-5 text-gray-600" />
                         <h3 className="text-lg font-semibold text-gray-900">Market Overview</h3>
                       </div>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={navigateToMarkets}>
                         <ExternalLink className="h-4 w-4 text-blue-600" />
                       </Button>
                     </div>
@@ -500,12 +502,14 @@ export function Dashboard() {
                                 {market.change}
                               </div>
                             </div>
-                            <div className="flex gap-2">
-                              <div className="flex-1 text-center py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
-                                YES ₹{market.yesPrice.toFixed(1)}
+                            <div className="flex gap-3 text-xs text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <span className="text-blue-600 font-medium">YES</span>
+                                <span>₹{market.yesPrice.toFixed(1)}</span>
                               </div>
-                              <div className="flex-1 text-center py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium">
-                                NO ₹{market.noPrice.toFixed(1)}
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-600 font-medium">NO</span>
+                                <span>₹{market.noPrice.toFixed(1)}</span>
                               </div>
                             </div>
                           </div>
@@ -522,55 +526,8 @@ export function Dashboard() {
               </div>
 
               {/* Right Column */}
-              <div className="space-y-4">
-                {/* Recent Trading Activity */}
-                <Card className="bg-white border border-gray-200">
-                  <div className="p-3 border-b border-gray-100 flex-shrink-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-5 w-5 text-gray-600" />
-                        <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4 text-blue-600" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 flex-1 overflow-y-auto">
-                    {tradingActivity.length > 0 ? (
-                      <div className="space-y-1">
-                        {tradingActivity.map((trade, index) => (
-                          <div key={index} className="flex items-center justify-between p-2 border border-gray-100 rounded-lg">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                  trade.type === 'YES' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                                }`}>
-                                  {trade.type}
-                                </span>
-                                <span className="text-sm font-medium text-gray-900">{trade.quantity}</span>
-                              </div>
-                              <p className="text-xs text-gray-600 truncate">
-                                {trade.market.length > 30 ? trade.market.substring(0, 30) + '...' : trade.market}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm font-medium text-gray-900">{trade.total}</div>
-                              <div className="text-xs text-gray-500">{trade.time}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6">
-                        <Activity className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-600">No recent activity</p>
-                        <p className="text-xs text-gray-500 mt-1">Your trades will appear here</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
+              <div className="space-y-2 sm:space-y-4">
+
 
                 {/* Trading Tips */}
                 <Card className="bg-white border border-gray-200 flex-shrink-0">
