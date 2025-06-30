@@ -260,21 +260,21 @@ export function Dashboard() {
           {hasActivePositions ? (
             /* Layout with Active Positions */
             <div className="grid lg:grid-cols-3 gap-4 h-full">
-              {/* Active Positions */}
+          {/* Active Positions */}
               <div className="lg:col-span-2 h-full">
                 <Card className="bg-white border border-gray-200 h-full flex flex-col">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
-                    <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-900">Active Positions</h2>
                       <Button variant="ghost" size="sm">
                         <ExternalLink className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
+                  </Button>
+                </div>
+              </div>
+              
                   <div className="p-3 flex-1 overflow-y-auto">
                     <div className="space-y-2">
-                      {transformedActivePositions.map((position, index) => (
+                    {transformedActivePositions.map((position, index) => (
                         <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
@@ -284,7 +284,7 @@ export function Dashboard() {
                               <span className="text-sm font-medium text-gray-900">
                                 {position.title.length > 50 ? position.title.substring(0, 50) + '...' : position.title}
                               </span>
-                            </div>
+                          </div>
                             <div className="flex items-center gap-4 text-xs text-gray-600">
                               <span>{position.category}</span>
                               <span className={`px-2 py-1 rounded ${
@@ -296,21 +296,21 @@ export function Dashboard() {
                               <span>Invested: {position.invested}</span>
                             </div>
                           </div>
-                          <div className="text-right">
+                        <div className="text-right">
                             <div className={`text-sm font-semibold ${
-                              position.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {position.pnl}
+                            position.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {position.pnl}
                             </div>
                             <div className={`text-xs ${
-                              position.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {position.pnlPercent}
+                            position.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {position.pnlPercent}
                             </div>
-                          </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    ))}
+                  </div>
                   </div>
                 </Card>
               </div>
@@ -326,8 +326,8 @@ export function Dashboard() {
                         <ExternalLink className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                  
+          </div>
+
                   <div className="p-3 flex-1 overflow-y-auto">
                     {marketOpportunities.length > 0 ? (
                       <div className="space-y-2">
@@ -343,7 +343,7 @@ export function Dashboard() {
                                   <span>•</span>
                                   <span>Vol: {market.volume}</span>
                                 </div>
-                              </div>
+              </div>
                               <div className={`text-xs font-medium ${
                                 market.trend === 'up' ? 'text-green-600' : 'text-red-600'
                               }`}>
@@ -356,31 +356,31 @@ export function Dashboard() {
                               </div>
                               <div className="flex-1 text-center py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium">
                                 NO ₹{market.noPrice.toFixed(1)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                        </div>
+                        </div>
                       </div>
-                    ) : (
+                    ))}
+                  </div>
+                ) : (
                       <div className="text-center py-4">
                         <BarChart3 className="h-6 w-6 text-gray-400 mx-auto mb-2" />
                         <p className="text-gray-600 text-sm">No markets available</p>
-                      </div>
-                    )}
                   </div>
-                </Card>
+                )}
+              </div>
+            </Card>
 
                 {/* Recent Trading Activity */}
                 <Card className="bg-white border border-gray-200 flex-1 flex flex-col">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
-                    <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
                       <Button variant="ghost" size="sm">
                         <Clock className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
+                  </Button>
+                </div>
+              </div>
+              
                   <div className="p-3 flex-1 overflow-y-auto">
                     {tradingActivity.length > 0 ? (
                       <div className="space-y-1">
@@ -506,11 +506,11 @@ export function Dashboard() {
                       <div className="text-center py-6">
                         <BarChart3 className="h-8 w-8 text-gray-400 mx-auto mb-3" />
                         <p className="text-gray-600">No markets available</p>
-                      </div>
-                    )}
                   </div>
-                </Card>
+                )}
               </div>
+            </Card>
+          </div>
 
               {/* Right Column */}
               <div className="space-y-4 h-full flex flex-col">

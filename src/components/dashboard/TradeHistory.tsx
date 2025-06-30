@@ -523,9 +523,9 @@ export function TradeHistory() {
                                     <div className="flex items-center gap-1 text-gray-600">
                                       <span className="font-bold">
                                         {formatCurrency(0)}
-                                        <span className="text-xs ml-1">
+                                          <span className="text-xs ml-1">
                                           (0.0%)
-                                        </span>
+                                          </span>
                                       </span>
                                     </div>
                                   </div>

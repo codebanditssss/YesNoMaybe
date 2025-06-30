@@ -22,7 +22,6 @@ import {
   Star,
   BarChart3,
   Volume2,
-  Eye,
   AlertCircle,
   Calendar,
   DollarSign,
@@ -623,18 +622,7 @@ export function Markets() {
                               </Button>
                             </div>
                             
-                            {/* Quick Actions */}
-                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="sm" className="p-1">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="p-1">
-                                <Star className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="sm" className="p-1">
-                                <AlertCircle className="h-4 w-4" />
-                              </Button>
-                            </div>
+
                           </div>
                         </div>
                       </div>

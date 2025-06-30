@@ -81,89 +81,263 @@ async function getOrdersHandler(request: NextRequest, user: AuthenticatedUser) {
   }
 }
 
-// POST handler for placing new orders
+// Helper function to calculate order cost
+function calculateOrderCost(side: string, price: number, quantity: number): number {
+  // For YES orders: cost = price * quantity / 100 
+  // For NO orders: cost = (100 - price) * quantity / 100
+  const actualPrice = side === 'YES' ? price : (100 - price)
+  return (actualPrice * quantity) / 100
+}
+
+// Helper function to match orders
+async function findMatchingOrders(marketId: string, side: string, price: number, quantity: number) {
+  const oppositeSide = side === 'YES' ? 'NO' : 'YES'
+  
+  // For YES orders, match with NO orders where YES_price + NO_price = 100
+  // For NO orders, match with YES orders where YES_price + NO_price = 100
+  const targetPrice = 100 - price
+  
+  console.log(`🔍 Looking for ${oppositeSide} orders at price ${targetPrice} for ${side} order at ${price}`)
+  
+  const { data: matchingOrders, error } = await serviceRoleClient
+    .from('orders')
+    .select('*')
+    .eq('market_id', marketId)
+    .eq('side', oppositeSide)
+    .eq('price', targetPrice)
+    .eq('status', 'open')
+    .gt('quantity', 0)
+    .order('created_at', { ascending: true }) // First-in-first-out
+  
+  if (error) {
+    console.error('Error finding matching orders:', error)
+    return []
+  }
+  
+  console.log(`📋 Found ${matchingOrders?.length || 0} potential matches`)
+  return matchingOrders || []
+}
+
+// Helper function to execute a trade
+async function executeTrade(
+  buyOrder: any,
+  sellOrder: any,
+  tradeQuantity: number,
+  tradePrice: number,
+  marketId: string
+) {
+  console.log(`⚡ Executing trade: ${tradeQuantity} shares at ₹${tradePrice}`)
+  
+  try {
+    // Create trade record with correct status
+    const { data: trade, error: tradeError } = await serviceRoleClient
+      .from('trades')
+      .insert({
+        market_id: marketId,
+        yes_order_id: buyOrder.side === 'YES' ? buyOrder.id : sellOrder.id,
+        no_order_id: buyOrder.side === 'NO' ? buyOrder.id : sellOrder.id,
+        yes_user_id: buyOrder.side === 'YES' ? buyOrder.user_id : sellOrder.user_id,
+        no_user_id: buyOrder.side === 'NO' ? buyOrder.user_id : sellOrder.user_id,
+        quantity: tradeQuantity,
+        price: tradePrice,
+        status: 'settled' // Fixed: use 'settled' instead of 'completed'
+      })
+      .select()
+      .single()
+    
+    if (tradeError) {
+      console.error('Error creating trade:', tradeError)
+      throw tradeError
+    }
+    
+    console.log(`✅ Trade created:`, trade)
+    
+    // Calculate new filled quantities
+    const buyOrderNewFilled = buyOrder.filled_quantity + tradeQuantity
+    const sellOrderNewFilled = sellOrder.filled_quantity + tradeQuantity
+    
+    // Determine order statuses
+    const buyOrderStatus = buyOrderNewFilled >= buyOrder.quantity ? 'filled' : 'partial'
+    const sellOrderStatus = sellOrderNewFilled >= sellOrder.quantity ? 'filled' : 'partial'
+    
+    // Update filled quantities for both orders
+    const updatePromises = [
+      serviceRoleClient
+        .from('orders')
+        .update({
+          filled_quantity: buyOrderNewFilled,
+          status: buyOrderStatus
+        })
+        .eq('id', buyOrder.id),
+      
+      serviceRoleClient
+        .from('orders')
+        .update({
+          filled_quantity: sellOrderNewFilled,
+          status: sellOrderStatus
+        })
+        .eq('id', sellOrder.id)
+    ]
+    
+    await Promise.all(updatePromises)
+    
+    // Calculate unlock amounts correctly
+    const yesUser = buyOrder.side === 'YES' ? buyOrder.user_id : sellOrder.user_id
+    const noUser = buyOrder.side === 'NO' ? buyOrder.user_id : sellOrder.user_id
+    
+    // YES user pays: tradePrice * tradeQuantity / 100
+    const yesUserCost = (tradePrice * tradeQuantity) / 100
+    
+    // NO user pays: (100 - tradePrice) * tradeQuantity / 100  
+    const noUserCost = ((100 - tradePrice) * tradeQuantity) / 100
+    
+    console.log(`💰 YES user cost: ₹${yesUserCost}, NO user cost: ₹${noUserCost}`)
+    
+    // Get current balances for both users
+    const { data: currentBalances } = await serviceRoleClient
+      .from('user_balances')
+      .select('user_id, locked_balance, total_trades, total_volume')
+      .in('user_id', [yesUser, noUser])
+    
+    const yesUserBalance = currentBalances?.find(b => b.user_id === yesUser)
+    const noUserBalance = currentBalances?.find(b => b.user_id === noUser)
+    
+    if (!yesUserBalance || !noUserBalance) {
+      throw new Error('User balances not found')
+    }
+    
+    // Update user balances - unlock the correct amounts
+    const balanceUpdates = [
+      // Update YES user balance
+      serviceRoleClient
+        .from('user_balances')
+        .update({
+          locked_balance: Number(yesUserBalance.locked_balance) - yesUserCost,
+          total_trades: yesUserBalance.total_trades + 1,
+          total_volume: Number(yesUserBalance.total_volume) + tradeQuantity
+        })
+        .eq('user_id', yesUser),
+      
+      // Update NO user balance  
+      serviceRoleClient
+        .from('user_balances')
+        .update({
+          locked_balance: Number(noUserBalance.locked_balance) - noUserCost,
+          total_trades: noUserBalance.total_trades + 1,
+          total_volume: Number(noUserBalance.total_volume) + tradeQuantity
+        })
+        .eq('user_id', noUser)
+    ]
+    
+    await Promise.all(balanceUpdates)
+    
+    console.log(`💰 Updated balances - YES user unlocked ₹${yesUserCost}, NO user unlocked ₹${noUserCost}`)
+    
+    return trade
+    
+  } catch (error) {
+    console.error('Error executing trade:', error)
+    throw error
+  }
+}
+
+// POST handler for placing new orders with matching engine
 export const POST = withAuth(async (req, user) => {
   try {
     const body = await req.json()
     const { marketId, side, quantity, price } = body
 
+    // Validate required fields
     if (!marketId || !side || !quantity || !price) {
       return NextResponse.json({ 
         success: false,
-        error: 'Missing required fields' 
+        error: 'Missing required fields: marketId, side, quantity, price' 
       }, { status: 400 })
     }
 
-    console.log('Creating order with data:', {
-      marketId, 
-      userId: user.id, 
-      side, 
-      quantity, 
-      price
-    })
+    // Validate input ranges
+    if (price < 1 || price > 99) {
+      return NextResponse.json({
+        success: false,
+        error: 'Price must be between 1 and 99'
+      }, { status: 400 })
+    }
 
-    // First, ensure user balance exists using raw SQL
-    try {
-      await serviceRoleClient.rpc('exec_sql', {
-        sql: `
-          INSERT INTO user_balances (user_id, available_balance, locked_balance, total_deposited, total_profit_loss)
-          VALUES ($1, 10000, 0, 10000, 0)
-          ON CONFLICT (user_id) DO NOTHING;
-        `,
-        params: [user.id]
-      })
-    } catch (balanceError) {
-      console.log('Balance upsert attempt:', balanceError)
-      // Try with simpler approach if RPC doesn't exist
-      try {
-        await serviceRoleClient
+    if (quantity < 1 || quantity > 10000) {
+      return NextResponse.json({
+        success: false,
+        error: 'Quantity must be between 1 and 10000'
+      }, { status: 400 })
+    }
+
+    if (!['YES', 'NO'].includes(side)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Side must be YES or NO'
+      }, { status: 400 })
+    }
+
+    console.log(`🎯 Processing order: ${side} ${quantity} @ ₹${price} for market ${marketId}`)
+
+    // Step 1: Get or create user balance
+    const { data: userBalance, error: balanceError } = await serviceRoleClient
           .from('user_balances')
           .upsert({
             user_id: user.id,
-            available_balance: 10000,
+        available_balance: 10000, // Default balance for new users
             locked_balance: 0,
             total_deposited: 10000,
-            total_profit_loss: 0
+        total_profit_loss: 0,
+        total_trades: 0,
+        winning_trades: 0,
+        total_volume: 0,
+        total_withdrawn: 0
           }, {
             onConflict: 'user_id'
           })
-      } catch (upsertError) {
-        console.log('Upsert attempt:', upsertError)
-      }
+      .select()
+      .single()
+
+    if (balanceError) {
+      console.error('Error getting user balance:', balanceError)
+      return NextResponse.json({ 
+        success: false,
+        error: 'Failed to access user balance' 
+      }, { status: 500 })
     }
 
-    // Try raw SQL first, then fallback to simple approach
-    let orderResult = null
-    let orderError = null
+    // Step 2: Calculate order cost and check balance
+    const orderCost = calculateOrderCost(side, price, quantity)
+    console.log(`💰 Order cost: ₹${orderCost}, Available: ₹${userBalance.available_balance}`)
 
-    try {
-      // Try raw SQL approach
-      const orderSql = `
-        INSERT INTO orders (market_id, user_id, side, quantity, price, status, order_type, filled_quantity)
-        VALUES ($1, $2, $3, $4, $5, 'open', 'limit', 0)
-        RETURNING id, market_id, user_id, side, quantity, price, status, order_type, filled_quantity, created_at;
-      `
+    if (orderCost > userBalance.available_balance) {
+      return NextResponse.json({
+        success: false,
+        error: `Insufficient balance. Required: ₹${orderCost.toFixed(2)}, Available: ₹${userBalance.available_balance.toFixed(2)}`
+      }, { status: 400 })
+    }
 
-      const { data: sqlResult, error: sqlError } = await serviceRoleClient.rpc('exec_sql', {
-        sql: orderSql,
-        params: [
-          marketId,
-          user.id,
-          side,
-          parseInt(quantity),
-          parseFloat(price)
-        ]
+    // Step 3: Lock funds
+    const { error: lockError } = await serviceRoleClient
+      .from('user_balances')
+      .update({
+        available_balance: userBalance.available_balance - orderCost,
+        locked_balance: userBalance.locked_balance + orderCost
       })
+      .eq('user_id', user.id)
 
-      if (sqlError) throw sqlError
-      orderResult = sqlResult
-      
-    } catch (sqlErr) {
-      console.log('Raw SQL failed, trying simple insert:', sqlErr)
-      
-      // Fallback to simplest possible insert
-      try {
-        const { data: insertResult, error: insertError } = await serviceRoleClient
+    if (lockError) {
+      console.error('Error locking funds:', lockError)
+      return NextResponse.json({ 
+        success: false,
+        error: 'Failed to lock funds' 
+      }, { status: 500 })
+    }
+
+    console.log(`🔒 Locked ₹${orderCost} for user ${user.id}`)
+
+    // Step 4: Create the order
+    const { data: newOrder, error: orderError } = await serviceRoleClient
       .from('orders')
       .insert({
         market_id: marketId,
@@ -175,112 +349,109 @@ export const POST = withAuth(async (req, user) => {
             order_type: 'limit',
         filled_quantity: 0
       })
-        
-        if (insertError) {
-          console.error('Insert failed with error:', insertError)
-          throw insertError
-        }
-        
-        console.log('Simple insert succeeded:', insertResult)
-        
-        // Verify the order was actually created by fetching the most recent order
-        const { data: verifyOrder, error: verifyError } = await serviceRoleClient
-          .from('orders')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-        
-        if (verifyError) {
-          console.error('Failed to verify order creation:', verifyError)
-        } else {
-          console.log('Verified most recent order in database:', verifyOrder)
-        }
-        
-        // Also check total orders count for debugging
-        const { data: allOrders, error: countError } = await serviceRoleClient
-          .from('orders')
-          .select('*')
-          .eq('user_id', user.id)
-        
-        if (!countError) {
-          console.log(`Total orders for user ${user.id}:`, allOrders?.length || 0)
-          console.log('Recent orders:', allOrders?.slice(-3))
-        }
-        
-        orderResult = 'simple_success'
-        
-      } catch (insertErr) {
-        console.error('All insert methods failed:', insertErr)
-        orderError = insertErr
-      }
+      .select()
+      .single()
+
+    if (orderError) {
+      // Rollback balance lock on order creation failure
+      await serviceRoleClient
+        .from('user_balances')
+        .update({
+          available_balance: userBalance.available_balance,
+          locked_balance: userBalance.locked_balance
+        })
+        .eq('user_id', user.id)
+      
+      console.error('Error creating order:', orderError)
+      return NextResponse.json({ 
+        success: false,
+        error: 'Failed to create order' 
+      }, { status: 500 })
     }
 
-    // Get market info for the response
+    console.log(`📝 Created order:`, newOrder)
+
+    // Step 5: Try to match the order immediately
+    let remainingQuantity = quantity
+    let totalFilled = 0
+    const executedTrades = []
+
+    try {
+      const matchingOrders = await findMatchingOrders(marketId, side, price, quantity)
+      
+      for (const matchOrder of matchingOrders) {
+        if (remainingQuantity <= 0) break
+        
+        const availableQuantity = matchOrder.quantity - (matchOrder.filled_quantity || 0)
+        if (availableQuantity <= 0) continue
+        
+        const tradeQuantity = Math.min(remainingQuantity, availableQuantity)
+        const tradePrice = side === 'YES' ? price : matchOrder.price
+        
+        // Execute the trade
+        const trade = await executeTrade(
+          side === 'YES' ? newOrder : matchOrder,
+          side === 'YES' ? matchOrder : newOrder,
+          tradeQuantity,
+          tradePrice,
+          marketId
+        )
+        
+        executedTrades.push(trade)
+        totalFilled += tradeQuantity
+        remainingQuantity -= tradeQuantity
+        
+        console.log(`🎉 Executed trade: ${tradeQuantity} shares, ${remainingQuantity} remaining`)
+      }
+      
+      // Update the new order if it was filled
+      if (totalFilled > 0) {
+        await serviceRoleClient
+          .from('orders')
+          .update({
+            filled_quantity: totalFilled,
+            status: totalFilled >= quantity ? 'filled' : 'partial'
+          })
+          .eq('id', newOrder.id)
+      }
+      
+    } catch (matchError) {
+      console.error('Error during matching:', matchError)
+      // Continue without failing the order placement
+    }
+
+    // Step 6: Get market info for response
     const { data: market } = await serviceRoleClient
       .from('markets')
       .select('title, category')
       .eq('id', marketId)
       .single()
 
-    // Handle the result
-    if (orderError) {
-      const errorMessage = orderError instanceof Error ? orderError.message : 
-                          (typeof orderError === 'object' && orderError && 'message' in orderError) 
-                          ? String(orderError.message) : 'Unknown error'
-      return NextResponse.json({ 
-        success: false,
-        error: 'Failed to create order: ' + errorMessage
-      }, { status: 500 })
-    }
-
-    // If we have SQL result data, use it; otherwise provide a basic response
-    if (orderResult && orderResult.length > 0) {
-      const order = orderResult[0]
+    // Step 7: Return success response
       return NextResponse.json({ 
         success: true,
         order: {
-          id: order.id,
-          marketId: order.market_id,
+        id: newOrder.id,
+        marketId: newOrder.market_id,
           marketTitle: market?.title || 'Unknown Market',
           marketCategory: market?.category || null,
-          side: order.side,
-          quantity: order.quantity,
-          price: order.price,
-          filledQuantity: order.filled_quantity || 0,
-          remainingQuantity: order.quantity - (order.filled_quantity || 0),
-          status: order.status,
-          orderType: order.order_type,
-          createdAt: order.created_at,
-          updatedAt: order.created_at,
+        side: newOrder.side,
+        quantity: newOrder.quantity,
+        price: newOrder.price,
+        filledQuantity: totalFilled,
+        remainingQuantity: newOrder.quantity - totalFilled,
+        status: totalFilled >= quantity ? 'filled' : (totalFilled > 0 ? 'partial' : 'open'),
+        orderType: newOrder.order_type,
+        createdAt: newOrder.created_at,
+        updatedAt: newOrder.updated_at || newOrder.created_at,
           expiresAt: null
         },
-        message: 'Order placed successfully'
-      })
-    } else {
-      // Fallback response - order was likely created but we couldn't get the details
-      return NextResponse.json({ 
-        success: true,
-        order: {
-          id: `order_${Date.now()}`,
-          marketId: marketId,
-          marketTitle: market?.title || 'Unknown Market',
-          marketCategory: market?.category || null,
-          side: side,
-          quantity: parseInt(quantity),
-          price: parseFloat(price),
-          filledQuantity: 0,
-          remainingQuantity: parseInt(quantity),
-          status: 'open',
-          orderType: 'limit',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          expiresAt: null
-        },
-        message: 'Order placed successfully'
-      })
-    }
+      trades: executedTrades,
+      totalFilled,
+      message: totalFilled > 0 
+        ? `Order placed and ${totalFilled}/${quantity} shares filled immediately`
+        : 'Order placed successfully and waiting for match'
+    })
 
   } catch (error) {
     console.error('Error in order placement:', error)
