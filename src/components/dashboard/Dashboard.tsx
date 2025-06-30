@@ -259,22 +259,22 @@ export function Dashboard() {
         <div className="flex-1 min-h-0">
           {hasActivePositions ? (
             /* Layout with Active Positions */
-            <div className="grid lg:grid-cols-3 gap-4 h-full">
-          {/* Active Positions */}
+            <div className="grid lg:grid-cols-3 gap-4 h-auto">
+              {/* Active Positions */}
               <div className="lg:col-span-2 h-full">
                 <Card className="bg-white border border-gray-200 h-full flex flex-col">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
-                <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-900">Active Positions</h2>
                       <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
+                        <ExternalLink className="h-4 w-4 text-blue-600" />
+                      </Button>
+                    </div>
+                  </div>
+                  
                   <div className="p-3 flex-1 overflow-y-auto">
                     <div className="space-y-2">
-                    {transformedActivePositions.map((position, index) => (
+                      {transformedActivePositions.map((position, index) => (
                         <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
@@ -284,7 +284,7 @@ export function Dashboard() {
                               <span className="text-sm font-medium text-gray-900">
                                 {position.title.length > 50 ? position.title.substring(0, 50) + '...' : position.title}
                               </span>
-                          </div>
+                            </div>
                             <div className="flex items-center gap-4 text-xs text-gray-600">
                               <span>{position.category}</span>
                               <span className={`px-2 py-1 rounded ${
@@ -296,91 +296,100 @@ export function Dashboard() {
                               <span>Invested: {position.invested}</span>
                             </div>
                           </div>
-                        <div className="text-right">
+                          <div className="text-right">
                             <div className={`text-sm font-semibold ${
-                            position.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {position.pnl}
+                              position.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {position.pnl}
                             </div>
                             <div className={`text-xs ${
-                            position.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {position.pnlPercent}
+                              position.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {position.pnlPercent}
                             </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
                   </div>
                 </Card>
               </div>
 
               {/* Right Sidebar */}
-              <div className="space-y-4 h-full flex flex-col">
+              <div className="space-y-5 h-full flex flex-col">
                 {/* Market Opportunities */}
-                <Card className="bg-white border border-gray-200 flex-1 flex flex-col">
-                  <div className="p-3 border-b border-gray-100 flex-shrink-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">Market Opportunities</h3>
-                      <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
+                <Card className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col transition-shadow hover:shadow-lg">
+                  <div className="p-4 border-b border-gray-100 flex-shrink-0 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-6 rounded-full mr-2"></div>
+                      <h3 className="text-lg font-bold text-gray-900 tracking-tight">Market Opportunities</h3>
                     </div>
-          </div>
-
-                  <div className="p-3 flex-1 overflow-y-auto">
+                    <Button variant="ghost" size="icon">
+                      <ExternalLink className="h-5 w-5 text-blue-600" />
+                    </Button>
+                  </div>
+                  
+                  <div className="p-4 flex-1 overflow-y-auto">
                     {marketOpportunities.length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-4">
                         {marketOpportunities.slice(0, 4).map((market, index) => (
-                          <div key={index} className="border-b border-gray-100 last:border-b-0 pb-2 last:pb-0">
-                            <div className="flex items-start justify-between mb-1">
+                          <div
+                            key={index}
+                            className="group bg-gray-50 border border-gray-100 rounded-lg p-4 flex flex-col gap-2 transition-all shadow-sm hover:shadow-md"
+                          >
+                            <div className="flex items-center justify-between">
                               <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                                <p className="text-base font-semibold text-gray-900 line-clamp-2 mb-1">
                                   {market.title.length > 35 ? market.title.substring(0, 35) + '...' : market.title}
                                 </p>
-                                <div className="flex items-center gap-2 text-xs text-gray-600">
-                                  <span>{market.category}</span>
-                                  <span>•</span>
-                                  <span>Vol: {market.volume}</span>
+                                <div className="flex items-center gap-2 text-xs">
+                                  <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{market.category}</span>
+                                  <span className="text-gray-400">•</span>
+                                  <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">Vol: {market.volume}</span>
                                 </div>
-              </div>
-                              <div className={`text-xs font-medium ${
+                              </div>
+                              <div className={`flex items-center gap-1 text-xs font-bold ${
                                 market.trend === 'up' ? 'text-green-600' : 'text-red-600'
                               }`}>
+                                {market.trend === 'up' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                                 {market.change}
                               </div>
                             </div>
-                            <div className="flex gap-2">
-                              <div className="flex-1 text-center py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                            <div className="flex gap-2 mt-2">
+                              <Button 
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-semibold rounded-lg shadow"
+                                size="sm"
+                              >
                                 YES ₹{market.yesPrice.toFixed(1)}
-                              </div>
-                              <div className="flex-1 text-center py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium">
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="border-gray-300 text-gray-700 hover:bg-gray-100 px-4 py-2 text-sm font-semibold rounded-lg"
+                                size="sm"
+                              >
                                 NO ₹{market.noPrice.toFixed(1)}
-                        </div>
-                        </div>
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    ) : (
+                      <div className="text-center py-8">
+                        <BarChart3 className="h-10 w-10 text-blue-200 mx-auto mb-3" />
+                        <p className="text-gray-500 text-base font-medium">No markets available</p>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                      <div className="text-center py-4">
-                        <BarChart3 className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-                        <p className="text-gray-600 text-sm">No markets available</p>
-                  </div>
-                )}
-              </div>
-            </Card>
+                </Card>
 
                 {/* Recent Trading Activity */}
-                <Card className="bg-white border border-gray-200 flex-1 flex flex-col">
+                <Card className="bg-white border border-gray-200 flex flex-col">
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
-                <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
-                      <Button variant="ghost" size="sm">
-                        <Clock className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
+                    </div>
+                  </div>
+                  
                   <div className="p-3 flex-1 overflow-y-auto">
                     {tradingActivity.length > 0 ? (
                       <div className="space-y-1">
@@ -464,7 +473,7 @@ export function Dashboard() {
                         <h3 className="text-lg font-semibold text-gray-900">Market Overview</h3>
                       </div>
                       <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-4 w-4 text-blue-600" />
                       </Button>
                     </div>
                   </div>
@@ -506,11 +515,11 @@ export function Dashboard() {
                       <div className="text-center py-6">
                         <BarChart3 className="h-8 w-8 text-gray-400 mx-auto mb-3" />
                         <p className="text-gray-600">No markets available</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </Card>
               </div>
-            </Card>
-          </div>
 
               {/* Right Column */}
               <div className="space-y-4 h-full flex flex-col">
@@ -523,7 +532,7 @@ export function Dashboard() {
                         <h3 className="text-lg font-semibold text-gray-900">Recent Activity</h3>
                       </div>
                       <Button variant="ghost" size="sm">
-                        <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-4 w-4 text-blue-600" />
                       </Button>
                     </div>
                   </div>
