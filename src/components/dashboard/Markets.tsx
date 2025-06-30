@@ -64,7 +64,16 @@ export function Markets() {
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [selectedSide, setSelectedSide] = useState<'yes' | 'no'>('yes');
 
-  // Fetch markets data from API
+  // Fetch ALL markets for category counts (no filters)
+  const { 
+    markets: allMarkets, 
+  } = useMarkets({
+    status: 'all',
+    category: 'all',
+    limit: 1000 // Get all markets
+  });
+
+  // Fetch filtered markets for display
   const { 
     markets: apiMarkets, 
     loading, 
@@ -86,21 +95,27 @@ export function Markets() {
     return () => clearInterval(interval);
   }, [refreshMarkets]);
 
-  const categories = [
-    { id: 'all', name: 'All Markets', count: 1584, icon: Globe },
-    { id: 'sports', name: 'Sports', count: 478, icon: Trophy },
-    { id: 'crypto', name: 'Crypto', count: 267, icon: Bitcoin },
-    { id: 'politics', name: 'Politics', count: 124, icon: Building },
-    { id: 'economics', name: 'Economics', count: 189, icon: DollarSign },
-    { id: 'technology', name: 'Technology', count: 301, icon: Activity },
-    { id: 'entertainment', name: 'Entertainment', count: 225, icon: Tv }
-  ];
-
   // Transform API markets to match frontend interface by adding icon
   const markets = apiMarkets.map(market => ({
     ...market,
     icon: getCategoryIcon(market.category)
   }));
+
+  // Calculate dynamic category counts from ALL markets (not filtered)
+  const categoryCounts = allMarkets.reduce((acc, market) => {
+    acc[market.category] = (acc[market.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const categories = [
+    { id: 'all', name: 'All Markets', count: allMarkets.length, icon: Globe },
+    { id: 'sports', name: 'Sports', count: categoryCounts['sports'] || 0, icon: Trophy },
+    { id: 'crypto', name: 'Crypto', count: categoryCounts['crypto'] || 0, icon: Bitcoin },
+    { id: 'politics', name: 'Politics', count: categoryCounts['politics'] || 0, icon: Building },
+    { id: 'economics', name: 'Economics', count: categoryCounts['economics'] || 0, icon: DollarSign },
+    { id: 'technology', name: 'Technology', count: categoryCounts['technology'] || 0, icon: Activity },
+    { id: 'entertainment', name: 'Entertainment', count: categoryCounts['entertainment'] || 0, icon: Tv }
+  ];
 
   // Utility functions
   const formatNumber = (num: number) => {
