@@ -164,14 +164,36 @@ export function Leaderboard() {
                   </div>
                   <span className="text-sm font-medium text-gray-600">Top Performer</span>
                 </div>
-                <p className="text-lg font-bold text-gray-900">
-                  {stats.topPerformer?.name || 'N/A'}
-                </p>
-                {stats.topPerformer && (
-                  <p className="text-sm text-green-600 font-medium">
-                    {formatCurrency(stats.topPerformer.totalPnL)}
-                  </p>
-                )}
+                <div className="flex items-center gap-3">
+                  {stats.topPerformer?.avatar ? (
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100">
+                      <img 
+                        src={stats.topPerformer.avatar} 
+                        alt={`${stats.topPerformer.name}'s avatar`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-green-100', 'text-green-600', 'font-medium');
+                          e.currentTarget.parentElement!.innerHTML = stats.topPerformer!.name.charAt(0).toUpperCase();
+                        }}
+                      />
+                    </div>
+                  ) : stats.topPerformer ? (
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-green-100 text-green-600 font-medium">
+                      {stats.topPerformer.name.charAt(0).toUpperCase()}
+                    </div>
+                  ) : null}
+                  <div>
+                    <p className="text-lg font-bold text-gray-900">
+                      {stats.topPerformer?.name || 'N/A'}
+                    </p>
+                    {stats.topPerformer && (
+                      <p className="text-sm text-green-600 font-medium">
+                        {formatCurrency(stats.topPerformer.totalPnL)}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </Card>
 
@@ -260,6 +282,24 @@ export function Leaderboard() {
                           <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${getRankBadgeColor(trader.rank)}`}>
                             {getRankIcon(trader.rank) || (
                               <span className="text-sm font-bold">#{trader.rank}</span>
+                            )}
+                          </div>
+                          <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100">
+                            {trader.avatar ? (
+                              <img 
+                                src={trader.avatar} 
+                                alt={`${trader.name}'s avatar`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center', 'bg-blue-100', 'text-blue-600', 'font-medium');
+                                  e.currentTarget.parentElement!.innerHTML = trader.name.charAt(0).toUpperCase();
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-blue-100 text-blue-600 font-medium">
+                                {trader.name.charAt(0).toUpperCase()}
+                              </div>
                             )}
                           </div>
                           <div>

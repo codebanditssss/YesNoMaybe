@@ -137,12 +137,81 @@ export function useProfile() {
     }
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!user || !profile) {
+      setError("User not authenticated");
+      return null;
+    }
+    
+    try {
+      setSaving(true);
+      setError(null);
+
+      // 1. Upload file to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Math.random()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        setError(`Failed to upload image: ${uploadError.message}`);
+        return null;
+      }
+
+      // 2. Get public URL
+      const { data: { publicUrl }, error: urlError } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      if (urlError) {
+        console.error("Get public URL error:", urlError);
+        setError(`Failed to get image URL: ${urlError.message}`);
+        return null;
+      }
+
+      // 3. Update profile with new avatar URL
+      const { data, error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        setError(`Failed to update profile: ${updateError.message}`);
+        return null;
+      }
+
+      setProfile(data);
+      return data;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      console.error("Error uploading avatar:", err);
+      setError(`Failed to upload avatar: ${errorMessage}`);
+      return null;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return {
     profile,
     loading,
     saving,
     error,
     updateProfile,
+    uploadAvatar,
     refreshProfile: fetchProfile,
   };
 } 

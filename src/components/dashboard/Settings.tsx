@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,7 +46,7 @@ interface AppPreferences {
 export function Settings() {
   const [activeSection, setActiveSection] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
-  const { profile, loading, saving, error, updateProfile } = useProfile();
+  const { profile, loading, saving, error, updateProfile, uploadAvatar } = useProfile();
   const [tempProfile, setTempProfile] = useState<EditableProfileFields>({
     full_name: '',
     twitter_handle: '',
@@ -68,11 +68,44 @@ export function Settings() {
     theme: 'system',
   });
 
+  const [errorMessage, setError] = useState<string | null>(null);
+
   const settingsSections = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
     { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file (JPEG, PNG, etc.)');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      await uploadAvatar(file);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload avatar');
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
 
   useEffect(() => {
     if (profile) {
@@ -129,15 +162,13 @@ export function Settings() {
   const renderProfileSection = () => (
     <div className="space-y-6">
       {/* Error Display */}
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="h-5 w-5" />
-              <span className="font-medium">Error: {error}</span>
-            </div>
-          </CardContent>
-        </Card>
+      {errorMessage && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertCircle className="h-5 w-5 flex-shrink-0" />
+            <span className="font-medium text-sm">{errorMessage}</span>
+          </div>
+        </div>
       )}
 
       <Card>
@@ -162,12 +193,37 @@ export function Settings() {
               {/* Profile Picture */}
               <div className="flex items-center gap-6">
                 <div className="relative">
-                  <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                    {profile?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                  </div>
-                  <button className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-md border hover:bg-gray-50">
-                    <Camera className="h-4 w-4 text-gray-600" />
+                  {profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt={profile.full_name || 'Profile'} 
+                      className="h-20 w-20 rounded-full object-cover border-2 border-white shadow-lg"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                      {profile?.full_name?.split(' ').map(n => n[0]).join('') || profile?.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <button 
+                    onClick={handleUploadClick}
+                    className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-md border hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={saving}
+                    title="Upload profile picture"
+                  >
+                    {saving ? (
+                      <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4 text-gray-600" />
+                    )}
                   </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    aria-label="Upload profile picture"
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg">{profile?.full_name || 'User'}</h3>

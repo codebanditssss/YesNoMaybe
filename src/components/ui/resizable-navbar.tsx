@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 
 interface NavbarProps {
   children: React.ReactNode;
@@ -190,6 +191,7 @@ export default function ResizableNavbar({ onOpenAuth }: ResizableNavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { user, loading, signOut } = useAuth();
+  const { profile } = useProfile();
   const avatarRef = useRef<HTMLDivElement>(null);
   
   const navItems = [
@@ -258,16 +260,26 @@ export default function ResizableNavbar({ onOpenAuth }: ResizableNavbarProps) {
               <div className="relative" ref={avatarRef}>
                 <button
                   onClick={toggleProfile}
-                  className="user-avatar"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
                 >
-                  {user.email?.charAt(0).toUpperCase() || 'U'}
+                  {profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt={profile.full_name || 'Profile'} 
+                      className="h-8 w-8 rounded-full object-cover border border-gray-200"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                      {profile?.full_name?.split(' ').map(n => n[0]).join('') || user.email?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                  )}
                 </button>
                 
                 {isProfileOpen && (
                   <div className="profile-dropdown">
                     <div className="profile-info">
                       <div className="profile-name">
-                        {user.email?.split('@')[0] || 'User'}
+                        {profile?.full_name || user.email?.split('@')[0] || 'User'}
                       </div>
                       <div className="profile-email">
                         {user.email}
