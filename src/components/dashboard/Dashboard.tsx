@@ -150,18 +150,6 @@ export function Dashboard() {
     refreshMarkets();
   };
 
-  const navigateToMarkets = () => {
-    setActiveView('markets');
-  };
-
-  const navigateToPortfolio = () => {
-    setActiveView('portfolio');
-  };
-
-  const navigateToDashboard = () => {
-    setActiveView('dashboard');
-  };
-
   if (isLoading) {
     return (
       <div className="p-6 bg-white min-h-screen">
@@ -206,57 +194,6 @@ export function Dashboard() {
     );
   }
 
-  // Render different views based on activeView
-  if (activeView === 'portfolio') {
-    return (
-      <div className="p-2 sm:p-4 bg-white min-h-screen">
-        <div className="w-full flex flex-col space-y-2 sm:space-y-4">
-          {/* Header with back button */}
-          <div className="flex items-center justify-between border-b border-gray-200 pb-3 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={navigateToDashboard}
-                variant="ghost"
-                size="sm"
-              >
-                ← Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Portfolio</h1>
-              </div>
-            </div>
-          </div>
-          <Portfolio />
-        </div>
-      </div>
-    );
-  }
-
-  if (activeView === 'markets') {
-    return (
-      <div className="p-2 sm:p-4 bg-white min-h-screen">
-        <div className="w-full flex flex-col space-y-2 sm:space-y-4">
-          {/* Header with back button */}
-          <div className="flex items-center justify-between border-b border-gray-200 pb-3 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={navigateToDashboard}
-                variant="ghost"
-                size="sm"
-              >
-                ← Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-lg sm:text-xl font-semibold text-gray-900">Markets</h1>
-              </div>
-            </div>
-          </div>
-          <Markets />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-2 sm:p-4 bg-white min-h-screen">
       <div className="w-full flex flex-col space-y-2 sm:space-y-4">
@@ -264,7 +201,7 @@ export function Dashboard() {
         <div className="flex items-center justify-between border-b border-gray-200 pb-3 flex-shrink-0">
           <div>
             <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-              Portfolio Dashboard
+              Dashboard
             </h1>
             <p className="text-sm text-gray-600 mt-0.5">
               {user?.email?.split('@')[0] || 'Trader'} • Last updated: {new Date().toLocaleTimeString()}

@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import NotificationModal from '@/components/ui/NotificationModal';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
+  const [notificationOpen, setNotificationOpen] = useState(false);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -308,7 +310,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
 
               {/* Notifications */}
-              <button className="p-3 rounded-lg hover:bg-gray-100 relative transition-all duration-200 group">
+              <button
+                className="p-3 rounded-lg hover:bg-gray-100 relative transition-all duration-200 group"
+                onClick={() => setNotificationOpen(true)}
+              >
                 <Bell className="h-5 w-5 text-gray-600 group-hover:text-gray-900" />
                 <span className="absolute top-2 right-2 block h-2.5 w-2.5 rounded-full bg-gray-900 border border-white"></span>
               </button>
@@ -321,6 +326,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      {/* Notification Modal */}
+      <NotificationModal open={notificationOpen} onClose={() => setNotificationOpen(false)} />
     </div>
   );
 } 
