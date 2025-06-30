@@ -77,7 +77,7 @@ interface PortfolioStats {
 }
 
 export function Portfolio() {
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'positions' | 'history' | 'analytics'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'positions' | 'analytics'>('overview');
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL'>('1M');
   const [sortBy, setSortBy] = useState<'pnl' | 'value' | 'alphabetical' | 'date'>('pnl');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'closing' | 'resolved'>('all');
@@ -94,7 +94,6 @@ export function Portfolio() {
     getPnLPercentage
   } = usePortfolio({ 
     includeHistory: true, // Always include history for recent activity section
-    historyLimit: selectedTab === 'history' ? 50 : 5, // Only get 5 for overview, 50 for history tab
     autoRefresh: true 
   });
 
@@ -260,14 +259,14 @@ export function Portfolio() {
               Refresh
             </Button>
             
-            <Button 
+            {/* <Button 
               variant="outline" 
               size="sm"
               className="flex items-center gap-2"
             >
               <Download className="h-4 w-4" />
               Export
-            </Button>
+            </Button> */}
           </div>
         </div>
 
@@ -413,7 +412,6 @@ export function Portfolio() {
               {[
                 { id: 'overview', label: 'Overview', icon: BarChart3 },
                 { id: 'positions', label: 'Positions', icon: Target },
-                { id: 'history', label: 'History', icon: Clock },
                 { id: 'analytics', label: 'Analytics', icon: PieChart }
               ].map(({ id, label, icon: Icon }) => (
                 <button
@@ -564,7 +562,7 @@ export function Portfolio() {
                 <Card className="p-6 bg-white border-0 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">Recent Trading Activity</h3>
-                    <Button variant="outline" size="sm" onClick={() => setSelectedTab('history')}>
+                    <Button variant="outline" size="sm"> {/* direct to trade history */}
                       View All
                     </Button>
                   </div>
@@ -614,32 +612,6 @@ export function Portfolio() {
                 {/* Position Controls */}
                 <Card className="p-4 bg-white border-0 shadow-sm">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm font-medium text-gray-900">Sort by:</span>
-                      </div>
-                      <div className="flex rounded-lg bg-gray-100 p-1">
-                        {[
-                          { value: 'pnl', label: 'P&L %' },
-                          { value: 'value', label: 'Value' },
-                          { value: 'alphabetical', label: 'A-Z' },
-                          { value: 'date', label: 'Date' },
-                        ].map(({ value, label }) => (
-                          <button
-                            key={value}
-                            onClick={() => setSortBy(value as any)}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                              sortBy === value
-                                ? 'bg-white text-gray-900 shadow-sm'
-                                : 'text-gray-600 hover:text-gray-900'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
 
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -754,76 +726,6 @@ export function Portfolio() {
                   </Card>
                 )}
               </div>
-            )}
-
-            {selectedTab === 'history' && (
-              <Card className="p-6 bg-white border-0 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900">Trading History</h3>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="h-4 w-4 mr-1" />
-                      Filter
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-1" />
-                      Export
-                    </Button>
-                  </div>
-                </div>
-                
-                {transformedTrades.length > 0 ? (
-                  <div className="space-y-4">
-                    {transformedTrades.map((trade) => (
-                      <div key={trade.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-4">
-                          <div className={`p-2 rounded-lg ${
-                            trade.type === 'buy' ? 'bg-green-100' : 'bg-red-100'
-                          }`}>
-                            {trade.type === 'buy' ? (
-                              <Plus className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <Minus className="h-4 w-4 text-red-600" />
-                            )}
-                          </div>
-                          
-                          <div>
-                            <p className="font-medium text-gray-900">{trade.marketTitle}</p>
-                            <div className="flex items-center gap-4 text-sm text-gray-600">
-                              <span>{trade.type.toUpperCase()} {trade.quantity} {trade.side.toUpperCase()}</span>
-                              <span>@ ₹{trade.price}</span>
-                              <span>{trade.timestamp.toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <p className="font-medium text-gray-900">{formatCurrency(trade.total)}</p>
-                          <Badge className={
-                            trade.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            trade.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }>
-                            {trade.status.toUpperCase()}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    <div className="text-center pt-6">
-                      <Button variant="outline">
-                        Load More History
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No trading history</h3>
-                    <p className="text-gray-600">Your completed trades will appear here once you start trading.</p>
-                  </div>
-                )}
-              </Card>
             )}
 
             {selectedTab === 'analytics' && (
