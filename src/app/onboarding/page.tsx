@@ -44,11 +44,11 @@ export default function OnboardingPage() {
     twitter_handle: ''
   });
 
-  useEffect(() => {
-    if (!user) {
-      router.push('/');
-    }
-  }, [user, router]);
+useEffect(() => {
+  if (!user) {
+    router.push('/');
+  }
+}, [user, loading, router]);
 
   const steps = [
     {
@@ -131,7 +131,7 @@ export default function OnboardingPage() {
   };
 
   const handleSubmit = async () => {
-    if (!user) return;
+    if (loading || !user || !user.id) return;
 
     setLoading(true);
     setError('');
@@ -140,8 +140,8 @@ export default function OnboardingPage() {
       const { data: existingUser } = await supabase
         .from('profiles')
         .select('username')
-        .eq('username', formData.username)
-        .neq('id', user.id)
+        .eq('username', formData.username as any)
+        .neq('id', user.id as any)
         .single();
 
       if (existingUser) {
@@ -150,36 +150,40 @@ export default function OnboardingPage() {
         return;
       }
 
+      const profileUpdate = {
+        username: formData.username.trim() ? formData.username : null,
+        full_name: formData.full_name.trim() ? formData.full_name : null,
+        bio: formData.bio.trim() ? formData.bio : null,
+        location: formData.location.trim() ? formData.location : null,
+        website: formData.website.trim() ? formData.website : null,
+        twitter_handle: formData.twitter_handle.trim() ? formData.twitter_handle : null,
+      };
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          username: formData.username,
-          full_name: formData.full_name,
-          bio: formData.bio,
-          location: formData.location,
-          website: formData.website || null,
-          twitter_handle: formData.twitter_handle || null,
-        })
-        .eq('id', user.id);
+        .update(profileUpdate as any)
+        .eq('id', user.id as any);
 
       if (error) {
         throw error;
       }
 
       // Create user balance record if it doesn't exist
+      const balanceInsert = {
+        user_id: user.id,
+        available_balance: 10,
+        locked_balance: 0,
+        total_deposited: 0,
+        total_withdrawn: 0,
+        total_trades: 0,
+        total_volume: 0,
+        total_profit_loss: 0,
+        winning_trades: 0,
+      };
+
       const { error: balanceError } = await supabase
         .from('user_balances')
-        .upsert({
-          user_id: user.id,
-          available_balance: 10, // 10 ruppee ki ghoos
-          locked_balance: 0,
-          total_deposited: 0,
-          total_withdrawn: 0,
-          total_trades: 0,
-          total_volume: 0,
-          total_profit_loss: 0,
-          winning_trades: 0
-        });
+        .upsert([balanceInsert as any]);
 
       if (balanceError) {
         console.error('Error creating user balance:', balanceError);

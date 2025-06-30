@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { DashboardApp } from '@/components/dashboard/DashboardApp'
 import { LandingPage } from '@/components/landing/LandingPage'
 import { AuthModal } from '@/components/auth/AuthModal'
 import ResizableNavbar from '@/components/ui/resizable-navbar'
@@ -28,6 +27,8 @@ export default function Home() {
   useEffect(() => {
     if (user && needsOnboarding && !loading) {
       router.push('/onboarding');
+    } else if (user && !needsOnboarding && !loading) {
+      router.push('/dashboard');
     }
   }, [user, needsOnboarding, loading, router]);
 
@@ -41,11 +42,6 @@ export default function Home() {
         </div>
       </main>
     );
-  }
-
-  // Show Dashboard with sidebar layout for authenticated users
-  if (user && !needsOnboarding) {
-    return <DashboardApp />;
   }
 
   // Show Landing Page for guests

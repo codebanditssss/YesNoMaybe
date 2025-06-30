@@ -204,7 +204,7 @@ export function Settings() {
                       disabled={saving}
                     />
                   ) : (
-                    <p className="text-gray-900">{profile?.full_name || 'Not set'}</p>
+                    <p className="text-gray-900">{profile?.full_name || '--'}</p>
                   )}
                 </div>
 
@@ -213,7 +213,7 @@ export function Settings() {
                     <Mail className="h-4 w-4" />
                     Email Address
                   </label>
-                  <p className="text-gray-900">{profile?.email || "Not set"}</p>
+                  <p className="text-gray-900">{profile?.email || "--"}</p>
                 </div>
 
                 <div className="space-y-2">
@@ -227,7 +227,7 @@ export function Settings() {
                       disabled={saving}
                     />
                   ) : (
-                    <p className="text-gray-900">{profile?.username || 'Not set'}</p>
+                    <p className="text-gray-900">{profile?.username || '--'}</p>
                   )}
                 </div>
 
@@ -242,7 +242,7 @@ export function Settings() {
                       disabled={saving}
                     />
                   ) : (
-                    <p className="text-gray-900">{profile?.bio || 'Not set'}</p>
+                    <p className="text-gray-900">{profile?.bio || '--'}</p>
                   )}
                 </div>
 
@@ -260,7 +260,7 @@ export function Settings() {
                       disabled={saving}
                     />
                   ) : (
-                    <p className="text-gray-900">{profile?.location || 'Not set'}</p>
+                    <p className="text-gray-900">{profile?.location || '--'}</p>
                   )}
                 </div>
 
@@ -279,7 +279,7 @@ export function Settings() {
                       disabled={saving}
                     />
                   ) : (
-                    <p className="text-gray-900">{profile?.website || 'Not set'}</p>
+                    <p className="text-gray-900">{profile?.website || '--'}</p>
                   )}
                 </div>
 
@@ -297,7 +297,7 @@ export function Settings() {
                       disabled={saving}
                     />
                   ) : (
-                    <p className="text-gray-900">{profile?.twitter_handle || 'Not set'}</p>
+                    <p className="text-gray-900">{profile?.twitter_handle || '--'}</p>
                   )}
                 </div>
               </div>

@@ -1,6 +1,8 @@
+"use client";
+
 import { useState, useEffect } from 'react';
 
-interface Market {
+export interface Market {
   id: string;
   title: string;
   category: string;

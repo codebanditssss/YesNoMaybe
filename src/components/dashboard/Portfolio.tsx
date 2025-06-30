@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -237,7 +239,10 @@ export function Portfolio() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Portfolio</h1>
             <p className="text-gray-600">Track your positions and performance</p>
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-              <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+            <span>
+                Last updated: {lastUpdate.toLocaleTimeString().slice(11, 19)}
+            </span>
+              {/* <span>Last updated: {lastUpdate.toLocaleTimeString()}</span> */}
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span>Live prices</span>

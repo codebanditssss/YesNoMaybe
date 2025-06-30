@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -218,7 +220,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                     <span className="text-gray-600 font-medium">No ₹{market.noPrice.toFixed(1)}</span>
                   </div>
                   <div className="text-gray-500">
-                      Vol: ₹{formatNumber(market.volume)}
+                      Vol: {market.volume}
                   </div>
                 </div>
               </div>
@@ -260,7 +262,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               )}
               
               <div className="flex items-center gap-6 text-sm text-gray-500">
-                  <span>Expires: {new Date(currentMarket.resolutionDate).toLocaleDateString()}</span>
+                  <span>Expires: {new Date(currentMarket.expiryDate).toLocaleDateString()}</span>
                   <span>24h Volume: ₹{formatNumber(marketInfo?.volume24h || 0)}</span>
                   <span>Last update: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString() : 'Not loaded'}</span>
               </div>

@@ -1,3 +1,5 @@
+"use client";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +9,7 @@ import { useMarkets } from "@/hooks/useMarkets";
 import { Portfolio } from "./Portfolio";
 import { Markets } from "./Markets";
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
 
 import { 
   TrendingUp, 
@@ -32,6 +35,7 @@ import {
 export function Dashboard() {
   const { user } = useAuth();
   const [activeView, setActiveView] = useState<'dashboard' | 'portfolio' | 'markets'>('dashboard');
+  const router = useRouter();
 
   // Fetch real portfolio data
   const { 
@@ -312,7 +316,7 @@ export function Dashboard() {
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-900">Active Positions</h2>
-                      <Button variant="ghost" size="sm" onClick={navigateToPortfolio}>
+                      <Button variant="ghost" size="sm" onClick={() => router.push('/Portfolio')}>
                         <ExternalLink className="h-4 w-4 text-blue-600" />
                       </Button>
                     </div>
@@ -370,7 +374,7 @@ export function Dashboard() {
                       <div className="w-1.5 h-6 rounded-full mr-2"></div>
                       <h3 className="text-lg font-bold text-gray-900 tracking-tight">Market Opportunities</h3>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={navigateToMarkets}>
+                    <Button variant="ghost" size="icon" onClick={() => router.push('/Markets')}>
                       <ExternalLink className="h-5 w-5 text-blue-600" />
                     </Button>
                   </div>
@@ -474,7 +478,7 @@ export function Dashboard() {
                         <BarChart3 className="h-5 w-5 text-gray-600" />
                         <h3 className="text-lg font-semibold text-gray-900">Market Overview</h3>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={navigateToMarkets}>
+                      <Button variant="ghost" size="sm" onClick={() => router.push('/Markets')}>
                         <ExternalLink className="h-4 w-4 text-blue-600" />
                       </Button>
                     </div>

@@ -85,7 +85,9 @@ export function Leaderboard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Leaderboard</h1>
             <p className="text-gray-600">Top traders and their performance rankings</p>
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-              <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+            <span>
+                Last updated: {lastUpdate.toISOString().slice(11, 19)}
+            </span>
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span>Live rankings</span>

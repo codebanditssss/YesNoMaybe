@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -15,31 +17,29 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-interface DashboardLayoutProps {
-  children: React.ReactNode;
-  currentPage?: string;
-  onNavigate?: (page: string) => void;
-}
-
-export function DashboardLayout({ children, currentPage = 'dashboard', onNavigate }: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const router = useRouter();
 
   const navigation = [
-    { name: 'Dashboard', page: 'dashboard', icon: Home, current: currentPage === 'dashboard' },
-    { name: 'Markets', page: 'markets', icon: BarChart3, current: currentPage === 'markets' },
-    { name: 'Portfolio', page: 'portfolio', icon: Target, current: currentPage === 'portfolio' },
-    { name: 'Market Depth', page: 'orderbook', icon: Activity, current: currentPage === 'orderbook' },
-    { name: 'Trade History', page: 'history', icon: Clock, current: currentPage === 'history' },
-    { name: 'Leaderboard', page: 'leaderboard', icon: Users, current: currentPage === 'leaderboard' },
-    { name: 'Settings', page: 'settings', icon: Settings, current: currentPage === 'settings' },
+    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Markets', href: '/Markets', icon: BarChart3 },
+    { name: 'Portfolio', href: '/Portfolio', icon: Target },
+    { name: 'Market Depth', href: '/MarketDepth', icon: Activity },
+    { name: 'Trade History', href: '/TradeHistory', icon: Clock },
+    { name: 'Leaderboard', href: '/Leaderboard', icon: Users },
+    { name: 'Settings', href: '/Settings', icon: Settings },
   ];
 
   const handleSignOut = async () => {
     try {
       await signOut();
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -101,7 +101,7 @@ export function DashboardLayout({ children, currentPage = 'dashboard', onNavigat
           )}
           {navigation.map((item, index) => {
             const Icon = item.icon;
-            const isSettings = item.page === 'settings';
+            const isSettings = item.name === 'Settings';
             return (
               <div key={item.name}>
                 {isSettings && !sidebarCollapsed && (
@@ -109,34 +109,20 @@ export function DashboardLayout({ children, currentPage = 'dashboard', onNavigat
                     <div className="border-t border-gray-200"></div>
                   </div>
                 )}
-                <button
-                  onClick={() => onNavigate?.(item.page)}
+                <Link
+                  href={item.href}
                   className={`group flex items-center rounded-lg transition-all duration-200 w-full text-left relative ${
                     sidebarCollapsed ? 'px-2 py-3 justify-center mx-1' : 'px-4 py-3.5'
-                  } ${
-                    item.current
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
+                  } text-gray-700 hover:bg-gray-100 hover:text-gray-900`}
                   title={sidebarCollapsed ? item.name : undefined}
                 >
                   <Icon className={`h-5 w-5 flex-shrink-0 ${
                     sidebarCollapsed ? 'mx-auto' : 'mr-4'
-                  } ${
-                    item.current ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                  }`} />
+                  } text-gray-500 group-hover:text-gray-700`} />
                   {!sidebarCollapsed && (
-                    <>
-                      <span className="text-sm font-semibold">{item.name}</span>
-                      {item.current && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
-                      )}
-                    </>
+                    <span className="text-sm font-semibold">{item.name}</span>
                   )}
-                  {sidebarCollapsed && item.current && (
-                    <div className="absolute right-1 top-1/2 transform -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
-                  )}
-                </button>
+                </Link>
               </div>
             );
           })}
@@ -227,7 +213,7 @@ export function DashboardLayout({ children, currentPage = 'dashboard', onNavigat
               )}
               {navigation.map((item, index) => {
                 const Icon = item.icon;
-                const isSettings = item.page === 'settings';
+                const isSettings = item.name === 'Settings';
                 return (
                   <div key={item.name}>
                     {isSettings && !sidebarCollapsed && (
@@ -235,34 +221,20 @@ export function DashboardLayout({ children, currentPage = 'dashboard', onNavigat
                         <div className="border-t border-gray-200"></div>
                       </div>
                     )}
-                    <button
-                      onClick={() => onNavigate?.(item.page)}
+                    <Link
+                      href={item.href}
                       className={`group flex items-center rounded-lg transition-all duration-200 w-full text-left relative ${
                         sidebarCollapsed ? 'px-2 py-3 justify-center mx-1' : 'px-4 py-3.5'
-                      } ${
-                        item.current
-                          ? 'bg-gray-900 text-white'
-                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                      }`}
+                      } text-gray-700 hover:bg-gray-100 hover:text-gray-900`}
                       title={sidebarCollapsed ? item.name : undefined}
                     >
                       <Icon className={`h-5 w-5 flex-shrink-0 ${
                         sidebarCollapsed ? 'mx-auto' : 'mr-4'
-                      } ${
-                        item.current ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                      }`} />
+                      } text-gray-500 group-hover:text-gray-700`} />
                       {!sidebarCollapsed && (
-                        <>
-                          <span className="text-sm font-semibold">{item.name}</span>
-                          {item.current && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-white rounded-full"></div>
-                          )}
-                        </>
+                        <span className="text-sm font-semibold">{item.name}</span>
                       )}
-                      {sidebarCollapsed && item.current && (
-                        <div className="absolute right-1 top-1/2 transform -translate-y-1/2 w-1.5 h-1.5 bg-white rounded-full"></div>
-                      )}
-                    </button>
+                    </Link>
                   </div>
                 );
               })}
