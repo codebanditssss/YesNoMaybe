@@ -303,10 +303,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
                 <div className="hidden md:block">
                   <p className="text-sm font-bold text-gray-900">
-                    {user?.email?.split('@')[0] || 'khushidiwan953'}
+                    {user?.email?.split('@')[0] || 'example@example.com'}
                   </p>
                   <p className="text-xs text-gray-600">
-                    {user?.email || 'khushidiwan953@gmail.com'}
+                    {user?.email || 'example@example.com'}
                   </p>
                 </div>
               </div>

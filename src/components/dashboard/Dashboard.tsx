@@ -12,6 +12,7 @@ import { Portfolio } from "./Portfolio";
 import { Markets } from "./Markets";
 import { useState } from "react";
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { 
   TrendingUp, 
@@ -531,9 +532,11 @@ export function Dashboard() {
                   <div className="p-3 border-b border-gray-100 flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-900">Active Positions</h2>
-                      <Button variant="ghost" size="sm" onClick={() => router.push('/Portfolio')}>
-                        <ExternalLink className="h-4 w-4 text-blue-600" />
-                      </Button>
+                      <Link href="/Portfolio" passHref>
+                        <Button variant="ghost" size="sm">
+                          <ExternalLink className="h-4 w-4 text-blue-600" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                   
@@ -589,9 +592,11 @@ export function Dashboard() {
                       <div className="w-1.5 h-6 rounded-full mr-2"></div>
                       <h3 className="text-lg font-bold text-gray-900 tracking-tight">Market Opportunities</h3>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => router.push('/Markets')}>
-                      <ExternalLink className="h-5 w-5 text-blue-600" />
-                    </Button>
+                    <Link href="/Markets" passHref>
+                      <Button variant="ghost" size="icon">
+                        <ExternalLink className="h-5 w-5 text-blue-600" />
+                      </Button>
+                    </Link>
                   </div>
                   
                   <div className="p-4 flex-1 overflow-y-auto">
