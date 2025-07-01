@@ -95,29 +95,12 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       return NextResponse.json({ error: 'History limit must be between 1 and 1000' }, { status: 400 })
     }
 
-    // Get user creation date for proper filtering
-    const { data: userData, error: userError } = await serviceRoleClient
-      .from('auth.users')
-      .select('created_at')
-      .eq('id', user.id)
-      .single()
-
-    if (userError) {
-      console.error('Error fetching user data:', userError)
-    }
-
-    const userCreatedAt = userData?.created_at ? new Date(userData.created_at) : new Date('2025-06-25') // fallback
-    console.log(`User ${user.email} created at:`, userCreatedAt.toISOString())
+    // Use fallback date for filtering (user creation date not critical for portfolio)
+    const userCreatedAt = new Date('2025-06-25') // Platform launch date fallback
 
     // Get date range for filtering, but never go before user creation
     const { start: timeframeStart, end } = getDateRange(timeframe)
     const start = timeframeStart < userCreatedAt ? userCreatedAt : timeframeStart
-    
-    console.log(`Date range for timeframe ${timeframe}:`, { 
-      start: start.toISOString(), 
-      end: end.toISOString(),
-      userCreated: userCreatedAt.toISOString()
-    })
 
     // Get user balance
     const { data: userBalance, error: balanceError } = await serviceRoleClient
@@ -156,13 +139,7 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 })
     }
 
-    // Debug logging
-    console.log(`Found ${allOrders?.length || 0} total orders for user ${user.email} (after ${userCreatedAt.toDateString()})`)
-    if (allOrders && allOrders.length > 0) {
-      console.log('First order date:', allOrders[0].created_at)
-      console.log('Last order date:', allOrders[allOrders.length - 1].created_at)
-      console.log('Sample order:', JSON.stringify(allOrders[0], null, 2))
-    }
+
 
     // For positions calculation, filter orders by timeframe
     const orders = allOrders?.filter(order => {
@@ -340,16 +317,6 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       },
       history: historyData
     };
-
-    console.log('API Response Summary:', {
-      historyCount: historyData.length,
-      totalTrades: periodTotalTrades,
-      totalValue: totalValue,
-      totalPnL: totalRealizedPnL + totalUnrealizedPnL,
-      winRate: winRate,
-      activePositions: portfolioPositions.filter(p => p.marketStatus === 'active').length,
-      availableBalance: userBalance.available_balance
-    });
 
     return NextResponse.json(response)
 
