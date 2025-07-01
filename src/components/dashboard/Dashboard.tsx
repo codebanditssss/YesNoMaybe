@@ -492,7 +492,7 @@ export function Dashboard() {
                     <div className="flex items-center justify-between">
                       <h2 className="text-lg font-semibold text-gray-900">Active Positions</h2>
                       <Link href="/Portfolio" passHref>
-                        <Button asChild variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm">
                           <ExternalLink className="h-4 w-4 text-blue-600" />
                         </Button>
                       </Link>
@@ -552,7 +552,7 @@ export function Dashboard() {
                       <h3 className="text-lg font-bold text-gray-900 tracking-tight">Market Opportunities</h3>
                     </div>
                     <Link href="/Markets" passHref>
-                      <Button asChild variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon">
                         <ExternalLink className="h-5 w-5 text-blue-600" />
                       </Button>
                     </Link>
