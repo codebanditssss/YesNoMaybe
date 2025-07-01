@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useMarkets } from "@/hooks/useMarkets";
+import { useTradeHistory } from "@/hooks/useTradeHistory";
+import { useNotifications } from "@/hooks/useNotifications";
 import { Portfolio } from "./Portfolio";
 import { Markets } from "./Markets";
 import { useState } from "react";
@@ -29,7 +31,8 @@ import {
   TrendingDown as Loss,
   PieChart,
   Calendar,
-  Info
+  Info,
+  TestTube
 } from "lucide-react";
 
 // Add type definition for stat
@@ -52,7 +55,6 @@ export function Dashboard() {
   const [activeView, setActiveView] = useState<'dashboard' | 'portfolio' | 'markets'>('dashboard');
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const router = useRouter();
-
   // Fetch real portfolio data
   const { 
     portfolio, 
@@ -79,10 +81,14 @@ export function Dashboard() {
     limit: 8
   });
 
+  const { createNotification } = useNotifications();
+  
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Calculate derived values
-  const totalPnL = portfolioLoading ? null : (getTotalPnL ? getTotalPnL() : null);
-  const pnlPercentage = portfolioLoading ? null : (getPnLPercentage ? getPnLPercentage() : null);
-  const activePositions = portfolioLoading ? null : (getActivePositions ? getActivePositions() : null);
+  const totalPnL = getTotalPnL();
+  const pnlPercentage = getPnLPercentage();
+  const activePositions = getActivePositions();
 
   // Portfolio performance metrics
   const portfolioStats: StatType[] = [
@@ -125,7 +131,7 @@ export function Dashboard() {
   ];
 
   // Active positions with detailed info
-  const transformedActivePositions = portfolioLoading ? [] : (activePositions || []).slice(0, 6).map(position => {
+  const transformedActivePositions = portfolioLoading ? [] : (activePositions || []).slice(0, 6).map((position: any) => {
     const pnl = (position.unrealizedPnL || 0) + (position.realizedPnL || 0);
     const pnlPercent = (position.totalInvested || 0) > 0 ? (pnl / (position.totalInvested || 1)) * 100 : 0;
     const totalShares = (position.yesShares || 0) + (position.noShares || 0);
@@ -161,10 +167,34 @@ export function Dashboard() {
   const hasError = portfolioError || marketsError;
   const hasActivePositions = transformedActivePositions.length > 0;
 
-  const handleRefreshAll = () => {
+  const handleRefreshAll = async () => {
+    setIsRefreshing(true);
     setLastUpdate(new Date());
-    refreshPortfolio();
-    refreshMarkets();
+    
+    try {
+      await Promise.all([
+        refreshPortfolio(),
+        refreshMarkets()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const createTestNotification = async () => {
+    try {
+      await createNotification({
+        title: 'Test Notification 🧪',
+        message: 'This is a test notification to verify the system is working correctly!',
+        type: 'system',
+        priority: 'normal',
+        action_url: '/Dashboard'
+      });
+    } catch (error) {
+      console.error('Failed to create test notification:', error);
+    }
   };
 
   // Loading skeleton for stats cards
@@ -368,19 +398,30 @@ export function Dashboard() {
               })}
             </p>
           </div>
-          <Button
-            onClick={handleRefreshAll}
-            variant="outline"
-            size="sm"
-            disabled={showLoading}
-          >
-            {showLoading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
-            )}
-            {showLoading ? "Loading..." : "Refresh Data"}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={createTestNotification}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <TestTube className="h-4 w-4" />
+              Test Notification
+            </Button>
+            <Button
+              onClick={handleRefreshAll}
+              variant="outline"
+              size="sm"
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {isRefreshing ? "Loading..." : "Refresh Data"}
+            </Button>
+          </div>
         </div>
 
         {/* Portfolio Metrics */}

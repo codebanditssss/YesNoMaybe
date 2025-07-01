@@ -20,6 +20,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import NotificationModal from '@/components/ui/NotificationModal';
+import { useNotifications } from '@/hooks/useNotifications';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -27,6 +28,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const { unreadCount } = useNotifications();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -315,7 +317,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => setNotificationOpen(true)}
               >
                 <Bell className="h-5 w-5 text-gray-600 group-hover:text-gray-900" />
-                <span className="absolute top-2 right-2 block h-2.5 w-2.5 rounded-full bg-gray-900 border border-white"></span>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white text-xs font-medium">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>

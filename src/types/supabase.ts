@@ -66,6 +66,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          priority: string | null
+          read: boolean | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          priority?: string | null
+          read?: boolean | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          priority?: string | null
+          read?: boolean | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           created_at: string
@@ -303,6 +345,45 @@ export type Database = {
           updated_at?: string
           user_id?: string
           winning_trades?: number
+        }
+        Relationships: []
+      }
+      user_notification_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          email_notifications: boolean
+          market_alerts: boolean
+          trade_confirmations: boolean
+          order_updates: boolean
+          promotions: boolean
+          system_notifications: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          email_notifications?: boolean
+          market_alerts?: boolean
+          trade_confirmations?: boolean
+          order_updates?: boolean
+          promotions?: boolean
+          system_notifications?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          email_notifications?: boolean
+          market_alerts?: boolean
+          trade_confirmations?: boolean
+          order_updates?: boolean
+          promotions?: boolean
+          system_notifications?: boolean
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }

@@ -22,6 +22,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 
 type EditableProfileFields = {
   full_name: string;
@@ -47,6 +48,7 @@ export function Settings() {
   const [activeSection, setActiveSection] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const { profile, loading, saving, error, updateProfile, uploadAvatar } = useProfile();
+  const { preferences: notificationPreferences, loading: preferencesLoading, updatePreferences } = useNotificationPreferences();
   const [tempProfile, setTempProfile] = useState<EditableProfileFields>({
     full_name: '',
     twitter_handle: '',
@@ -55,14 +57,6 @@ export function Settings() {
     location: '',
     website: '',
   });
-
-  const [notifications, setNotifications] = useState<NotificationSettings>({
-    email: true,
-    marketAlerts: true,
-    tradeConfirmations: true,
-    promotions: false
-  });
-
 
   const [preferences, setPreferences] = useState<AppPreferences>({
     theme: 'system',
@@ -151,8 +145,17 @@ export function Settings() {
     setIsEditing(false);
   };
 
-  const toggleNotification = (key: keyof NotificationSettings) => {
-    setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleNotification = async (key: keyof typeof notificationPreferences) => {
+    if (!notificationPreferences) return;
+    
+    try {
+      const newValue = !notificationPreferences[key];
+      await updatePreferences({
+        [key]: newValue
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update notification preference');
+    }
   };
 
   const updatePreference = (key: keyof AppPreferences, value: any) => {
@@ -447,52 +450,65 @@ export function Settings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-4">
-            {[
-              { key: 'email', label: 'Email Notifications', desc: 'Receive notifications via email' },
-            ].map(({ key, label, desc }) => (
-              <div key={key} className="flex items-center justify-between">
-                <div>
-                  <label className="font-medium">{label}</label>
-                  <p className="text-sm text-gray-600">{desc}</p>
-                </div>
-                <button
-                  onClick={() => toggleNotification(key as keyof NotificationSettings)}
-                >
-                  {notifications[key as keyof NotificationSettings] ? (
-                    <ToggleRight className="h-6 w-6 text-blue-600" />
-                  ) : (
-                    <ToggleLeft className="h-6 w-6 text-gray-400" />
-                  )}
-                </button>
+          {preferencesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading preferences...</span>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4">
+                {[
+                  { key: 'email_notifications', label: 'Email Notifications', desc: 'Receive notifications via email' },
+                ].map(({ key, label, desc }) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <div>
+                      <label className="font-medium">{label}</label>
+                      <p className="text-sm text-gray-600">{desc}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleNotification(key as keyof typeof notificationPreferences)}
+                      disabled={preferencesLoading}
+                    >
+                      {notificationPreferences?.[key as keyof typeof notificationPreferences] ? (
+                        <ToggleRight className="h-6 w-6 text-blue-600" />
+                      ) : (
+                        <ToggleLeft className="h-6 w-6 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          <div className="border-t pt-4">
-            <h4 className="font-medium text-gray-900 mb-4">Notification Types</h4>
-            {[
-              { key: 'marketAlerts', label: 'Market Alerts', desc: 'Price movements and market events' },
-              { key: 'tradeConfirmations', label: 'Trade Confirmations', desc: 'Order executions and settlements' },
-              { key: 'promotions', label: 'Promotions', desc: 'Special offers and new features' }
-            ].map(({ key, label, desc }) => (
-              <div key={key} className="flex items-center justify-between py-2">
-                <div>
-                  <label className="font-medium">{label}</label>
-                  <p className="text-sm text-gray-600">{desc}</p>
-                </div>
-                <button
-                  onClick={() => toggleNotification(key as keyof NotificationSettings)}
-                >
-                  {notifications[key as keyof NotificationSettings] ? (
-                    <ToggleRight className="h-6 w-6 text-blue-600" />
-                  ) : (
-                    <ToggleLeft className="h-6 w-6 text-gray-400" />
-                  )}
-                </button>
+              <div className="border-t pt-4">
+                <h4 className="font-medium text-gray-900 mb-4">Notification Types</h4>
+                {[
+                  { key: 'market_alerts', label: 'Market Alerts', desc: 'Price movements and market events' },
+                  { key: 'trade_confirmations', label: 'Trade Confirmations', desc: 'Order executions and settlements' },
+                  { key: 'order_updates', label: 'Order Updates', desc: 'Status changes for your orders' },
+                  { key: 'promotions', label: 'Promotions', desc: 'Special offers and new features' },
+                  { key: 'system_notifications', label: 'System Notifications', desc: 'Important platform updates' }
+                ].map(({ key, label, desc }) => (
+                  <div key={key} className="flex items-center justify-between py-2">
+                    <div>
+                      <label className="font-medium">{label}</label>
+                      <p className="text-sm text-gray-600">{desc}</p>
+                    </div>
+                    <button
+                      onClick={() => toggleNotification(key as keyof typeof notificationPreferences)}
+                      disabled={preferencesLoading}
+                    >
+                      {notificationPreferences?.[key as keyof typeof notificationPreferences] ? (
+                        <ToggleRight className="h-6 w-6 text-blue-600" />
+                      ) : (
+                        <ToggleLeft className="h-6 w-6 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

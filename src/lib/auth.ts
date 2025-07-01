@@ -1,5 +1,6 @@
-import { supabase } from './supabase'
+import { createServerClient } from '@supabase/ssr'
 import { NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
 
 export interface AuthenticatedUser {
   id: string
@@ -8,40 +9,39 @@ export interface AuthenticatedUser {
 }
 
 /**
- * Extracts and verifies JWT token from request headers
+ * Extracts and verifies JWT token from request headers or cookies
  * Returns user data if valid, null if invalid
  */
 export async function getAuthenticatedUser(request: NextRequest): Promise<AuthenticatedUser | null> {
   try {
-    // First try to get the session token from the cookie
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    // Create server client that can access cookies
+    const cookieStore = await cookies()
     
-    if (session?.user) {
-      return {
-        id: session.user.id,
-        email: session.user.email!,
-        role: session.user.user_metadata?.role || 'user'
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+        },
       }
+    )
+
+    // Get the current user from the session
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error || !user) {
+      console.warn('No valid session found:', error?.message)
+      return null
     }
 
-    // If no session from cookie, try the Authorization header
-    const authHeader = request.headers.get('Authorization')
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1]
-      const { data: { user }, error } = await supabase.auth.getUser(token)
-      
-      if (user) {
-        return {
-          id: user.id,
-          email: user.email!,
-          role: user.user_metadata?.role || 'user'
-        }
-      }
+    return {
+      id: user.id,
+      email: user.email!,
+      role: user.user_metadata?.role || 'user'
     }
-
-    // No valid session found
-    console.warn('No valid session found')
-    return null
 
   } catch (error) {
     console.error('Error in getAuthenticatedUser:', error)
@@ -54,17 +54,9 @@ export async function getAuthenticatedUser(request: NextRequest): Promise<Authen
  */
 export async function getUserFromSession(): Promise<AuthenticatedUser | null> {
   try {
-    const { data: { session }, error } = await supabase.auth.getSession()
-    
-    if (error || !session) {
-      return null
-    }
-
-    return {
-      id: session.user.id,
-      email: session.user.email!,
-      role: session.user.user_metadata?.role || 'user'
-    }
+    // This method is deprecated for server-side use
+    console.warn('getUserFromSession is deprecated for server-side use')
+    return null
   } catch (error) {
     console.error('Session error:', error)
     return null
