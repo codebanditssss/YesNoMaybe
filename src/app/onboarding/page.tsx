@@ -103,12 +103,6 @@ export default function OnboardingPage() {
           return false;
         }
         break;
-      case 3:
-        if (!formData.twitter_handle.trim()) {
-          setError('Please add a twitter handle to your profile.');
-          return false;
-        }
-        break;
     }
     return true;
   };
@@ -237,7 +231,7 @@ export default function OnboardingPage() {
         placeholder: '@username',
         icon: Twitter,
         type: 'text',
-        required: true
+        required: false
       }
     };
 
