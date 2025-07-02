@@ -248,7 +248,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu className="h-5 w-5 text-gray-500" />
           </button>
           <div className="flex-1 flex justify-end">
-            <ProfileDropdown user={user} handleSignOut={handleSignOut} />
+            <ProfileDropdown user={user} />
           </div>
         </div>
 

@@ -1,16 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { LogOut} from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
 export default function ProfileDropdown({
   user,
-  handleSignOut,
 }: {
   user: User | null; 
-  handleSignOut: () => Promise<void>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -122,13 +119,6 @@ export default function ProfileDropdown({
                 {changing ? 'Changing...' : 'Change Password'}
               </button>
             </div>
-            <button
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all duration-200"
-              onClick={async () => { handleSignOut(); setIsOpen(false); }}
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </button>
           </div>
         </div>
       )}
