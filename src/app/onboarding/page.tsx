@@ -108,12 +108,6 @@ useEffect(() => {
           return false;
         }
         break;
-      case 3:
-        if (!formData.twitter_handle.trim()) {
-          setError('Please add a twitter handle to your profile.');
-          return false;
-        }
-        break;
     }
     return true;
   };
@@ -250,7 +244,7 @@ useEffect(() => {
         placeholder: '@username',
         icon: Twitter,
         type: 'text',
-        required: true
+        required: false
       }
     };
 
