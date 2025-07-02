@@ -1,72 +1,97 @@
-import { supabase } from '@/lib/supabase'
-import { NextRequest, NextResponse } from 'next/server'
-import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
-import { createClient } from '@supabase/supabase-js'
-import { notificationService } from '@/lib/notificationService'
-
-// Create a Supabase client with the service role key for admin operations
-const serviceRoleClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
+import { NextRequest } from 'next/server';
+import { 
+  withAuthentication, 
+  getServiceRoleClient,
+  validateRequestInput, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/server-utils';
+import { tradingEngine } from '@/lib/trading-engine';
+import { notificationService } from '@/lib/notificationService';
 
 // GET handler for fetching user's orders
-async function getOrdersHandler(request: NextRequest, user: AuthenticatedUser) {
+async function getOrdersHandler(user: any, supabase: any, request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') // 'all', 'pending', 'filled', 'cancelled'
-    const marketId = searchParams.get('market_id')
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100) // Cap at 100
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const { searchParams } = new URL(request.url);
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
+    const offset = parseInt(searchParams.get('offset') || '0');
+    const status = searchParams.get('status'); // open, filled, partial, cancelled
+    const marketId = searchParams.get('marketId');
+    const side = searchParams.get('side'); // YES, NO
 
+    // Build query using authenticated client (RLS will filter to user's orders)
     let query = supabase
       .from('orders')
       .select(`
-        id,
-        market_id,
-        side,
-        quantity,
-        price,
-        filled_quantity,
-        remaining_quantity,
-        status,
-        order_type,
-        created_at,
-        updated_at,
-        expires_at,
+        *,
         markets:market_id (
+          id,
           title,
-          category,
+          description,
           status
         )
       `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+      .range(offset, offset + limit - 1);
 
     // Apply filters
-    if (status && status !== 'all') {
-      query = query.eq('status', status)
+    if (status) {
+      const validStatuses = ['open', 'filled', 'partial', 'cancelled'];
+      if (validStatuses.includes(status)) {
+        query = query.eq('status', status);
+      }
     }
 
-    if (marketId) {
-      query = query.eq('market_id', marketId)
+    if (marketId?.trim()) {
+      query = query.eq('market_id', marketId.trim());
     }
 
-    const { data: orders, error, count } = await query
+    if (side) {
+      const validSides = ['YES', 'NO'];
+      if (validSides.includes(side)) {
+        query = query.eq('side', side);
+      }
+    }
+
+    const { data: orders, error } = await query;
 
     if (error) {
-      console.error('Error fetching orders:', error)
-      return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 })
+      console.error('Error fetching orders:', error);
+      return createErrorResponse('Failed to fetch orders', 500);
     }
 
-    return NextResponse.json({
+    // Get total count for pagination
+    let countQuery = supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+
+    if (status) {
+      const validStatuses = ['open', 'filled', 'partial', 'cancelled'];
+      if (validStatuses.includes(status)) {
+        countQuery = countQuery.eq('status', status);
+      }
+    }
+
+    if (marketId?.trim()) {
+      countQuery = countQuery.eq('market_id', marketId.trim());
+    }
+
+    if (side) {
+      const validSides = ['YES', 'NO'];
+      if (validSides.includes(side)) {
+        countQuery = countQuery.eq('side', side);
+      }
+    }
+
+    const { count, error: countError } = await countQuery;
+
+    if (countError) {
+      console.error('Error getting order count:', countError);
+    }
+
+    return createSuccessResponse({
       orders: orders || [],
       pagination: {
         total: count || 0,
@@ -74,476 +99,245 @@ async function getOrdersHandler(request: NextRequest, user: AuthenticatedUser) {
         offset,
         hasMore: (count || 0) > offset + limit
       }
-    })
+    });
 
   } catch (error) {
-    console.error('Orders GET API error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Orders GET API error:', error);
+    return createErrorResponse('Internal server error', 500);
   }
 }
 
-// Helper function to calculate order cost
-function calculateOrderCost(side: string, price: number, quantity: number): number {
-  // For YES orders: cost = price * quantity / 100 
-  // For NO orders: cost = (100 - price) * quantity / 100
-  const actualPrice = side === 'YES' ? price : (100 - price)
-  return (actualPrice * quantity) / 100
-}
-
-// Helper function to match orders
-async function findMatchingOrders(marketId: string, side: string, price: number, quantity: number) {
-  const oppositeSide = side === 'YES' ? 'NO' : 'YES'
-  
-  // For YES orders, match with NO orders where YES_price + NO_price = 100
-  // For NO orders, match with YES orders where YES_price + NO_price = 100
-  const targetPrice = 100 - price
-  
-  console.log(`🔍 Looking for ${oppositeSide} orders at price ${targetPrice} for ${side} order at ${price}`)
-  
-  const { data: matchingOrders, error } = await serviceRoleClient
-    .from('orders')
-    .select('*')
-    .eq('market_id', marketId)
-    .eq('side', oppositeSide)
-    .eq('price', targetPrice)
-    .eq('status', 'open')
-    .gt('quantity', 0)
-    .order('created_at', { ascending: true }) // First-in-first-out
-  
-  if (error) {
-    console.error('Error finding matching orders:', error)
-    return []
-  }
-  
-  console.log(`📋 Found ${matchingOrders?.length || 0} potential matches`)
-  return matchingOrders || []
-}
-
-// Helper function to execute a trade
-async function executeTrade(
-  buyOrder: any,
-  sellOrder: any,
-  tradeQuantity: number,
-  tradePrice: number,
-  marketId: string
-) {
-  console.log(`⚡ Executing trade: ${tradeQuantity} shares at ₹${tradePrice}`)
-  
+// POST handler for placing new orders using atomic trading engine
+async function placeOrderHandler(user: any, supabase: any, request: NextRequest) {
   try {
-    // Create trade record with correct status
-    const { data: trade, error: tradeError } = await serviceRoleClient
-      .from('trades')
-      .insert({
-        market_id: marketId,
-        yes_order_id: buyOrder.side === 'YES' ? buyOrder.id : sellOrder.id,
-        no_order_id: buyOrder.side === 'NO' ? buyOrder.id : sellOrder.id,
-        yes_user_id: buyOrder.side === 'YES' ? buyOrder.user_id : sellOrder.user_id,
-        no_user_id: buyOrder.side === 'NO' ? buyOrder.user_id : sellOrder.user_id,
-        quantity: tradeQuantity,
-        price: tradePrice,
-        status: 'settled' // Fixed: use 'settled' instead of 'completed'
-      })
-      .select()
-      .single()
+    const body = await request.json();
     
-    if (tradeError) {
-      console.error('Error creating trade:', tradeError)
-      throw tradeError
-    }
-    
-    console.log(`✅ Trade created:`, trade)
-    
-    // Calculate new filled quantities
-    const buyOrderNewFilled = buyOrder.filled_quantity + tradeQuantity
-    const sellOrderNewFilled = sellOrder.filled_quantity + tradeQuantity
-    
-    // Determine order statuses
-    const buyOrderStatus = buyOrderNewFilled >= buyOrder.quantity ? 'filled' : 'partial'
-    const sellOrderStatus = sellOrderNewFilled >= sellOrder.quantity ? 'filled' : 'partial'
-    
-    // Update filled quantities for both orders
-    const updatePromises = [
-      serviceRoleClient
-        .from('orders')
-        .update({
-          filled_quantity: buyOrderNewFilled,
-          status: buyOrderStatus
-        })
-        .eq('id', buyOrder.id),
-      
-      serviceRoleClient
-        .from('orders')
-        .update({
-          filled_quantity: sellOrderNewFilled,
-          status: sellOrderStatus
-        })
-        .eq('id', sellOrder.id)
-    ]
-    
-    await Promise.all(updatePromises)
-    
-    // Calculate unlock amounts correctly
-    const yesUser = buyOrder.side === 'YES' ? buyOrder.user_id : sellOrder.user_id
-    const noUser = buyOrder.side === 'NO' ? buyOrder.user_id : sellOrder.user_id
-    
-    // YES user pays: tradePrice * tradeQuantity / 100
-    const yesUserCost = (tradePrice * tradeQuantity) / 100
-    
-    // NO user pays: (100 - tradePrice) * tradeQuantity / 100  
-    const noUserCost = ((100 - tradePrice) * tradeQuantity) / 100
-    
-    console.log(`💰 YES user cost: ₹${yesUserCost}, NO user cost: ₹${noUserCost}`)
-    
-    // Get current balances for both users
-    const { data: currentBalances } = await serviceRoleClient
-      .from('user_balances')
-      .select('user_id, locked_balance, total_trades, total_volume')
-      .in('user_id', [yesUser, noUser])
-    
-    const yesUserBalance = currentBalances?.find(b => b.user_id === yesUser)
-    const noUserBalance = currentBalances?.find(b => b.user_id === noUser)
-    
-    if (!yesUserBalance || !noUserBalance) {
-      throw new Error('User balances not found')
-    }
-    
-    // Update user balances - unlock the correct amounts
-    const balanceUpdates = [
-      // Update YES user balance
-      serviceRoleClient
-        .from('user_balances')
-        .update({
-          locked_balance: Number(yesUserBalance.locked_balance) - yesUserCost,
-          total_trades: yesUserBalance.total_trades + 1,
-          total_volume: Number(yesUserBalance.total_volume) + tradeQuantity
-        })
-        .eq('user_id', yesUser),
-      
-      // Update NO user balance  
-      serviceRoleClient
-        .from('user_balances')
-        .update({
-          locked_balance: Number(noUserBalance.locked_balance) - noUserCost,
-          total_trades: noUserBalance.total_trades + 1,
-          total_volume: Number(noUserBalance.total_volume) + tradeQuantity
-        })
-        .eq('user_id', noUser)
-    ]
-    
-    await Promise.all(balanceUpdates)
-    
-    console.log(`💰 Updated balances - YES user unlocked ₹${yesUserCost}, NO user unlocked ₹${noUserCost}`)
-    
-    return trade
-    
-  } catch (error) {
-    console.error('Error executing trade:', error)
-    throw error
-  }
-}
-
-// POST handler for placing new orders with matching engine
-export const POST = withAuth(async (req, user) => {
-  try {
-    const body = await req.json()
-    const { marketId, side, quantity, price } = body
-
     // Validate required fields
-    if (!marketId || !side || !quantity || !price) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'Missing required fields: marketId, side, quantity, price' 
-      }, { status: 400 })
+    const validation = validateRequestInput(body, ['marketId', 'side', 'quantity', 'price']);
+    if (!validation.isValid) {
+      return createErrorResponse(
+        `Missing required fields: ${validation.missingFields.join(', ')}`,
+        400
+      );
     }
 
-    // Validate input ranges
-    if (price < 1 || price > 99) {
-      return NextResponse.json({
-        success: false,
-        error: 'Price must be between 1 and 99'
-      }, { status: 400 })
-    }
+    const { marketId, side, quantity, price } = body;
 
-    if (quantity < 1 || quantity > 10000) {
-      return NextResponse.json({
-        success: false,
-        error: 'Quantity must be between 1 and 10000'
-      }, { status: 400 })
-    }
-
+    // Additional validation
     if (!['YES', 'NO'].includes(side)) {
-      return NextResponse.json({
-        success: false,
-        error: 'Side must be YES or NO'
-      }, { status: 400 })
+      return createErrorResponse('Side must be YES or NO', 400);
     }
 
-    console.log(`🎯 Processing order: ${side} ${quantity} @ ₹${price} for market ${marketId}`)
+    // Validate numeric inputs
+    const numericQuantity = parseInt(quantity);
+    const numericPrice = parseFloat(price);
 
-    // Step 1: Get user balance (don't overwrite existing balance!)
-    let { data: userBalance, error: balanceError } = await serviceRoleClient
-      .from('user_balances')
-      .select('*')
-      .eq('user_id', user.id)
-      .single()
-
-    // Only create default balance for truly new users
-    if (balanceError && balanceError.code === 'PGRST116') {
-      console.log(`🆕 Creating new user balance for ${user.id}`)
-      const { data: newBalance, error: createError } = await serviceRoleClient
-        .from('user_balances')
-        .insert({
-          user_id: user.id,
-          available_balance: 10000, // Default balance for new users
-          locked_balance: 0,
-          total_deposited: 10000,
-          total_profit_loss: 0,
-          total_trades: 0,
-          winning_trades: 0,
-          total_volume: 0,
-          total_withdrawn: 0
-        })
-        .select()
-        .single()
-      
-      if (createError) {
-        console.error('Error creating user balance:', createError)
-        return NextResponse.json({ 
-          success: false,
-          error: 'Failed to create user balance' 
-        }, { status: 500 })
-      }
-      
-      userBalance = newBalance
-      balanceError = null
+    if (!Number.isInteger(numericQuantity) || numericQuantity < 1 || numericQuantity > 10000) {
+      return createErrorResponse('Quantity must be an integer between 1 and 10000', 400);
     }
 
-    if (balanceError) {
-      console.error('Error getting user balance:', balanceError)
-      return NextResponse.json({ 
-        success: false,
-        error: 'Failed to access user balance' 
-      }, { status: 500 })
+    if (typeof numericPrice !== 'number' || numericPrice < 1 || numericPrice > 99) {
+      return createErrorResponse('Price must be a number between 1 and 99', 400);
     }
 
-    // Step 2: Calculate order cost and check balance
-    const orderCost = calculateOrderCost(side, price, quantity)
-    console.log(`💰 Order cost: ₹${orderCost}, Available: ₹${userBalance.available_balance}`)
+    // Validate market exists and is active
+    const { data: market, error: marketError } = await supabase
+      .from('markets')
+      .select('id, title, status, end_date')
+      .eq('id', marketId.trim())
+      .single();
 
-    if (orderCost > userBalance.available_balance) {
-      return NextResponse.json({
-        success: false,
-        error: `Insufficient balance. Required: ₹${orderCost.toFixed(2)}, Available: ₹${userBalance.available_balance.toFixed(2)}`
-      }, { status: 400 })
+    if (marketError || !market) {
+      return createErrorResponse('Market not found', 404);
     }
 
-    // Step 3: Lock funds
-    const { error: lockError } = await serviceRoleClient
-      .from('user_balances')
-      .update({
-        available_balance: userBalance.available_balance - orderCost,
-        locked_balance: userBalance.locked_balance + orderCost
-      })
-      .eq('user_id', user.id)
-
-    if (lockError) {
-      console.error('Error locking funds:', lockError)
-      return NextResponse.json({ 
-        success: false,
-        error: 'Failed to lock funds' 
-      }, { status: 500 })
+    if (market.status !== 'active') {
+      return createErrorResponse('Market is not active for trading', 400);
     }
 
-    console.log(`🔒 Locked ₹${orderCost} for user ${user.id}`)
-
-    // Step 4: Create the order
-    const { data: newOrder, error: orderError } = await serviceRoleClient
-      .from('orders')
-      .insert({
-        market_id: marketId,
-        user_id: user.id,
-            side: side,
-            quantity: parseInt(quantity),
-            price: parseFloat(price),
-        status: 'open',
-            order_type: 'limit',
-        filled_quantity: 0
-      })
-      .select()
-      .single()
-
-    if (orderError) {
-      // Rollback balance lock on order creation failure
-      await serviceRoleClient
-        .from('user_balances')
-        .update({
-          available_balance: userBalance.available_balance,
-          locked_balance: userBalance.locked_balance
-        })
-        .eq('user_id', user.id)
-      
-      console.error('Error creating order:', orderError)
-      return NextResponse.json({ 
-        success: false,
-        error: 'Failed to create order' 
-      }, { status: 500 })
+    // Check if market has ended
+    if (market.end_date && new Date(market.end_date) < new Date()) {
+      return createErrorResponse('Market has ended', 400);
     }
 
-    console.log(`📝 Created order:`, newOrder)
+    console.log(`🎯 Processing order: ${side} ${numericQuantity} @ ₹${numericPrice} for market ${marketId}`);
 
-    // Step 5: Send order placed notification
+    // Use atomic trading engine to place order
+    const result = await tradingEngine.placeOrder({
+      marketId: marketId.trim(),
+      userId: user.id,
+      side: side as 'YES' | 'NO',
+      quantity: numericQuantity,
+      price: numericPrice
+    });
+
+    if (!result.success) {
+      return createErrorResponse(result.error || 'Failed to place order', 400);
+    }
+
+    // Send order placed notification (async, don't block response)
     try {
-      const { data: marketData } = await serviceRoleClient
-        .from('markets')
-        .select('title')
-        .eq('id', marketId)
-        .single()
-
-      await notificationService.notifyOrderPlaced(user.id, {
-        orderId: newOrder.id,
+      notificationService.notifyOrderPlaced(user.id, {
+        orderId: result.orderId!,
         marketId: marketId,
-        marketTitle: marketData?.title || 'Unknown Market',
+        marketTitle: market.title,
         side: side,
-        quantity: quantity,
-        price: price
-      })
+        quantity: numericQuantity,
+        price: numericPrice
+      }).catch(error => {
+        console.error('Error sending order placed notification:', error);
+      });
     } catch (notifError) {
-      console.error('Error sending order placed notification:', notifError)
+      console.error('Error queuing order placed notification:', notifError);
       // Don't fail the order if notification fails
     }
 
-    // Step 6: Try to match the order immediately
-    let remainingQuantity = quantity
-    let totalFilled = 0
-    const executedTrades = []
-
-    try {
-      const matchingOrders = await findMatchingOrders(marketId, side, price, quantity)
-      
-      for (const matchOrder of matchingOrders) {
-        if (remainingQuantity <= 0) break
-        
-        const availableQuantity = matchOrder.quantity - (matchOrder.filled_quantity || 0)
-        if (availableQuantity <= 0) continue
-        
-        const tradeQuantity = Math.min(remainingQuantity, availableQuantity)
-        const tradePrice = side === 'YES' ? price : matchOrder.price
-        
-        // Execute the trade
-        const trade = await executeTrade(
-          side === 'YES' ? newOrder : matchOrder,
-          side === 'YES' ? matchOrder : newOrder,
-          tradeQuantity,
-          tradePrice,
-          marketId
-        )
-        
-        executedTrades.push(trade)
-        totalFilled += tradeQuantity
-        remainingQuantity -= tradeQuantity
-        
-        console.log(`🎉 Executed trade: ${tradeQuantity} shares, ${remainingQuantity} remaining`)
-      }
-      
-      // Update the new order if it was filled
-      if (totalFilled > 0) {
-        await serviceRoleClient
-          .from('orders')
-          .update({
-            filled_quantity: totalFilled,
-            status: totalFilled >= quantity ? 'filled' : 'partial'
-          })
-          .eq('id', newOrder.id)
-
-        // Send order filled notification
-        try {
-          const { data: marketData } = await serviceRoleClient
-            .from('markets')
-            .select('title')
-            .eq('id', marketId)
-            .single()
-
-          if (totalFilled >= quantity) {
-            // Order completely filled
-            await notificationService.notifyOrderFilled(user.id, {
-              orderId: newOrder.id,
-              marketId: marketId,
-              marketTitle: marketData?.title || 'Unknown Market',
-              side: side,
-              quantity: totalFilled,
-              price: price,
-              tradeId: executedTrades[0]?.id || 'multiple'
-            })
-          } else {
-            // Order partially filled - create a custom notification
-            await notificationService.createNotification({
-              user_id: user.id,
-              title: 'Order Partially Filled! 📊',
-              message: `Your ${side} order for ${quantity} shares was partially filled (${totalFilled}/${quantity}) at ₹${price} for "${marketData?.title || 'Unknown Market'}"`,
-              type: 'order_update',
-              priority: 'normal',
-              metadata: {
-                orderId: newOrder.id,
-                marketId: marketId,
-                side: side,
-                quantity: quantity,
-                filledQuantity: totalFilled,
-                price: price
-              }
-            })
-          }
-        } catch (notifError) {
-          console.error('Error sending order filled notification:', notifError)
-          // Don't fail the order if notification fails
+    // If trades were executed, send trade notifications
+    if (result.trades && result.trades.length > 0) {
+      try {
+        for (const trade of result.trades) {
+          notificationService.notifyTradeExecuted(user.id, {
+            tradeId: trade.id,
+            marketId: marketId,
+            marketTitle: market.title,
+            quantity: trade.quantity,
+            price: trade.price,
+            side: side
+          }).catch(error => {
+            console.error('Error sending trade notification:', error);
+          });
         }
+      } catch (notifError) {
+        console.error('Error queuing trade notifications:', notifError);
       }
-      
-    } catch (matchError) {
-      console.error('Error during matching:', matchError)
-      // Continue without failing the order placement
     }
 
-    // Step 7: Get market info for response
-    const { data: market } = await serviceRoleClient
-      .from('markets')
-      .select('title, category')
-      .eq('id', marketId)
-      .single()
-
-    // Step 8: Return success response
-      return NextResponse.json({ 
-        success: true,
-        order: {
-        id: newOrder.id,
-        marketId: newOrder.market_id,
-          marketTitle: market?.title || 'Unknown Market',
-          marketCategory: market?.category || null,
-        side: newOrder.side,
-        quantity: newOrder.quantity,
-        price: newOrder.price,
-        filledQuantity: totalFilled,
-        remainingQuantity: newOrder.quantity - totalFilled,
-        status: totalFilled >= quantity ? 'filled' : (totalFilled > 0 ? 'partial' : 'open'),
-        orderType: newOrder.order_type,
-        createdAt: newOrder.created_at,
-        updatedAt: newOrder.updated_at || newOrder.created_at,
-          expiresAt: null
-        },
-      trades: executedTrades,
-      totalFilled,
-      message: totalFilled > 0 
-        ? `Order placed and ${totalFilled}/${quantity} shares filled immediately`
-        : 'Order placed successfully and waiting for match'
-    })
+    return createSuccessResponse({
+      success: true,
+      orderId: result.orderId,
+      filledQuantity: result.filledQuantity || 0,
+      remainingQuantity: result.remainingQuantity || numericQuantity,
+      trades: result.trades || [],
+      message: result.trades && result.trades.length > 0 
+        ? `Order placed and ${result.filledQuantity} shares executed immediately`
+        : 'Order placed successfully'
+    }, 201);
 
   } catch (error) {
-    console.error('Error in order placement:', error)
-    return NextResponse.json({ 
-      success: false,
-      error: 'Internal server error' 
-    }, { status: 500 })
+    console.error('Place order API error:', error);
+    if (error instanceof SyntaxError) {
+      return createErrorResponse('Invalid JSON in request body', 400);
+    }
+    return createErrorResponse('Internal server error', 500);
   }
-})
+}
 
-// Export the protected handlers
-export const GET = withAuth(getOrdersHandler)
+// PATCH handler for updating orders (cancel, modify)
+async function updateOrderHandler(user: any, supabase: any, request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    // Validate required fields
+    const validation = validateRequestInput(body, ['orderId', 'action']);
+    if (!validation.isValid) {
+      return createErrorResponse(
+        `Missing required fields: ${validation.missingFields.join(', ')}`,
+        400
+      );
+    }
+
+    const { orderId, action } = body;
+
+    // Validate action
+    const validActions = ['cancel'];
+    if (!validActions.includes(action)) {
+      return createErrorResponse(
+        `Invalid action. Must be one of: ${validActions.join(', ')}`,
+        400
+      );
+    }
+
+    if (action === 'cancel') {
+      const result = await tradingEngine.cancelOrder(orderId.trim(), user.id);
+      
+      if (!result.success) {
+        return createErrorResponse(result.error || 'Failed to cancel order', 400);
+      }
+
+      // Send order cancelled notification (async)
+      try {
+        const { data: order } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            markets:market_id (title)
+          `)
+          .eq('id', orderId.trim())
+          .eq('user_id', user.id)
+          .single();
+
+        if (order) {
+          notificationService.notifyOrderCancelled(user.id, {
+            orderId: orderId.trim(),
+            marketId: order.market_id,
+            marketTitle: order.markets?.title || 'Unknown Market',
+            side: order.side,
+            quantity: order.quantity,
+            price: order.price
+          }).catch(error => {
+            console.error('Error sending order cancelled notification:', error);
+          });
+        }
+      } catch (notifError) {
+        console.error('Error queuing order cancelled notification:', notifError);
+      }
+
+      return createSuccessResponse({
+        success: true,
+        message: 'Order cancelled successfully'
+      });
+    }
+
+    return createErrorResponse('Invalid action', 400);
+
+  } catch (error) {
+    console.error('Update order API error:', error);
+    if (error instanceof SyntaxError) {
+      return createErrorResponse('Invalid JSON in request body', 400);
+    }
+    return createErrorResponse('Internal server error', 500);
+  }
+}
+
+// DELETE handler for cancelling orders
+async function deleteOrderHandler(user: any, supabase: any, request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const orderId = searchParams.get('orderId');
+
+    if (!orderId?.trim()) {
+      return createErrorResponse('Order ID is required', 400);
+    }
+
+    const result = await tradingEngine.cancelOrder(orderId.trim(), user.id);
+    
+    if (!result.success) {
+      return createErrorResponse(result.error || 'Failed to cancel order', 400);
+    }
+
+    return createSuccessResponse({
+      success: true,
+      message: 'Order cancelled successfully'
+    });
+
+  } catch (error) {
+    console.error('Delete order API error:', error);
+    return createErrorResponse('Internal server error', 500);
+  }
+}
+
+// Export the wrapped handlers
+export const GET = withAuthentication(getOrdersHandler);
+export const POST = withAuthentication(placeOrderHandler);
+export const PATCH = withAuthentication(updateOrderHandler);
+export const DELETE = withAuthentication(deleteOrderHandler);
