@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import NotificationModal from '@/components/ui/NotificationModal';
 import { useNotifications } from '@/hooks/useNotifications';
+import ProfileDropdown from '@/components/dashboard/ProfileDropdown';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -43,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleSignOut = async () => {
     try {
       await signOut();
-      window.location.href = '/';
+      router.push("/");
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -290,7 +291,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="flex items-center space-x-4">
               {/* User Profile */}
-              <div className="flex items-center space-x-3">
+              <ProfileDropdown  user={user} handleSignOut={handleSignOut}/>
+              {/* <div className="flex items-center space-x-3">
                 <div className="relative">
                   <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
                     <span className="text-white font-bold text-sm">
@@ -309,7 +311,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {user?.email || 'example@example.com'}
                   </p>
                 </div>
-              </div>
+              </div> */}
 
               {/* Notifications */}
               <button
