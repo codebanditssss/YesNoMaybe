@@ -82,7 +82,7 @@ export async function getCurrentUser(request?: NextRequest) {
  * Automatically handles authentication and provides both user and supabase client
  */
 export function withAuthentication<T extends any[]>(
-  handler: (user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>, supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>, ...args: T) => Promise<Response>
+  handler: (user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>, supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>, request: NextRequest, ...args: T) => Promise<Response>
 ) {
   return async (request: NextRequest, ...args: T) => {
     try {
@@ -102,7 +102,7 @@ export function withAuthentication<T extends any[]>(
       }
 
       const supabase = await getAuthenticatedServerClient(request)
-      return handler(user, supabase, ...args)
+      return handler(user, supabase, request, ...args)
       
     } catch (error) {
       console.error('Authentication error:', error)
@@ -124,9 +124,9 @@ export function withAuthentication<T extends any[]>(
  * Admin-only wrapper - requires user to have admin role
  */
 export function withAdminAuthentication<T extends any[]>(
-  handler: (user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>, supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>, ...args: T) => Promise<Response>
+  handler: (user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>, supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>, request: NextRequest, ...args: T) => Promise<Response>
 ) {
-  return withAuthentication(async (user, supabase, ...args: T) => {
+  return withAuthentication(async (user, supabase, request, ...args: T) => {
     if (user.role !== 'admin') {
       return new Response(
         JSON.stringify({ 
@@ -140,7 +140,7 @@ export function withAdminAuthentication<T extends any[]>(
       )
     }
 
-    return handler(user, supabase, ...args)
+    return handler(user, supabase, request, ...args)
   })
 }
 

@@ -33,7 +33,11 @@ export interface TradeExecution {
  * Uses database transactions to prevent race conditions
  */
 export class TradingEngine {
-  private supabase = getServiceRoleClient();
+  private supabase: any;
+
+  constructor() {
+    this.supabase = getServiceRoleClient();
+  }
 
   /**
    * Calculate the cost required to place an order
@@ -219,7 +223,7 @@ export class TradingEngine {
     const orderCost = this.calculateOrderCost(side, price, quantity);
 
     try {
-      // Start transaction by using a single connection for all operations
+      // Try to use the stored procedure for atomic operations
       const result = await this.supabase.rpc('place_order_atomic', {
         p_market_id: marketId,
         p_user_id: userId,
@@ -229,22 +233,25 @@ export class TradingEngine {
         p_order_cost: orderCost
       });
 
-      if (result.error) {
-        return { 
-          success: false, 
-          error: result.error.message || 'Failed to place order'
+      // If RPC succeeds, return the result
+      if (!result.error) {
+        return {
+          success: true,
+          orderId: result.data?.order_id,
+          trades: result.data?.trades || [],
+          filledQuantity: result.data?.filled_quantity || 0,
+          remainingQuantity: result.data?.remaining_quantity || quantity
         };
       }
 
-      // If the RPC function is not available, fall back to manual transaction
+      // If function doesn't exist or other RPC error, fall back to manual transaction
+      console.log('RPC function not available, falling back to manual transaction:', result.error.message);
       return await this.placeOrderManualTransaction(orderRequest);
 
     } catch (error) {
-      console.error('Order placement error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Order placement failed'
-      };
+      console.log('RPC error, falling back to manual transaction:', error);
+      // Any error in RPC should fall back to manual transaction
+      return await this.placeOrderManualTransaction(orderRequest);
     }
   }
 
@@ -258,7 +265,7 @@ export class TradingEngine {
 
     try {
       // 1. Check and lock user balance atomically
-      const { data: userBalance, error: balanceError } = await this.supabase
+      let { data: userBalance, error: balanceError } = await this.supabase
         .from('user_balances')
         .select('*')
         .eq('user_id', userId)
@@ -415,4 +422,4 @@ export class TradingEngine {
 }
 
 // Export singleton instance
-export const tradingEngine = new TradingEngine(); 
+ 

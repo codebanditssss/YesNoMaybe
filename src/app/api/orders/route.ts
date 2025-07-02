@@ -6,7 +6,8 @@ import {
   createErrorResponse, 
   createSuccessResponse 
 } from '@/lib/server-utils';
-import { tradingEngine } from '@/lib/trading-engine';
+import { TradingEngine } from '@/lib/trading-engine';
+import { supabase as publicSupabase } from '@/lib/supabase'; // Public client for market validation
 
 // GET handler for fetching user's orders
 async function getOrdersHandler(user: any, supabase: any, request: NextRequest) {
@@ -139,14 +140,15 @@ async function placeOrderHandler(user: any, supabase: any, request: NextRequest)
       return createErrorResponse('Price must be a number between 1 and 99', 400);
     }
 
-    // Validate market exists and is active
-    const { data: market, error: marketError } = await supabase
+    // Validate market exists and is active (use public client for market data)
+    const { data: market, error: marketError } = await publicSupabase
       .from('markets')
-      .select('id, title, status, end_date')
+      .select('id, title, status, resolution_date')
       .eq('id', marketId.trim())
       .single();
 
     if (marketError || !market) {
+      console.error(`❌ Market validation failed:`, { marketId: marketId.trim(), marketError });
       return createErrorResponse('Market not found', 404);
     }
 
@@ -155,14 +157,15 @@ async function placeOrderHandler(user: any, supabase: any, request: NextRequest)
     }
 
     // Check if market has ended
-    if (market.end_date && new Date(market.end_date) < new Date()) {
+    if (market.resolution_date && new Date(market.resolution_date) < new Date()) {
       return createErrorResponse('Market has ended', 400);
     }
 
     console.log(`🎯 Processing order: ${side} ${numericQuantity} @ ₹${numericPrice} for market ${marketId}`);
 
     // Use atomic trading engine to place order
-    const result = await tradingEngine.placeOrder({
+    const engine = new TradingEngine();
+    const result = await engine.placeOrder({
       marketId: marketId.trim(),
       userId: user.id,
       side: side as 'YES' | 'NO',
@@ -188,7 +191,7 @@ async function placeOrderHandler(user: any, supabase: any, request: NextRequest)
         ? `Order placed and ${result.filledQuantity} shares executed immediately`
         : 'Order placed successfully'
     }, 201);
-
+    
   } catch (error) {
     console.error('Place order API error:', error);
     if (error instanceof SyntaxError) {
@@ -202,7 +205,7 @@ async function placeOrderHandler(user: any, supabase: any, request: NextRequest)
 async function updateOrderHandler(user: any, supabase: any, request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validate required fields
     const validation = validateRequestInput(body, ['orderId', 'action']);
     if (!validation.isValid) {
@@ -224,7 +227,8 @@ async function updateOrderHandler(user: any, supabase: any, request: NextRequest
     }
 
     if (action === 'cancel') {
-      const result = await tradingEngine.cancelOrder(orderId.trim(), user.id);
+      const engine = new TradingEngine();
+      const result = await engine.cancelOrder(orderId.trim(), user.id);
       
       if (!result.success) {
         return createErrorResponse(result.error || 'Failed to cancel order', 400);
@@ -259,14 +263,15 @@ async function deleteOrderHandler(user: any, supabase: any, request: NextRequest
       return createErrorResponse('Order ID is required', 400);
     }
 
-    const result = await tradingEngine.cancelOrder(orderId.trim(), user.id);
+    const engine = new TradingEngine();
+    const result = await engine.cancelOrder(orderId.trim(), user.id);
     
     if (!result.success) {
       return createErrorResponse(result.error || 'Failed to cancel order', 400);
     }
 
     return createSuccessResponse({
-      success: true,
+        success: true,
       message: 'Order cancelled successfully'
     });
 
