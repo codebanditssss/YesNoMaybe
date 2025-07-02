@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { ClientRedirectManager } from '@/lib/redirect-manager';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,9 +47,13 @@ export default function OnboardingPage() {
 
 useEffect(() => {
   if (!user) {
-    router.push('/');
+    ClientRedirectManager.redirect(
+      router, 
+      '/', 
+      'No user found, redirecting to home'
+    );
   }
-}, [user, loading, router]);
+}, [user, router]);
 
   const steps = [
     {
@@ -190,7 +195,11 @@ useEffect(() => {
       }
 
       await checkOnboardingStatus();
-      router.push('/');
+      ClientRedirectManager.redirect(
+        router, 
+        '/dashboard', 
+        'Onboarding completed successfully'
+      );
     } catch (err) {
       console.error('Onboarding error:', err);
       setError('Failed to save your profile. Please try again.');

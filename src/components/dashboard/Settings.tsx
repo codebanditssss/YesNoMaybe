@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import {
   User,
-  Bell,
   Palette,
   Globe,
   Mail,
@@ -13,8 +12,6 @@ import {
   Settings as SettingsIcon,
   Moon,
   Sun,
-  ToggleLeft,
-  ToggleRight,
   Edit3,
   Save,
   X,
@@ -22,7 +19,6 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useProfile } from '@/hooks/useProfile';
-import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 
 type EditableProfileFields = {
   full_name: string;
@@ -33,12 +29,7 @@ type EditableProfileFields = {
   website: string;
 }
 
-interface NotificationSettings {
-  email: boolean;
-  marketAlerts: boolean;
-  tradeConfirmations: boolean;
-  promotions: boolean;
-}
+
 
 interface AppPreferences {
   theme: 'light' | 'dark' | 'system';
@@ -48,7 +39,6 @@ export function Settings() {
   const [activeSection, setActiveSection] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const { profile, loading, saving, error, updateProfile, uploadAvatar } = useProfile();
-  const { preferences: notificationPreferences, loading: preferencesLoading, updatePreferences } = useNotificationPreferences();
   const [tempProfile, setTempProfile] = useState<EditableProfileFields>({
     full_name: '',
     twitter_handle: '',
@@ -67,7 +57,6 @@ export function Settings() {
   const settingsSections = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
   ];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -145,18 +134,7 @@ export function Settings() {
     setIsEditing(false);
   };
 
-  const toggleNotification = async (key: keyof typeof notificationPreferences) => {
-    if (!notificationPreferences) return;
-    
-    try {
-      const newValue = !notificationPreferences[key];
-      await updatePreferences({
-        [key]: newValue
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update notification preference');
-    }
-  };
+
 
   const updatePreference = (key: keyof AppPreferences, value: any) => {
     setPreferences(prev => ({ ...prev, [key]: value }));
@@ -437,88 +415,12 @@ export function Settings() {
     </div>
   );
 
-  const renderNotificationsSection = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Notification Preferences
-          </CardTitle>
-          <CardDescription>
-            Choose how you want to be notified about important events
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {preferencesLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-gray-600">Loading preferences...</span>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-4">
-                {[
-                  { key: 'email_notifications', label: 'Email Notifications', desc: 'Receive notifications via email' },
-                ].map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center justify-between">
-                    <div>
-                      <label className="font-medium">{label}</label>
-                      <p className="text-sm text-gray-600">{desc}</p>
-                    </div>
-                    <button
-                      onClick={() => toggleNotification(key as keyof typeof notificationPreferences)}
-                      disabled={preferencesLoading}
-                    >
-                      {notificationPreferences?.[key as keyof typeof notificationPreferences] ? (
-                        <ToggleRight className="h-6 w-6 text-blue-600" />
-                      ) : (
-                        <ToggleLeft className="h-6 w-6 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
 
-              <div className="border-t pt-4">
-                <h4 className="font-medium text-gray-900 mb-4">Notification Types</h4>
-                {[
-                  { key: 'market_alerts', label: 'Market Alerts', desc: 'Price movements and market events' },
-                  { key: 'trade_confirmations', label: 'Trade Confirmations', desc: 'Order executions and settlements' },
-                  { key: 'order_updates', label: 'Order Updates', desc: 'Status changes for your orders' },
-                  { key: 'promotions', label: 'Promotions', desc: 'Special offers and new features' },
-                  { key: 'system_notifications', label: 'System Notifications', desc: 'Important platform updates' }
-                ].map(({ key, label, desc }) => (
-                  <div key={key} className="flex items-center justify-between py-2">
-                    <div>
-                      <label className="font-medium">{label}</label>
-                      <p className="text-sm text-gray-600">{desc}</p>
-                    </div>
-                    <button
-                      onClick={() => toggleNotification(key as keyof typeof notificationPreferences)}
-                      disabled={preferencesLoading}
-                    >
-                      {notificationPreferences?.[key as keyof typeof notificationPreferences] ? (
-                        <ToggleRight className="h-6 w-6 text-blue-600" />
-                      ) : (
-                        <ToggleLeft className="h-6 w-6 text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
 
   const renderSection = () => {
     switch (activeSection) {
       case 'profile': return renderProfileSection();
       case 'preferences': return renderPreferencesSection();
-      case 'notifications': return renderNotificationsSection();
       default: return renderProfileSection();
     }
   };

@@ -7,7 +7,6 @@ import {
   createSuccessResponse 
 } from '@/lib/server-utils';
 import { tradingEngine } from '@/lib/trading-engine';
-import { notificationService } from '@/lib/notificationService';
 
 // GET handler for fetching user's orders
 async function getOrdersHandler(user: any, supabase: any, request: NextRequest) {
@@ -175,42 +174,9 @@ async function placeOrderHandler(user: any, supabase: any, request: NextRequest)
       return createErrorResponse(result.error || 'Failed to place order', 400);
     }
 
-    // Send order placed notification (async, don't block response)
-    try {
-      notificationService.notifyOrderPlaced(user.id, {
-        orderId: result.orderId!,
-        marketId: marketId,
-        marketTitle: market.title,
-        side: side,
-        quantity: numericQuantity,
-        price: numericPrice
-      }).catch(error => {
-        console.error('Error sending order placed notification:', error);
-      });
-    } catch (notifError) {
-      console.error('Error queuing order placed notification:', notifError);
-      // Don't fail the order if notification fails
-    }
 
-    // If trades were executed, send trade notifications
-    if (result.trades && result.trades.length > 0) {
-      try {
-        for (const trade of result.trades) {
-          notificationService.notifyTradeExecuted(user.id, {
-            tradeId: trade.id,
-            marketId: marketId,
-            marketTitle: market.title,
-            quantity: trade.quantity,
-            price: trade.price,
-            side: side
-          }).catch(error => {
-            console.error('Error sending trade notification:', error);
-          });
-        }
-      } catch (notifError) {
-        console.error('Error queuing trade notifications:', notifError);
-      }
-    }
+
+
 
     return createSuccessResponse({
       success: true,
@@ -264,33 +230,7 @@ async function updateOrderHandler(user: any, supabase: any, request: NextRequest
         return createErrorResponse(result.error || 'Failed to cancel order', 400);
       }
 
-      // Send order cancelled notification (async)
-      try {
-        const { data: order } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            markets:market_id (title)
-          `)
-          .eq('id', orderId.trim())
-          .eq('user_id', user.id)
-          .single();
 
-        if (order) {
-          notificationService.notifyOrderCancelled(user.id, {
-            orderId: orderId.trim(),
-            marketId: order.market_id,
-            marketTitle: order.markets?.title || 'Unknown Market',
-            side: order.side,
-            quantity: order.quantity,
-            price: order.price
-          }).catch(error => {
-            console.error('Error sending order cancelled notification:', error);
-          });
-        }
-      } catch (notifError) {
-        console.error('Error queuing order cancelled notification:', notifError);
-      }
 
       return createSuccessResponse({
         success: true,

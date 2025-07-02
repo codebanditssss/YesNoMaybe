@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { LandingPage } from '@/components/landing/LandingPage'
 import { AuthModal } from '@/components/auth/AuthModal'
 import ResizableNavbar from '@/components/ui/resizable-navbar'
+import { ClientRedirectManager } from '@/lib/redirect-manager'
 
 export default function Home() {
   const router = useRouter();
@@ -23,13 +24,27 @@ export default function Home() {
     setAuthModal({ isOpen: false, tab: 'signin' });
   };
 
-  // Redirect to onboarding
+  // Handle redirects with loop protection
   useEffect(() => {
-    if (user && needsOnboarding && !loading) {
-      router.push('/onboarding');
-    } else if (user && !needsOnboarding && !loading) {
-      router.push('/dashboard');
+    // Reset redirect manager on component mount
+    ClientRedirectManager.reset();
+
+    if (loading) return; // Wait for auth state to load
+
+    if (user && needsOnboarding) {
+      ClientRedirectManager.redirect(
+        router, 
+        '/onboarding', 
+        'User authenticated but needs onboarding'
+      );
+    } else if (user && !needsOnboarding) {
+      ClientRedirectManager.redirect(
+        router, 
+        '/dashboard', 
+        'User authenticated and onboarding complete'
+      );
     }
+    // If no user, stay on landing page (no redirect needed)
   }, [user, needsOnboarding, loading, router]);
 
   // Show loading state

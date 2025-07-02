@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOrders } from "@/hooks/useOrders";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { useNotifications } from "@/hooks/useNotifications";
 import { 
   Plus, 
   Minus, 
@@ -50,9 +49,6 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   // Get user balance
   const { portfolio, loading: portfolioLoading } = usePortfolio({});
   const balance = portfolio?.balance;
-
-  // Get notifications hook to refresh after order placement
-  const { refresh: refreshNotifications } = useNotifications();
 
   // Update price when side changes or market prices change
   useEffect(() => {
@@ -138,11 +134,6 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
 
-      // Refresh notifications to show the new order notification
-      setTimeout(() => {
-        refreshNotifications();
-      }, 500);
-
       // Call callbacks
       if (onOrderPlace) {
         onOrderPlace({
@@ -174,7 +165,6 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             <CheckCircle className="h-4 w-4 text-green-600" />
             <span className="text-sm font-medium text-green-800">Order placed successfully! 🎉</span>
           </div>
-          <p className="text-xs text-green-600 mt-1">Check the bell icon for notifications</p>
         </div>
       )}
 

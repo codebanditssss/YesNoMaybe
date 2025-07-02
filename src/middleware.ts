@@ -1,77 +1,33 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { RedirectManager } from '@/lib/redirect-manager'
 
+/**
+ * Middleware with comprehensive redirect management and loop prevention
+ */
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next()
-
-  // Create a Supabase client configured to use cookies
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value,
-            ...options
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          response.cookies.set({
-            name,
-            value: '',
-            ...options
-          })
-        }
-      }
-    }
-  )
-
-  const { data: { session }, error } = await supabase.auth.getSession()
-
-  const protectedPaths = ['/dashboard', '/Markets', '/Portfolio', '/MarketDepth', '/TradeHistory', '/Leaderboard', '/Settings', '/api']
-  const isProtectedRoute = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
-  const isAuthRoute = request.nextUrl.pathname === '/auth'
-  const isOnboardingRoute = request.nextUrl.pathname === '/onboarding'
-
-  // If not authenticated and trying to access protected route
-  if (!session && isProtectedRoute) {
-    return NextResponse.redirect(new URL('/', request.url))
+  // Skip API routes completely to avoid interference
+  if (request.nextUrl.pathname.startsWith('/api')) {
+    return NextResponse.next()
   }
 
-  // If authenticated but on auth route
-  if (session && isAuthRoute) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  try {
+    return await RedirectManager.handleMiddleware(request)
+  } catch (error) {
+    console.error('Middleware error:', error)
+    // Fallback to allowing the request through on error
+    return NextResponse.next()
   }
-
-  // If authenticated, check onboarding status
-  if (session && !isOnboardingRoute) {
-    // Check if user has completed onboarding
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, username')
-      .eq('id', session.user.id)
-      .single()
-
-    // If profile doesn't exist or is incomplete, redirect to onboarding
-    if (!profile?.full_name || !profile?.username) {
-      // Don't redirect if already on onboarding page
-      if (!isOnboardingRoute) {
-        return NextResponse.redirect(new URL('/onboarding', request.url))
-      }
-    }
-  }
-
-  return response
 }
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
     '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 } 
