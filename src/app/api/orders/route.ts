@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
 import { createClient } from '@supabase/supabase-js'
+import { notificationService } from '@/lib/notificationService'
 
 // Create a Supabase client with the service role key for admin operations
 const serviceRoleClient = createClient(
@@ -390,7 +391,28 @@ export const POST = withAuth(async (req, user) => {
 
     console.log(`📝 Created order:`, newOrder)
 
-    // Step 5: Try to match the order immediately
+    // Step 5: Send order placed notification
+    try {
+      const { data: marketData } = await serviceRoleClient
+        .from('markets')
+        .select('title')
+        .eq('id', marketId)
+        .single()
+
+      await notificationService.notifyOrderPlaced(user.id, {
+        orderId: newOrder.id,
+        marketId: marketId,
+        marketTitle: marketData?.title || 'Unknown Market',
+        side: side,
+        quantity: quantity,
+        price: price
+      })
+    } catch (notifError) {
+      console.error('Error sending order placed notification:', notifError)
+      // Don't fail the order if notification fails
+    }
+
+    // Step 6: Try to match the order immediately
     let remainingQuantity = quantity
     let totalFilled = 0
     const executedTrades = []
@@ -432,6 +454,48 @@ export const POST = withAuth(async (req, user) => {
             status: totalFilled >= quantity ? 'filled' : 'partial'
           })
           .eq('id', newOrder.id)
+
+        // Send order filled notification
+        try {
+          const { data: marketData } = await serviceRoleClient
+            .from('markets')
+            .select('title')
+            .eq('id', marketId)
+            .single()
+
+          if (totalFilled >= quantity) {
+            // Order completely filled
+            await notificationService.notifyOrderFilled(user.id, {
+              orderId: newOrder.id,
+              marketId: marketId,
+              marketTitle: marketData?.title || 'Unknown Market',
+              side: side,
+              quantity: totalFilled,
+              price: price,
+              tradeId: executedTrades[0]?.id || 'multiple'
+            })
+          } else {
+            // Order partially filled - create a custom notification
+            await notificationService.createNotification({
+              user_id: user.id,
+              title: 'Order Partially Filled! 📊',
+              message: `Your ${side} order for ${quantity} shares was partially filled (${totalFilled}/${quantity}) at ₹${price} for "${marketData?.title || 'Unknown Market'}"`,
+              type: 'order_update',
+              priority: 'normal',
+              metadata: {
+                orderId: newOrder.id,
+                marketId: marketId,
+                side: side,
+                quantity: quantity,
+                filledQuantity: totalFilled,
+                price: price
+              }
+            })
+          }
+        } catch (notifError) {
+          console.error('Error sending order filled notification:', notifError)
+          // Don't fail the order if notification fails
+        }
       }
       
     } catch (matchError) {
@@ -439,14 +503,14 @@ export const POST = withAuth(async (req, user) => {
       // Continue without failing the order placement
     }
 
-    // Step 6: Get market info for response
+    // Step 7: Get market info for response
     const { data: market } = await serviceRoleClient
       .from('markets')
       .select('title, category')
       .eq('id', marketId)
       .single()
 
-    // Step 7: Return success response
+    // Step 8: Return success response
       return NextResponse.json({ 
         success: true,
         order: {

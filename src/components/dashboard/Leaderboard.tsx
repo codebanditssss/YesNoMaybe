@@ -20,7 +20,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export function Leaderboard() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
   
   // Get auth status for debugging
   const { user, session, loading: authLoading } = useAuth();
@@ -41,13 +42,21 @@ export function Leaderboard() {
 
 
 
+  // Initialize timestamp on client side only
+  useEffect(() => {
+    setMounted(true);
+    setLastUpdate(new Date());
+  }, []);
+
   // Auto-refresh timestamp
   useEffect(() => {
+    if (!mounted) return;
+    
     const interval = setInterval(() => {
       setLastUpdate(new Date());
     }, 60000); // Update timestamp every minute
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { 
@@ -85,9 +94,11 @@ export function Leaderboard() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Leaderboard</h1>
             <p className="text-gray-600">Top traders and their performance rankings</p>
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-            <span>
-                Last updated: {lastUpdate.toISOString().slice(11, 19)}
-            </span>
+              {mounted && lastUpdate && (
+                <span>
+                  Last updated: {lastUpdate.toISOString().slice(11, 19)}
+                </span>
+              )}
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span>Live rankings</span>
@@ -100,7 +111,9 @@ export function Leaderboard() {
               variant="outline" 
               size="sm"
               onClick={() => {
-                setLastUpdate(new Date());
+                if (mounted) {
+                  setLastUpdate(new Date());
+                }
                 refresh();
               }}
               className="flex items-center gap-2"

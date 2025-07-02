@@ -37,13 +37,34 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = ['/dashboard', '/Markets', '/Portfolio', '/MarketDepth', '/TradeHistory', '/Leaderboard', '/Settings', '/api']
   const isProtectedRoute = protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))
   const isAuthRoute = request.nextUrl.pathname === '/auth'
+  const isOnboardingRoute = request.nextUrl.pathname === '/onboarding'
 
+  // If not authenticated and trying to access protected route
   if (!session && isProtectedRoute) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
+  // If authenticated but on auth route
   if (session && isAuthRoute) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // If authenticated, check onboarding status
+  if (session && !isOnboardingRoute) {
+    // Check if user has completed onboarding
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, username')
+      .eq('id', session.user.id)
+      .single()
+
+    // If profile doesn't exist or is incomplete, redirect to onboarding
+    if (!profile?.full_name || !profile?.username) {
+      // Don't redirect if already on onboarding page
+      if (!isOnboardingRoute) {
+        return NextResponse.redirect(new URL('/onboarding', request.url))
+      }
+    }
   }
 
   return response

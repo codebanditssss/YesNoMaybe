@@ -786,40 +786,25 @@ export function Markets() {
 
         {/* Order Placement Modal */}
         {showOrderModal && selectedMarket && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Place Order - {selectedSide.toUpperCase()}
-                  </h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowOrderModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    ✕
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                  {selectedMarket.title}
-                </p>
-              </div>
-              
-              <div className="p-4">
-                                 <OrderPlacement
-                   market={{
-                     id: selectedMarket.id,
-                     title: selectedMarket.title,
-                     yesPrice: selectedMarket.yesPrice,
-                     noPrice: selectedMarket.noPrice,
-                     availableQuantity: 1000 // TODO: Get from market data
-                   }}
-                   initialSide={selectedSide}
-                   onOrderSuccess={handleOrderSuccess}
-                 />
-              </div>
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowOrderModal(false)}
+          >
+            <div 
+              className="relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <OrderPlacement
+                market={{
+                  id: selectedMarket.id,
+                  title: selectedMarket.title,
+                  yesPrice: selectedMarket.yesPrice,
+                  noPrice: selectedMarket.noPrice,
+                  availableQuantity: 1000 // TODO: Get from market data
+                }}
+                initialSide={selectedSide}
+                onOrderSuccess={handleOrderSuccess}
+              />
             </div>
           </div>
         )}

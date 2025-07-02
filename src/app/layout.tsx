@@ -9,6 +9,17 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'YesNoMaybe - Opinion Trading Platform',
   description: 'A real-time opinion trading platform where users can place positions on future events',
+  icons: {
+    icon: [
+      {
+        url: '/favicon.ico',
+        sizes: '16x16',
+        type: 'image/x-icon',
+      },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({

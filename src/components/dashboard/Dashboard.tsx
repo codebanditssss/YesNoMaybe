@@ -7,10 +7,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useTradeHistory } from "@/hooks/useTradeHistory";
-import { useNotifications } from "@/hooks/useNotifications";
 import { Portfolio } from "./Portfolio";
 import { Markets } from "./Markets";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -32,8 +31,7 @@ import {
   TrendingDown as Loss,
   PieChart,
   Calendar,
-  Info,
-  TestTube
+  Info
 } from "lucide-react";
 
 // Add type definition for stat
@@ -54,7 +52,8 @@ type StatType = StatCardProps['stat'];
 export function Dashboard() {
   const { user } = useAuth();
   const [activeView, setActiveView] = useState<'dashboard' | 'portfolio' | 'markets'>('dashboard');
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   // Fetch real portfolio data
   const { 
@@ -82,9 +81,13 @@ export function Dashboard() {
     limit: 8
   });
 
-  const { createNotification } = useNotifications();
-  
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Initialize timestamp on client side only
+  useEffect(() => {
+    setMounted(true);
+    setLastUpdate(new Date());
+  }, []);
 
   // Calculate derived values
   const totalPnL = getTotalPnL();
@@ -170,7 +173,9 @@ export function Dashboard() {
 
   const handleRefreshAll = async () => {
     setIsRefreshing(true);
-    setLastUpdate(new Date());
+    if (mounted) {
+      setLastUpdate(new Date());
+    }
     
     try {
       await Promise.all([
@@ -184,19 +189,7 @@ export function Dashboard() {
     }
   };
 
-  const createTestNotification = async () => {
-    try {
-      await createNotification({
-        title: 'Test Notification 🧪',
-        message: 'This is a test notification to verify the system is working correctly!',
-        type: 'system',
-        priority: 'normal',
-        action_url: '/Dashboard'
-      });
-    } catch (error) {
-      console.error('Failed to create test notification:', error);
-    }
-  };
+
 
   // Loading skeleton for stats cards
   const StatCardSkeleton = () => (
@@ -391,24 +384,18 @@ export function Dashboard() {
               Dashboard
             </h1>
             <p className="text-sm text-gray-600 mt-0.5">
-              {user?.email?.split('@')[0] || 'Trader'} • Last updated: {lastUpdate.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit', 
-                hour12: true 
-              })}
+              {user?.email?.split('@')[0] || 'Trader'}
+              {mounted && lastUpdate && (
+                <> • Last updated: {lastUpdate.toLocaleTimeString('en-US', { 
+                  hour: '2-digit', 
+                  minute: '2-digit', 
+                  second: '2-digit', 
+                  hour12: true 
+                })}</>
+              )}
             </p>
           </div>
           <div className="flex gap-2">
-            <Button
-              onClick={createTestNotification}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <TestTube className="h-4 w-4" />
-              Test Notification
-            </Button>
             <Button
               onClick={handleRefreshAll}
               variant="outline"

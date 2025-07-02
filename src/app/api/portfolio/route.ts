@@ -103,11 +103,38 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
     const start = timeframeStart < userCreatedAt ? userCreatedAt : timeframeStart
 
     // Get user balance
-    const { data: userBalance, error: balanceError } = await serviceRoleClient
+    let { data: userBalance, error: balanceError } = await serviceRoleClient
       .from('user_balances')
       .select('*')
       .eq('user_id', user.id)
       .single()
+
+    // If no balance exists, create one with default values
+    if (!userBalance && balanceError?.code === 'PGRST116') {
+      const { data: newBalance, error: createError } = await serviceRoleClient
+        .from('user_balances')
+        .insert({
+          user_id: user.id,
+          available_balance: 10000, // ₹10,000 initial balance
+          locked_balance: 0,
+          total_deposited: 10000,
+          total_withdrawn: 0,
+          total_trades: 0,
+          winning_trades: 0,
+          total_volume: 0,
+          total_profit_loss: 0
+        })
+        .select()
+        .single()
+
+      if (createError) {
+        console.error('Error creating user balance:', { error: createError, userId: user.id, email: user.email })
+        return NextResponse.json({ error: 'Failed to create user balance' }, { status: 500 })
+      }
+
+      userBalance = newBalance
+      balanceError = null
+    }
 
     if (balanceError) {
       console.error('Error fetching user balance:', { error: balanceError, userId: user.id, email: user.email })

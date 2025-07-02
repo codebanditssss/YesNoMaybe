@@ -15,19 +15,29 @@ export const supabase = createBrowserClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
+// Disconnect from realtime to prevent WebSocket errors
+if (typeof window !== 'undefined') {
+  supabase.realtime.disconnect()
+}
+
 // Create a client with the service role key for admin operations
 export const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
   ? createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY,
       {
-      auth: { 
-        autoRefreshToken: false,
+        auth: { 
+          autoRefreshToken: false,
           persistSession: false
         }
       }
     )
   : null
+
+// Disconnect admin client from realtime as well
+if (supabaseAdmin && typeof window !== 'undefined') {
+  supabaseAdmin.realtime.disconnect()
+}
 
 // Export types
 export type Market = Database['public']['Tables']['markets']['Row']

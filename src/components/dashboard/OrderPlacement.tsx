@@ -1,18 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useOrders } from "@/hooks/useOrders";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { useNotifications } from "@/hooks/useNotifications";
 import { 
   Plus, 
   Minus, 
   TrendingUp, 
   Info,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  CheckCircle
 } from "lucide-react";
 
 interface OrderPlacementProps {
@@ -40,12 +42,17 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market'); // Default to market for simplicity
   const [price, setPrice] = useState(initialSide === 'yes' ? market.yesPrice : market.noPrice);
   const [quantity, setQuantity] = useState(1);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   
   // Use the orders hook for placing orders
   const { placeOrder, placing, error: orderError } = useOrders();
   
   // Get user balance
-  const { balance } = usePortfolio();
+  const { portfolio, loading: portfolioLoading } = usePortfolio({});
+  const balance = portfolio?.balance;
+
+  // Get notifications hook to refresh after order placement
+  const { refresh: refreshNotifications } = useNotifications();
 
   // Update price when side changes or market prices change
   useEffect(() => {
@@ -127,6 +134,15 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
 
       const newOrder = await placeOrder(orderData);
 
+      // Show success message
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+
+      // Refresh notifications to show the new order notification
+      setTimeout(() => {
+        refreshNotifications();
+      }, 500);
+
       // Call callbacks
       if (onOrderPlace) {
         onOrderPlace({
@@ -150,9 +166,20 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   };
 
   return (
-    <Card className="bg-white border-0 shadow-lg max-w-md mx-auto">
+    <div className="bg-white rounded-xl shadow-lg max-w-md mx-auto">
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="absolute top-4 left-4 right-4 z-20 bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <span className="text-sm font-medium text-green-800">Order placed successfully! 🎉</span>
+          </div>
+          <p className="text-xs text-green-600 mt-1">Check the bell icon for notifications</p>
+        </div>
+      )}
+
       {/* Header with Market Info */}
-      <div className="p-4 border-b border-gray-100">
+      <div className="p-4">
         <div className="flex items-start justify-between">
           <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 flex-1 mr-2">
             {market.title}
@@ -354,7 +381,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
         {/* Place Order Button */}
         <Button
           onClick={handlePlaceOrder}
-          disabled={placing || hasInsufficientBalance || !balance || isMarketInactive}
+          disabled={placing || hasInsufficientBalance || portfolioLoading || !balance || isMarketInactive}
           className={`w-full py-3 text-base font-semibold rounded-lg ${
             selectedSide === 'yes'
               ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400'
@@ -366,7 +393,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Placing order...
             </>
-          ) : !balance ? (
+          ) : portfolioLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Loading...
@@ -383,6 +410,6 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           Prediction markets involve risk. You may lose your entire investment.
         </p>
       </div>
-    </Card>
+    </div>
   );
 } 

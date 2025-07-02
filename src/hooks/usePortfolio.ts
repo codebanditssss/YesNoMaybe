@@ -82,13 +82,14 @@ interface UsePortfolioOptions {
   refreshInterval?: number; // in milliseconds
 }
 
-export function usePortfolio({ 
-  includeHistory = false, 
-  historyLimit = 10, 
-  timeframe = 'ALL',
-  autoRefresh = false,
-  refreshInterval = 30000 // 30 seconds
-}: UsePortfolioOptions) {
+export function usePortfolio(options: UsePortfolioOptions = {}) {
+  const { 
+    includeHistory = false, 
+    historyLimit = 10, 
+    timeframe = 'ALL',
+    autoRefresh = false,
+    refreshInterval = 30000 // 30 seconds
+  } = options;
   const { user, session } = useAuth();
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [loading, setLoading] = useState(true);

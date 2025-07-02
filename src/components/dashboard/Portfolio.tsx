@@ -73,7 +73,8 @@ export function Portfolio() {
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL'>('ALL');
   const [sortBy, setSortBy] = useState<'pnl' | 'value' | 'alphabetical' | 'date'>('pnl');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved'>('all');
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   // Use real portfolio data
   const { 
@@ -90,14 +91,22 @@ export function Portfolio() {
     timeframe: timeframe
   });
 
+  // Initialize timestamp on client side only
+  useEffect(() => {
+    setMounted(true);
+    setLastUpdate(new Date());
+  }, []);
+
   // Auto-refresh portfolio data
   useEffect(() => {
+    if (!mounted) return;
+    
     const interval = setInterval(() => {
       setLastUpdate(new Date());
       refresh();
     }, 30000);
     return () => clearInterval(interval);
-  }, [refresh]);
+  }, [refresh, mounted]);
 
   // Calculate portfolio stats
   const stats: PortfolioStats = {
@@ -331,16 +340,18 @@ export function Portfolio() {
                           <div className="text-right">
                 <div className="text-sm text-gray-400 font-light">Last updated</div>
                 <div className="text-sm text-black font-medium">
-                  {lastUpdate.toLocaleTimeString('en-US', { 
+                  {mounted && lastUpdate ? lastUpdate.toLocaleTimeString('en-US', { 
                     hour: '2-digit', 
                     minute: '2-digit', 
                     hour12: true 
-                  })}
+                  }) : '--:--'}
                 </div>
               </div>
             <button 
               onClick={() => {
-                setLastUpdate(new Date());
+                if (mounted) {
+                  setLastUpdate(new Date());
+                }
                 refresh();
               }}
               className="w-10 h-10 rounded-full border border-gray-200 hover:border-gray-300 transition-all duration-300 flex items-center justify-center group hover:shadow-md"

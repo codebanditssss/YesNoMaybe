@@ -43,7 +43,8 @@ export function TradeHistory() {
   const [filterSide, setFilterSide] = useState<'all' | 'YES' | 'NO'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'filled' | 'open' | 'cancelled'>('all');
   const [dateRange, setDateRange] = useState<'all' | '1d' | '7d' | '30d' | '90d'>('all');
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
 
   // Use real trade history data
@@ -67,13 +68,21 @@ export function TradeHistory() {
     refreshInterval: 60000 // 1 minute
   });
 
+  // Initialize timestamp on client side only
+  useEffect(() => {
+    setMounted(true);
+    setLastUpdate(new Date());
+  }, []);
+
   // Auto-refresh timestamp
   useEffect(() => {
+    if (!mounted) return;
+    
     const interval = setInterval(() => {
       setLastUpdate(new Date());
     }, 60000); // Update timestamp every minute
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]);
 
   // Filter trades client-side for tab functionality
   const filteredTrades = trades.filter(trade => {
@@ -150,9 +159,11 @@ export function TradeHistory() {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Trade History</h1>
             <p className="text-gray-600">Track all your trading activity and performance</p>
             <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-            <span>
-                Last updated: {lastUpdate.toLocaleTimeString().slice(11, 19)}
-            </span>
+            {mounted && lastUpdate && (
+              <span>
+                Last updated: {lastUpdate.toISOString().slice(11, 19)}
+              </span>
+            )}
               {/* <span>Last updated: {lastUpdate.toLocaleTimeString()}</span> */}
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -166,7 +177,9 @@ export function TradeHistory() {
               variant="outline" 
               size="sm"
               onClick={() => {
-                setLastUpdate(new Date());
+                if (mounted) {
+                  setLastUpdate(new Date());
+                }
                 refresh();
               }}
               className="flex items-center gap-2"

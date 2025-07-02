@@ -313,12 +313,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               {/* Notifications */}
               <button
-                className="p-3 rounded-lg hover:bg-gray-100 relative transition-all duration-200 group"
+                className={`p-3 rounded-lg hover:bg-gray-100 relative transition-all duration-200 group ${
+                  unreadCount > 0 ? 'animate-pulse bg-blue-50 hover:bg-blue-100' : ''
+                }`}
                 onClick={() => setNotificationOpen(true)}
+                title={unreadCount > 0 ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'Notifications'}
               >
-                <Bell className="h-5 w-5 text-gray-600 group-hover:text-gray-900" />
+                <Bell className={`h-5 w-5 transition-colors ${
+                  unreadCount > 0 ? 'text-blue-600' : 'text-gray-600 group-hover:text-gray-900'
+                }`} />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white text-xs font-medium">
+                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white text-xs font-medium animate-bounce">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}

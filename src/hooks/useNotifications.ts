@@ -152,42 +152,23 @@ export function useNotifications(): UseNotificationsReturn {
     fetchNotifications(true);
   }, []);
 
-  // Set up real-time subscriptions
+  // Set up real-time subscriptions - DISABLED to prevent WebSocket errors
   useEffect(() => {
-    const setupRealtimeSubscription = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
-
-      const channel = supabase
-        .channel('notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            const newNotification = payload.new as Notification;
-            setNotifications(prev => [newNotification, ...prev]);
-            setUnreadCount(prev => prev + 1);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    };
-
-    const cleanup = setupRealtimeSubscription();
+    // Real-time notifications are disabled to prevent WebSocket connection issues
+    // The app will rely on manual refresh and periodic polling for new notifications
     
+    // Optional: Set up periodic polling for notifications
+    const pollInterval = setInterval(() => {
+      // Only poll if user is authenticated and tab is visible
+      if (document.visibilityState === 'visible') {
+        refresh();
+      }
+    }, 30000); // Poll every 30 seconds
+
     return () => {
-      cleanup.then(cleanupFn => cleanupFn?.());
+      clearInterval(pollInterval);
     };
-  }, []);
+  }, [refresh]);
 
   return {
     notifications,

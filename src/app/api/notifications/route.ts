@@ -1,28 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { withAuth, AuthenticatedUser } from '@/lib/auth';
-import { NewNotification } from '@/lib/supabase';
+import { NextRequest } from 'next/server';
+import { 
+  withAuthentication, 
+  getServiceRoleClient, 
+  validateRequestInput, 
+  createErrorResponse, 
+  createSuccessResponse 
+} from '@/lib/server-utils';
+import type { NewNotification } from '@/lib/supabase';
 
-const serviceRoleClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
-
-async function getNotifications(request: NextRequest, user: AuthenticatedUser) {
+// GET handler for fetching user's notifications
+async function getNotifications(user: any, supabase: any, request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Cap at 100
     const offset = parseInt(searchParams.get('offset') || '0');
     const unread_only = searchParams.get('unread_only') === 'true';
 
-    // Build query
-    let query = serviceRoleClient
+    // Build query - using authenticated client with RLS
+    let query = supabase
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
@@ -37,11 +32,11 @@ async function getNotifications(request: NextRequest, user: AuthenticatedUser) {
 
     if (error) {
       console.error('Error fetching notifications:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return createErrorResponse('Failed to fetch notifications', 500);
     }
 
-    // Get unread count
-    const { count: unreadCount, error: countError } = await serviceRoleClient
+    // Get unread count using authenticated client
+    const { count: unreadCount, error: countError } = await supabase
       .from('notifications')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
@@ -51,34 +46,64 @@ async function getNotifications(request: NextRequest, user: AuthenticatedUser) {
       console.error('Error getting unread count:', countError);
     }
 
-    return NextResponse.json({
-      notifications,
+    return createSuccessResponse({
+      notifications: notifications || [],
       unreadCount: unreadCount || 0,
-      hasMore: notifications.length === limit
+      hasMore: notifications?.length === limit
     });
 
   } catch (error) {
-    console.error('Notifications API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Notifications GET API error:', error);
+    return createErrorResponse('Internal server error', 500);
   }
 }
 
-async function createNotification(request: NextRequest, user: AuthenticatedUser) {
+// POST handler for creating notifications
+async function createNotification(user: any, supabase: any, request: NextRequest) {
   try {
     const body = await request.json();
+    
+    // Validate required fields
+    const validation = validateRequestInput(body, ['title', 'message', 'type']);
+    if (!validation.isValid) {
+      return createErrorResponse(
+        `Missing required fields: ${validation.missingFields.join(', ')}`,
+        400
+      );
+    }
+
     const { title, message, type, priority = 'normal', action_url, metadata = {} } = body;
+
+    // Validate notification type
+    const validTypes = ['market_alert', 'trade_confirmation', 'order_update', 'promotion', 'system'];
+    if (!validTypes.includes(type)) {
+      return createErrorResponse(
+        `Invalid notification type. Must be one of: ${validTypes.join(', ')}`,
+        400
+      );
+    }
+
+    // Validate priority
+    const validPriorities = ['low', 'normal', 'high', 'urgent'];
+    if (!validPriorities.includes(priority)) {
+      return createErrorResponse(
+        `Invalid priority. Must be one of: ${validPriorities.join(', ')}`,
+        400
+      );
+    }
 
     const newNotification: NewNotification = {
       user_id: user.id,
-      title,
-      message,
+      title: title.trim(),
+      message: message.trim(),
       type,
       priority,
-      action_url,
+      action_url: action_url?.trim() || null,
       metadata
     };
 
-    const { data: notification, error } = await serviceRoleClient
+    // Use authenticated client for insertion (RLS will ensure user can only create their own notifications)
+    const { data: notification, error } = await supabase
       .from('notifications')
       .insert(newNotification)
       .select()
@@ -86,27 +111,52 @@ async function createNotification(request: NextRequest, user: AuthenticatedUser)
 
     if (error) {
       console.error('Error creating notification:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return createErrorResponse('Failed to create notification', 500);
     }
 
-    return NextResponse.json({ notification }, { status: 201 });
+    return createSuccessResponse({ notification }, 201);
 
   } catch (error) {
     console.error('Create notification API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (error instanceof SyntaxError) {
+      return createErrorResponse('Invalid JSON in request body', 400);
+    }
+    return createErrorResponse('Internal server error', 500);
   }
 }
 
-async function updateNotifications(request: NextRequest, user: AuthenticatedUser) {
+// PATCH handler for updating notifications (mark as read/unread)
+async function updateNotifications(user: any, supabase: any, request: NextRequest) {
   try {
     const body = await request.json();
+    
+    // Validate required fields
+    const validation = validateRequestInput(body, ['notificationIds']);
+    if (!validation.isValid) {
+      return createErrorResponse(
+        `Missing required fields: ${validation.missingFields.join(', ')}`,
+        400
+      );
+    }
+
     const { notificationIds, read = true } = body;
 
-    // Update notifications
-    const { data, error } = await serviceRoleClient
+    // Validate notificationIds is an array
+    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+      return createErrorResponse('notificationIds must be a non-empty array', 400);
+    }
+
+    // Validate all IDs are strings/UUIDs
+    const invalidIds = notificationIds.filter(id => typeof id !== 'string' || id.trim().length === 0);
+    if (invalidIds.length > 0) {
+      return createErrorResponse('All notification IDs must be valid strings', 400);
+    }
+
+    // Update notifications using authenticated client (RLS ensures user can only update their own)
+    const { data, error } = await supabase
       .from('notifications')
       .update({ 
-        read, 
+        read: Boolean(read), 
         read_at: read ? new Date().toISOString() : null 
       })
       .eq('user_id', user.id)
@@ -115,17 +165,24 @@ async function updateNotifications(request: NextRequest, user: AuthenticatedUser
 
     if (error) {
       console.error('Error updating notifications:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return createErrorResponse('Failed to update notifications', 500);
     }
 
-    return NextResponse.json({ updated: data });
+    return createSuccessResponse({ 
+      updated: data,
+      count: data?.length || 0 
+    });
 
   } catch (error) {
     console.error('Update notifications API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    if (error instanceof SyntaxError) {
+      return createErrorResponse('Invalid JSON in request body', 400);
+    }
+    return createErrorResponse('Internal server error', 500);
   }
 }
 
-export const GET = withAuth(getNotifications);
-export const POST = withAuth(createNotification);
-export const PATCH = withAuth(updateNotifications); 
+// Export the wrapped handlers
+export const GET = withAuthentication(getNotifications);
+export const POST = withAuthentication(createNotification);
+export const PATCH = withAuthentication(updateNotifications); 
