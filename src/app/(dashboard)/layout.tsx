@@ -14,7 +14,12 @@ import {
   Activity,
   Clock,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Shield,
+  Database,
+  Monitor,
+  Flag,
+  FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,6 +32,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
 
+  // Check if user has admin role
+  const isAdmin = user?.user_metadata?.role === 'admin';
+
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Markets', href: '/Markets', icon: BarChart3 },
@@ -34,7 +42,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Market Depth', href: '/MarketDepth', icon: Activity },
     { name: 'Trade History', href: '/TradeHistory', icon: Clock },
     { name: 'Leaderboard', href: '/Leaderboard', icon: Users },
-    { name: 'Settings', href: '/Settings', icon: Settings },
+  ];
+
+  const adminNavigation = [
+    { name: 'Admin Dashboard', href: '/admin', icon: Shield },
+    { name: 'User Management', href: '/admin/users', icon: Users },
+    { name: 'Market Management', href: '/admin/markets', icon: BarChart3 },
+    { name: 'System Monitor', href: '/admin/system', icon: Monitor },
+    { name: 'Analytics', href: '/admin/analytics', icon: Database },
+    { name: 'Moderation', href: '/admin/moderation', icon: Flag },
+    { name: 'Reports', href: '/admin/reports', icon: FileText },
   ];
 
   const handleSignOut = async () => {
@@ -97,40 +114,91 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Navigation */}
         <nav className={`flex-1 py-6 space-y-1 overflow-y-auto ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
+          {/* Show only admin navigation for admin users */}
+          {isAdmin ? (
+            <>
+              {!sidebarCollapsed && (
+                <div className="mb-6">
+                  <p className="px-3 text-xs font-bold text-red-600 uppercase tracking-wider">
+                    Admin Panel
+                  </p>
+                </div>
+              )}
+              {adminNavigation.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={`group flex items-center rounded-lg transition-all duration-200 w-full text-left relative ${
+                        sidebarCollapsed ? 'px-2 py-3 justify-center mx-1' : 'px-4 py-3.5'
+                      } text-red-700 hover:bg-red-50 hover:text-red-900`}
+                      title={sidebarCollapsed ? item.name : undefined}
+                    >
+                      <Icon className={`h-5 w-5 flex-shrink-0 ${
+                        sidebarCollapsed ? 'mx-auto' : 'mr-4'
+                      } text-red-500 group-hover:text-red-700`} />
+                      {!sidebarCollapsed && (
+                        <span className="text-sm font-semibold">{item.name}</span>
+                      )}
+                    </Link>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            <>
+              {!sidebarCollapsed && (
+                <div className="mb-6">
+                  <p className="px-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    Main Menu
+                  </p>
+                </div>
+              )}
+              {navigation.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.name}>
+                    <Link
+                      href={item.href}
+                      className={`group flex items-center rounded-lg transition-all duration-200 w-full text-left relative ${
+                        sidebarCollapsed ? 'px-2 py-3 justify-center mx-1' : 'px-4 py-3.5'
+                      } text-gray-700 hover:bg-gray-100 hover:text-gray-900`}
+                      title={sidebarCollapsed ? item.name : undefined}
+                    >
+                      <Icon className={`h-5 w-5 flex-shrink-0 ${
+                        sidebarCollapsed ? 'mx-auto' : 'mr-4'
+                      } text-gray-500 group-hover:text-gray-700`} />
+                      {!sidebarCollapsed && (
+                        <span className="text-sm font-semibold">{item.name}</span>
+                      )}
+                    </Link>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* Settings */}
           {!sidebarCollapsed && (
-            <div className="mb-6">
-              <p className="px-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Main Menu
-              </p>
+            <div className="my-6 px-3">
+              <div className="border-t border-gray-200"></div>
             </div>
           )}
-          {navigation.map((item, index) => {
-            const Icon = item.icon;
-            const isSettings = item.name === 'Settings';
-            return (
-              <div key={item.name}>
-                {isSettings && !sidebarCollapsed && (
-                  <div className="my-6 px-3">
-                    <div className="border-t border-gray-200"></div>
-                  </div>
-                )}
-                <Link
-                  href={item.href}
-                  className={`group flex items-center rounded-lg transition-all duration-200 w-full text-left relative ${
-                    sidebarCollapsed ? 'px-2 py-3 justify-center mx-1' : 'px-4 py-3.5'
-                  } text-gray-700 hover:bg-gray-100 hover:text-gray-900`}
-                  title={sidebarCollapsed ? item.name : undefined}
-                >
-                  <Icon className={`h-5 w-5 flex-shrink-0 ${
-                    sidebarCollapsed ? 'mx-auto' : 'mr-4'
-                  } text-gray-500 group-hover:text-gray-700`} />
-                  {!sidebarCollapsed && (
-                    <span className="text-sm font-semibold">{item.name}</span>
-                  )}
-                </Link>
-              </div>
-            );
-          })}
+          <Link
+            href="/Settings"
+            className={`group flex items-center rounded-lg transition-all duration-200 w-full text-left relative ${
+              sidebarCollapsed ? 'px-2 py-3 justify-center mx-1' : 'px-4 py-3.5'
+            } text-gray-700 hover:bg-gray-100 hover:text-gray-900`}
+            title={sidebarCollapsed ? 'Settings' : undefined}
+          >
+            <Settings className={`h-5 w-5 flex-shrink-0 ${
+              sidebarCollapsed ? 'mx-auto' : 'mr-4'
+            } text-gray-500 group-hover:text-gray-700`} />
+            {!sidebarCollapsed && (
+              <span className="text-sm font-semibold">Settings</span>
+            )}
+          </Link>
         </nav>
 
         {/* Sidebar Footer */}
@@ -195,32 +263,66 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Mobile Navigation */}
             <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
-              <div className="mb-6">
-                <p className="px-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Main Menu
-                </p>
-              </div>
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                const isSettings = item.name === 'Settings';
-                return (
-                  <div key={item.name}>
-                    {isSettings && (
-                      <div className="my-6 px-3">
-                        <div className="border-t border-gray-200"></div>
-                      </div>
-                    )}
-                    <Link
-                      href={item.href}
-                      className="group flex items-center px-4 py-3.5 rounded-lg transition-all duration-200 w-full text-left text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <Icon className="h-5 w-5 flex-shrink-0 mr-4 text-gray-500 group-hover:text-gray-700" />
-                      <span className="text-sm font-semibold">{item.name}</span>
-                    </Link>
+              {/* Show only admin navigation for admin users */}
+              {isAdmin ? (
+                <>
+                  <div className="mb-6">
+                    <p className="px-3 text-xs font-bold text-red-600 uppercase tracking-wider">
+                      Admin Panel
+                    </p>
                   </div>
-                );
-              })}
+                  {adminNavigation.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.name}>
+                        <Link
+                          href={item.href}
+                          className="group flex items-center px-4 py-3.5 rounded-lg transition-all duration-200 w-full text-left text-red-700 hover:bg-red-50 hover:text-red-900"
+                          onClick={() => setSidebarOpen(false)}
+                        >
+                          <Icon className="h-5 w-5 flex-shrink-0 mr-4 text-red-500 group-hover:text-red-700" />
+                          <span className="text-sm font-semibold">{item.name}</span>
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </>
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <p className="px-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Main Menu
+                    </p>
+                  </div>
+                  {navigation.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.name}>
+                        <Link
+                          href={item.href}
+                          className="group flex items-center px-4 py-3.5 rounded-lg transition-all duration-200 w-full text-left text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                          onClick={() => setSidebarOpen(false)}
+                        >
+                          <Icon className="h-5 w-5 flex-shrink-0 mr-4 text-gray-500 group-hover:text-gray-700" />
+                          <span className="text-sm font-semibold">{item.name}</span>
+                        </Link>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              <div className="my-6 px-3">
+                <div className="border-t border-gray-200"></div>
+              </div>
+              <Link
+                href="/Settings"
+                className="group flex items-center px-4 py-3.5 rounded-lg transition-all duration-200 w-full text-left text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Settings className="h-5 w-5 flex-shrink-0 mr-4 text-gray-500 group-hover:text-gray-700" />
+                <span className="text-sm font-semibold">Settings</span>
+              </Link>
             </nav>
 
             {/* Mobile Sidebar Footer */}
