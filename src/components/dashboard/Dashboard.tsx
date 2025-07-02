@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { useMarkets } from "@/hooks/useMarkets";
 import { useTradeHistory } from "@/hooks/useTradeHistory";
+import { useDailyChanges } from "@/hooks/useDailyChanges";
 import { Portfolio } from "./Portfolio";
 import { Markets } from "./Markets";
 import { useState, useEffect } from "react";
@@ -93,6 +94,10 @@ export function Dashboard() {
   const totalPnL = getTotalPnL();
   const pnlPercentage = getPnLPercentage();
   const activePositions = getActivePositions();
+  
+  // Get daily changes for today's P&L
+  const currentTotalValue = portfolio?.summary?.totalValue || (portfolio?.balance?.available_balance || 0);
+  const { dailyChange } = useDailyChanges(currentTotalValue);
 
   // Portfolio performance metrics
   const portfolioStats: StatType[] = [
@@ -107,10 +112,22 @@ export function Dashboard() {
     },
     {
       title: "Today's P&L",
-      value: portfolioLoading ? "Loading..." : ((totalPnL || 0) >= 0 ? `+₹${(totalPnL || 0).toLocaleString()}` : `-₹${Math.abs(totalPnL || 0).toLocaleString()}`),
-      change: portfolioLoading ? "Loading..." : ((pnlPercentage || 0) >= 0 ? `+${(pnlPercentage || 0).toFixed(2)}%` : `${(pnlPercentage || 0).toFixed(2)}%`),
-      trend: portfolioLoading ? "neutral" : ((totalPnL || 0) >= 0 ? "up" : "down"),
-      icon: (totalPnL || 0) >= 0 ? TrendingUp : Loss,
+      value: portfolioLoading ? "Loading..." : (
+        dailyChange ? 
+          ((dailyChange.absoluteChange >= 0) ? `+₹${Math.abs(dailyChange.absoluteChange).toLocaleString()}` : `-₹${Math.abs(dailyChange.absoluteChange).toLocaleString()}`) :
+          "No data"
+      ),
+      change: portfolioLoading ? "Loading..." : (
+        dailyChange ? 
+          ((dailyChange.percentChange >= 0) ? `+${dailyChange.percentChange.toFixed(2)}%` : `${dailyChange.percentChange.toFixed(2)}%`) :
+          "First day"
+      ),
+      trend: portfolioLoading ? "neutral" : (
+        dailyChange ? 
+          (dailyChange.absoluteChange >= 0 ? "up" : "down") :
+          "neutral"
+      ),
+      icon: dailyChange ? (dailyChange.absoluteChange >= 0 ? TrendingUp : Loss) : TrendingUp,
       description: "Daily performance",
       loading: portfolioLoading
     },

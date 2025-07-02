@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { usePortfolio } from '@/hooks/usePortfolio';
+import { useDailyChanges } from '@/hooks/useDailyChanges';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -35,6 +36,7 @@ import {
 } from "lucide-react";
 import { PortfolioCharts } from './PortfolioCharts';
 import { PortfolioAnalytics } from './PortfolioAnalytics';
+import { PnLCalculator, TradePosition } from '@/lib/pnl-calculator';
 
 interface Position {
   id: string;
@@ -108,14 +110,25 @@ export function Portfolio() {
     return () => clearInterval(interval);
   }, [refresh, mounted]);
 
-  // Calculate portfolio stats
+  const currentTotalValue = portfolio?.summary?.totalValue || (portfolio?.balance?.available_balance || 0);
+  
+  // Get daily changes using our new hook
+  const { 
+    dailyChange, 
+    yesterdaySnapshot, 
+    loading: dailyChangeLoading, 
+    error: dailyChangeError,
+    createSnapshot 
+  } = useDailyChanges(currentTotalValue);
+
+  // Use API portfolio data with calculated daily changes
   const stats: PortfolioStats = {
-    totalValue: portfolio?.summary?.totalValue || 0,
+    totalValue: currentTotalValue,
     totalInvested: portfolio?.summary?.totalInvested || 0,
     totalPnl: getTotalPnL(),
     totalPnlPercent: getPnLPercentage(),
-    dayChange: 0, // TODO: Calculate daily change
-    dayChangePercent: 0, // TODO: Calculate daily change %
+    dayChange: dailyChange?.absoluteChange || 0,
+    dayChangePercent: dailyChange?.percentChange || 0,
     winRate: portfolio?.summary?.winRate || 0,
     totalTrades: portfolio?.balance?.total_trades || 0,
     activePositions: positions?.filter(p => p.marketStatus === 'active').length || 0,
@@ -123,7 +136,7 @@ export function Portfolio() {
     volume: portfolio?.summary?.volume || 0
   };
 
-  // Transform positions for display
+  // Transform positions for display using API data
   const transformedPositions: Position[] = (positions || []).map(pos => {
     const totalShares = (pos.yesShares || 0) + (pos.noShares || 0);
     const isYesPosition = (pos.yesShares || 0) > (pos.noShares || 0);
@@ -139,7 +152,7 @@ export function Portfolio() {
       type: isYesPosition ? 'yes' : 'no',
       quantity: totalShares,
       avgPrice: avgPrice,
-      currentPrice: avgPrice,
+      currentPrice: avgPrice, // Use avg price as current for now
       investmentValue: pos.totalInvested || 0,
       currentValue: currentValue,
       pnl: (pos.unrealizedPnL || 0) + (pos.realizedPnL || 0),

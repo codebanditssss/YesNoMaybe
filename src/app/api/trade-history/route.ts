@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
+import { PnLCalculator, TradePosition } from '@/lib/pnl-calculator'
 
 async function tradeHistoryHandler(request: NextRequest, user: AuthenticatedUser) {
   try {
@@ -49,7 +50,8 @@ async function tradeHistoryHandler(request: NextRequest, user: AuthenticatedUser
           title,
           category,
           status,
-          resolution_date
+          resolution_date,
+          actual_outcome
         )
       `, { count: 'exact' })
       .eq('user_id', user.id)
@@ -102,26 +104,63 @@ async function tradeHistoryHandler(request: NextRequest, user: AuthenticatedUser
       return NextResponse.json({ error: 'Failed to fetch trade history' }, { status: 500 })
     }
 
-    // Transform orders to trade history format
-    let trades = (orders || []).map(order => ({
-      id: order.id,
-      userId: order.user_id,
-      marketId: order.market_id,
-      marketTitle: order.markets?.title || 'Unknown Market',
-      marketCategory: order.markets?.category || 'other',
-      marketStatus: order.markets?.status || 'unknown',
-      resolutionDate: order.markets?.resolution_date,
-      side: order.side,
-      orderType: order.order_type || 'limit',
-      quantity: order.quantity,
-      price: order.price,
-      filledQuantity: order.filled_quantity || 0,
-      status: order.status,
-      total: ((order.price || 0) * (order.filled_quantity || 0)) / 100,
-      fees: ((order.price || 0) * (order.filled_quantity || 0)) / 100 * 0.01, // 1% fee
-      timestamp: order.created_at,
-      updatedAt: order.updated_at
-    }))
+    // Transform orders to trade history format with P&L calculations
+    let trades = (orders || []).map(order => {
+      const filledQuantity = order.filled_quantity || 0;
+      const price = order.price || 0;
+      const total = (price * filledQuantity) / 100;
+      const fees = total * 0.01; // 1% fee
+      
+      // Calculate P&L for this trade
+      let tradePnL = 0;
+      let pnlPercent = 0;
+      
+      if (filledQuantity > 0 && order.markets?.status) {
+        if (order.markets.status === 'resolved') {
+          // For resolved markets, calculate realized P&L
+          const tradePosition: TradePosition = {
+            marketId: order.market_id,
+            side: order.side as 'YES' | 'NO',
+            quantity: filledQuantity,
+            avgPrice: price,
+            totalCost: total,
+            marketStatus: 'resolved',
+            marketOutcome: (order.markets.actual_outcome as 'YES' | 'NO') || undefined
+          };
+          
+          const pnlResult = PnLCalculator.calculatePositionPnL(tradePosition);
+          tradePnL = pnlResult.totalPnL;
+          pnlPercent = pnlResult.pnlPercent;
+        } else {
+          // For active markets, P&L is pending (show as 0 or investment cost)
+          tradePnL = 0; // P&L unknown until resolution
+          pnlPercent = 0;
+        }
+      }
+
+      return {
+        id: order.id,
+        userId: order.user_id,
+        marketId: order.market_id,
+        marketTitle: order.markets?.title || 'Unknown Market',
+        marketCategory: order.markets?.category || 'other',
+        marketStatus: order.markets?.status || 'unknown',
+        resolutionDate: order.markets?.resolution_date,
+        actualOutcome: order.markets?.actual_outcome,
+        side: order.side,
+        orderType: order.order_type || 'limit',
+        quantity: order.quantity,
+        price: price,
+        filledQuantity: filledQuantity,
+        status: order.status,
+        total: total,
+        fees: fees,
+        pnl: tradePnL,
+        pnlPercent: pnlPercent,
+        timestamp: order.created_at,
+        updatedAt: order.updated_at
+      };
+    })
 
     // Apply client-side search filter (since PostgREST doesn't support nested field search easily)
     if (search) {
@@ -139,35 +178,59 @@ async function tradeHistoryHandler(request: NextRequest, user: AuthenticatedUser
     const completedTrades = trades.filter(trade => trade.status === 'filled')
     const pendingTrades = trades.filter(trade => trade.status === 'open')
     const cancelledTrades = trades.filter(trade => trade.status === 'cancelled')
+    const resolvedTrades = filledTrades.filter(trade => trade.marketStatus === 'resolved')
 
     const totalVolume = filledTrades.reduce((sum, trade) => sum + (trade.filledQuantity || 0), 0)
     const totalFees = filledTrades.reduce((sum, trade) => sum + (trade.fees || 0), 0)
     const totalValue = filledTrades.reduce((sum, trade) => sum + (trade.total || 0), 0)
 
-    // Calculate P&L (simplified - would need more complex logic for actual P&L)
-    const totalPnL = 0 // TODO: Implement actual P&L calculation
+    // Calculate actual P&L from resolved trades only
+    const totalPnL = resolvedTrades.reduce((sum, trade) => sum + (trade.pnl || 0), 0)
+    
+    // Calculate winning trades (positive P&L on resolved markets)
+    const winningTrades = resolvedTrades.filter(trade => (trade.pnl || 0) > 0)
+    const winRate = resolvedTrades.length > 0 ? (winningTrades.length / resolvedTrades.length) * 100 : 0
 
-    // Calculate win rate (simplified)
-    const winRate = completedTrades.length > 0 ? (completedTrades.length / filledTrades.length) * 100 : 0
+    // Calculate best and worst trades
+    const tradePnLs = resolvedTrades.map(trade => trade.pnl || 0)
+    const bestTrade = tradePnLs.length > 0 ? Math.max(...tradePnLs) : 0
+    const worstTrade = tradePnLs.length > 0 ? Math.min(...tradePnLs) : 0
 
     // Calculate average trade size
     const avgTradeSize = filledTrades.length > 0 ? totalVolume / filledTrades.length : 0
 
-    // Calculate execution time (simplified)
-    const avgExecutionTime = 0 // TODO: Calculate actual execution time
+    // Calculate execution time from filled orders (order creation to fill time)
+    const executionTimes: number[] = []
+    filledTrades.forEach(trade => {
+      if (trade.status === 'filled' && trade.timestamp && trade.updatedAt) {
+        const createdAt = new Date(trade.timestamp)
+        const filledAt = new Date(trade.updatedAt)
+        const execTimeSeconds = (filledAt.getTime() - createdAt.getTime()) / 1000
+        
+        // Only include reasonable execution times (filter out data anomalies)
+        if (execTimeSeconds >= 0 && execTimeSeconds <= 3600) { // Max 1 hour
+          executionTimes.push(execTimeSeconds)
+        }
+      }
+    })
+    
+    const avgExecutionTime = executionTimes.length > 0 
+      ? executionTimes.reduce((sum, time) => sum + time, 0) / executionTimes.length 
+      : 0
 
     const stats = {
       totalTrades: trades.length,
       completedTrades: completedTrades.length,
       pendingTrades: pendingTrades.length,
       cancelledTrades: cancelledTrades.length,
+      resolvedTrades: resolvedTrades.length,
       totalVolume,
       totalFees,
-      totalPnL,
+      totalPnL: Math.round(totalPnL * 100) / 100,
       winRate: Math.round(winRate * 100) / 100,
       avgTradeSize: Math.round(avgTradeSize * 100) / 100,
-      bestTrade: 0, // TODO: Calculate best trade
-      worstTrade: 0, // TODO: Calculate worst trade
+      bestTrade: Math.round(bestTrade * 100) / 100,
+      worstTrade: Math.round(worstTrade * 100) / 100,
       avgExecutionTime
     }
 

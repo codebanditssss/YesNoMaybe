@@ -500,6 +500,16 @@ export function TradeHistory() {
                                   <Badge variant="outline" className="bg-purple-100 text-purple-800">
                                     {trade.orderType.toUpperCase()}
                                   </Badge>
+                                  {trade.marketStatus === 'resolved' && (
+                                    <Badge variant="outline" className="bg-emerald-100 text-emerald-800">
+                                      RESOLVED
+                                    </Badge>
+                                  )}
+                                  {trade.marketStatus === 'active' && (
+                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                      ACTIVE
+                                    </Badge>
+                                  )}
                                 </div>
                                 
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -535,23 +545,37 @@ export function TradeHistory() {
 
                               <div className="text-right space-y-2">
                                 <div>
-                                  <p className="text-sm text-gray-500">Net Amount</p>
+                                  <p className="text-sm text-gray-500">Investment</p>
                                   <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.total || 0)}</p>
                                 </div>
                                 
-                                {trade.status === 'filled' && (
-                                  <div>
-                                    <p className="text-sm text-gray-500">P&L</p>
-                                    <div className="flex items-center gap-1 text-gray-600">
-                                      <span className="font-bold">
-                                        {formatCurrency(0)}
-                                          <span className="text-xs ml-1">
-                                          (0.0%)
-                                          </span>
+                                <div>
+                                  <p className="text-sm text-gray-500">P&L</p>
+                                  <div className="flex items-center gap-1">
+                                    {trade.marketStatus === 'resolved' ? (
+                                      <span className={`font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
+                                        <span className="text-xs ml-1">
+                                          ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
+                                        </span>
                                       </span>
-                                    </div>
+                                    ) : trade.status === 'filled' ? (
+                                      <span className="font-medium text-blue-600">
+                                        Pending
+                                        <span className="text-xs ml-1 text-gray-500">
+                                          (Active Market)
+                                        </span>
+                                      </span>
+                                    ) : (
+                                      <span className="font-medium text-gray-500">
+                                        -
+                                        <span className="text-xs ml-1">
+                                          (Not Filled)
+                                        </span>
+                                      </span>
+                                    )}
                                   </div>
-                                )}
+                                </div>
                                 
                                 <div className="text-xs text-gray-500">
                                   <p>Fees: {formatCurrency(trade.fees)}</p>

@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { NextRequest, NextResponse } from 'next/server'
 import { withAuth, AuthenticatedUser, validateInput } from '@/lib/auth'
+import { AnalyticsCalculator, TradeForAnalytics } from '@/lib/analytics-calculator'
 
 async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser) {
   try {
@@ -68,11 +69,68 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
         totalVolume: parseFloat(entry.total_volume || '0'),
         balance: parseFloat(entry.available_balance || '0'),
         isCurrentUser: entry.user_id === user.id,
-        streak: 0, // TODO: Calculate win streak
-        badges: [], // TODO: Implement badge system
+        streak: 0, // Will be calculated below
+        badges: [], // Will be calculated below
         lastActive: entry.updated_at
       }
     })
+
+    // Calculate win streak and badges for current user only (for performance)
+    const currentUserEntry = leaderboardEntries.find(entry => entry.isCurrentUser)
+    if (currentUserEntry) {
+      try {
+        // Fetch current user's trade history for analytics
+        const { data: userTrades, error: tradesError } = await supabaseAdmin!
+          .from('orders')
+          .select(`
+            id,
+            side,
+            quantity,
+            price,
+            filled_quantity,
+            status,
+            created_at,
+            updated_at,
+            markets (
+              title,
+              category,
+              status,
+              actual_outcome
+            )
+          `)
+          .eq('user_id', user.id)
+          .eq('status', 'filled')
+          .order('created_at', { ascending: false })
+          .limit(100) // Limit for performance
+
+        if (!tradesError && userTrades) {
+          // Transform to analytics format
+          const analyticsData: TradeForAnalytics[] = userTrades.map(trade => ({
+            id: trade.id,
+            pnl: 0, // Will be calculated by AnalyticsCalculator if needed
+            status: 'filled' as const,
+            marketStatus: (trade.markets?.status === 'resolved' ? 'resolved' : 'active') as 'resolved' | 'active',
+            timestamp: trade.created_at,
+            volume: ((trade.price || 0) * (trade.filled_quantity || 0)) / 100,
+            side: trade.side as 'YES' | 'NO',
+            marketCategory: trade.markets?.category || 'other'
+          }))
+
+          // Calculate win streak
+          const winStreak = AnalyticsCalculator.calculateWinStreak(analyticsData)
+          currentUserEntry.streak = winStreak.currentStreak
+
+          // Calculate badges  
+          const totalVolume = analyticsData.reduce((sum, t) => sum + t.volume, 0)
+          const winRate = currentUserEntry.winRate
+          const badges = AnalyticsCalculator.calculateBadges(analyticsData, winStreak, totalVolume, winRate)
+          currentUserEntry.badges = badges.filter(b => b.earned).map(b => b.name)
+        }
+      } catch (error) {
+        console.error('Error calculating user analytics:', error)
+        // Continue without analytics - don't fail the entire request
+      }
+    }
 
     // Apply client-side search filter
     if (search) {

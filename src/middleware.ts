@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
     console.error('Middleware error:', error)
     // Fallback to allowing the request through on error
     return NextResponse.next()
-  }
+      }
 }
 
 export const config = {

@@ -95,12 +95,9 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       return NextResponse.json({ error: 'History limit must be between 1 and 1000' }, { status: 400 })
     }
 
-    // Use fallback date for filtering (user creation date not critical for portfolio)
-    const userCreatedAt = new Date('2025-06-25') // Platform launch date fallback
-
-    // Get date range for filtering, but never go before user creation
+    // Get date range for filtering (only used for history/charts, not positions)
     const { start: timeframeStart, end } = getDateRange(timeframe)
-    const start = timeframeStart < userCreatedAt ? userCreatedAt : timeframeStart
+    const start = timeframeStart
 
     // Get user balance
     let { data: userBalance, error: balanceError } = await serviceRoleClient
@@ -158,7 +155,6 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
         )
       `)
       .eq('user_id', user.id)
-      .gte('created_at', userCreatedAt.toISOString()) // Filter out orders before user creation
       .order('created_at', { ascending: true })
 
     if (allOrdersError) {
@@ -168,11 +164,9 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
 
 
 
-    // For positions calculation, filter orders by timeframe
-    const orders = allOrders?.filter(order => {
-      const orderDate = new Date(order.updated_at);
-      return orderDate >= start && orderDate <= end;
-    }) || [];
+    // For positions calculation, use ALL orders (timeframe filtering only for history/charts)
+    // Portfolio positions should show current holdings regardless of when they were acquired
+    const orders = allOrders || [];
 
     // Calculate positions and P&L for the time period
     const positionsByMarket = new Map()
@@ -327,10 +321,7 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
     const response = {
       balance: {
         ...userBalance,
-        // Override with period-specific stats
-        total_trades: periodTotalTrades,
-        winning_trades: periodWinningTrades,
-        total_volume: periodTotalVolume,
+        // Use actual balance data, not period-filtered stats for portfolio view
         total_profit_loss: totalRealizedPnL + totalUnrealizedPnL
       },
       positions: portfolioPositions,

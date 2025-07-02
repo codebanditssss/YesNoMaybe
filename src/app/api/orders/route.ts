@@ -255,7 +255,7 @@ async function updateOrderHandler(user: any, supabase: any, request: NextRequest
 
 // DELETE handler for cancelling orders
 async function deleteOrderHandler(user: any, supabase: any, request: NextRequest) {
-  try {
+    try {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get('orderId');
 

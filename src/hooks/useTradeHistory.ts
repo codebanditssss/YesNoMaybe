@@ -10,6 +10,7 @@ export interface TradeHistoryEntry {
   marketCategory: string;
   marketStatus: string;
   resolutionDate?: string | null;
+  actualOutcome?: 'YES' | 'NO';
   side: 'YES' | 'NO';
   orderType: string;
   quantity: number;
@@ -18,6 +19,8 @@ export interface TradeHistoryEntry {
   status: string;
   total: number;
   fees: number;
+  pnl: number;
+  pnlPercent: number;
   timestamp: string | Date;
   updatedAt: string;
 }
@@ -27,6 +30,7 @@ export interface TradeHistoryStats {
   completedTrades: number;
   pendingTrades: number;
   cancelledTrades: number;
+  resolvedTrades: number;
   totalVolume: number;
   totalFees: number;
   totalPnL: number;
@@ -143,13 +147,17 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
         timestamp: new Date(trade.timestamp),
         updatedAt: trade.updatedAt,
         resolutionDate: trade.resolutionDate || null,
-        // Computed fields for component
+        // Use calculated P&L from API
         netAmount: trade.total || 0,
-        pnl: 0, // TODO: Calculate actual P&L
-        pnlPercent: 0,
-        executionTime: 0,
+        pnl: trade.pnl || 0, // P&L calculated by API using PnLCalculator
+        pnlPercent: trade.pnlPercent || 0,
+        executionTime: 0, // TODO: Calculate execution time
         isPartiallyFilled: (trade.filledQuantity || 0) > 0 && (trade.filledQuantity || 0) < trade.quantity,
-        originalQuantity: trade.quantity
+        originalQuantity: trade.quantity,
+        // Add helper fields
+        isWinner: (trade.pnl || 0) > 0,
+        isLoser: (trade.pnl || 0) < 0,
+        isResolved: trade.marketStatus === 'resolved'
       }));
 
       setData({
@@ -213,13 +221,17 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
         timestamp: new Date(trade.timestamp),
         updatedAt: trade.updatedAt,
         resolutionDate: trade.resolutionDate || null,
-        // Computed fields for component
+        // Use calculated P&L from API
         netAmount: trade.total || 0,
-        pnl: 0, // TODO: Calculate actual P&L
-        pnlPercent: 0,
-        executionTime: 0,
+        pnl: trade.pnl || 0, // P&L calculated by API using PnLCalculator
+        pnlPercent: trade.pnlPercent || 0,
+        executionTime: 0, // TODO: Calculate execution time
         isPartiallyFilled: (trade.filledQuantity || 0) > 0 && (trade.filledQuantity || 0) < trade.quantity,
-        originalQuantity: trade.quantity
+        originalQuantity: trade.quantity,
+        // Add helper fields
+        isWinner: (trade.pnl || 0) > 0,
+        isLoser: (trade.pnl || 0) < 0,
+        isResolved: trade.marketStatus === 'resolved'
       }));
 
       setData(prevData => ({
@@ -274,6 +286,7 @@ export function useTradeHistory(options: UseTradeHistoryOptions = {}) {
       completedTrades: 0,
       pendingTrades: 0,
       cancelledTrades: 0,
+      resolvedTrades: 0,
       totalVolume: 0,
       totalFees: 0,
       totalPnL: 0,

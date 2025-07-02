@@ -130,4 +130,4 @@ function calculateRiskLevel(daysUntilExpiry: number, category: string): 'low' | 
   if (daysUntilExpiry <= 30) return 'high';
   if (daysUntilExpiry <= 180) return 'medium';
   return 'low';
-}
+} 
