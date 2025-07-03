@@ -15,9 +15,9 @@ export const supabase = createBrowserClient<Database>(
   supabaseAnonKey
 )
 
-// Disconnect from realtime to prevent WebSocket errors
+// Enable realtime (WebSocket connections will be established on subscription)
 if (typeof window !== 'undefined') {
-  supabase.realtime.disconnect()
+  console.log('🔌 Supabase Realtime Enabled - WebSocket connections will start on subscription')
 }
 
 // Create a client with the service role key for admin operations
@@ -34,7 +34,7 @@ export const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
     )
   : null
 
-// Disconnect admin client from realtime as well
+// Keep admin client disconnected from realtime (server-side operations only)
 if (supabaseAdmin && typeof window !== 'undefined') {
   supabaseAdmin.realtime.disconnect()
 }
