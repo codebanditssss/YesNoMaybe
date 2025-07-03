@@ -14,7 +14,11 @@ import {
   TrendingDown,
   Minus,
   UserPlus,
-  X
+  X,
+  Clock,
+  Zap,
+  Target,
+  Trophy
 } from "lucide-react";
 import { useLeaderboard, LeaderboardEntry, RecentTrade } from '@/hooks/useLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -160,27 +164,33 @@ export function Leaderboard() {
                    placeholder="Search traders..."
                    value={searchTerm}
                    onChange={(e) => setSearchTerm(e.target.value)}
-                   className="w-80 pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-black focus:border-black bg-white shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
+                   className="w-64 pl-12 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black bg-white shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
                  />
           </div>
           
-               {/* Filters */}
+               {/* Time Range Filter */}
                <div className="relative">
-            <Button 
-              variant="outline" 
-              size="sm"
-                   onClick={() => setShowTimeRangeDropdown(!showTimeRangeDropdown)}
-                   className="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-3 px-4 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
+                 <Button 
+                   variant="outline"
+                   size="sm"
+                   onClick={() => {
+                     setShowTimeRangeDropdown(!showTimeRangeDropdown);
+                     setShowCategoryDropdown(false);
+                   }}
+                   className={`border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2.5 px-4 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md ${
+                     showTimeRangeDropdown ? 'bg-gray-50 border-gray-300' : ''
+                   }`}
                  >
-                   <Filter className="h-4 w-4 mr-2" />
-                   Filters
-                   <ChevronDown className="h-4 w-4 ml-2" />
+                   <Clock className="h-4 w-4 mr-2" />
+                   {selectedTimeRange === 'all' ? 'All Time' : 
+                    selectedTimeRange === '30d' ? 'Last 30 Days' :
+                    selectedTimeRange === '7d' ? 'Last 7 Days' : 'Last 24 Hours'}
+                   <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showTimeRangeDropdown ? 'transform rotate-180' : ''}`} />
                  </Button>
-                
-                                 {showTimeRangeDropdown && (
-                   <div className="absolute top-full right-0 mt-3 w-56 bg-white border border-gray-200 rounded-xl shadow-xl z-20 backdrop-blur-sm">
-                     <div className="p-4">
-                       <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Time Range</div>
+
+                 {showTimeRangeDropdown && (
+                   <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                     <div className="py-1">
                        {[
                          { value: 'all', label: 'All Time' },
                          { value: '30d', label: 'Last 30 Days' },
@@ -193,44 +203,70 @@ export function Leaderboard() {
                              setSelectedTimeRange(option.value as any);
                              setShowTimeRangeDropdown(false);
                            }}
-                           className={`w-full text-left px-3 py-2 text-sm rounded-lg mb-1 transition-all duration-200 ${
+                           className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 ${
                              selectedTimeRange === option.value 
-                               ? 'bg-black text-white shadow-sm' 
-                               : 'text-gray-700 hover:bg-gray-50 hover:translate-x-1'
+                               ? 'bg-gray-50 text-black font-medium' 
+                               : 'text-gray-700 hover:bg-gray-50'
                            }`}
                          >
                            {option.label}
                          </button>
                        ))}
-                       <div className="border-t border-gray-100 mt-3 pt-3">
-                         <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Category</div>
-                         {[
-                           { value: 'overall', label: 'Overall Performance' },
-                           { value: 'streak', label: 'Win Streak Leaders' },
-                           { value: 'consistency', label: 'Most Consistent' },
-                           { value: 'volume', label: 'Volume Leaders' }
-                         ].map((option) => (
-                           <button
-                             key={option.value}
-              onClick={() => {
-                               setSelectedCategory(option.value as any);
-                               setShowTimeRangeDropdown(false);
-                             }}
-                             className={`w-full text-left px-3 py-2 text-sm rounded-lg mb-1 transition-all duration-200 ${
-                               selectedCategory === option.value 
-                                 ? 'bg-black text-white shadow-sm' 
-                                 : 'text-gray-700 hover:bg-gray-50 hover:translate-x-1'
-                             }`}
-                           >
-                             {option.label}
-                           </button>
-                         ))}
-                       </div>
                      </div>
                    </div>
                  )}
-              </div>
-            </div>
+               </div>
+
+               {/* Category Filter */}
+               <div className="relative">
+                 <Button 
+                   variant="outline"
+                   size="sm"
+                   onClick={() => {
+                     setShowCategoryDropdown(!showCategoryDropdown);
+                     setShowTimeRangeDropdown(false);
+                   }}
+                   className={`border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2.5 px-4 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md ${
+                     showCategoryDropdown ? 'bg-gray-50 border-gray-300' : ''
+                   }`}
+                 >
+                   <Filter className="h-4 w-4 mr-2" />
+                   {selectedCategory === 'overall' ? 'Overall Performance' :
+                    selectedCategory === 'streak' ? 'Win Streak Leaders' :
+                    selectedCategory === 'consistency' ? 'Most Consistent' : 'Volume Leaders'}
+                   <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showCategoryDropdown ? 'transform rotate-180' : ''}`} />
+                 </Button>
+
+                 {showCategoryDropdown && (
+                   <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                     <div className="py-1">
+                       {[
+                         { value: 'overall', label: 'Overall Performance', icon: Trophy },
+                         { value: 'streak', label: 'Win Streak Leaders', icon: Zap },
+                         { value: 'consistency', label: 'Most Consistent', icon: Target },
+                         { value: 'volume', label: 'Volume Leaders', icon: TrendingUp }
+                       ].map((option) => (
+                         <button
+                           key={option.value}
+                           onClick={() => {
+                             setSelectedCategory(option.value as any);
+                             setShowCategoryDropdown(false);
+                           }}
+                           className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 flex items-center ${
+                             selectedCategory === option.value 
+                               ? 'bg-gray-50 text-black font-medium' 
+                               : 'text-gray-700 hover:bg-gray-50'
+                           }`}
+                         >
+                           <option.icon className="h-4 w-4 mr-2" />
+                           {option.label}
+                         </button>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+               </div>
+             </div>
           </div>
           </div>
         </div>
