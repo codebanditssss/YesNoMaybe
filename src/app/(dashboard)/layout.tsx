@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ClientRedirectManager } from '@/lib/redirect-manager';
 import ProfileDropdown from '@/components/dashboard/ProfileDropdown';
+import { ConnectionStatusCompact } from '@/components/realtime/ConnectionStatus';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -349,7 +350,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <Menu className="h-5 w-5 text-gray-500" />
           </button>
-          <div className="flex-1 flex justify-end">
+          <div className="flex-1 flex items-center justify-end space-x-4">
+            <ConnectionStatusCompact />
             <ProfileDropdown user={user} />
           </div>
         </div>
