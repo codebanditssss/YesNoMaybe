@@ -219,10 +219,10 @@ export function Leaderboard() {
 
                {/* Category Filter */}
                <div className="relative">
-                 <Button 
-                   variant="outline"
-                   size="sm"
-                   onClick={() => {
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
                      setShowCategoryDropdown(!showCategoryDropdown);
                      setShowTimeRangeDropdown(false);
                    }}
@@ -235,7 +235,7 @@ export function Leaderboard() {
                     selectedCategory === 'streak' ? 'Win Streak Leaders' :
                     selectedCategory === 'consistency' ? 'Most Consistent' : 'Volume Leaders'}
                    <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showCategoryDropdown ? 'transform rotate-180' : ''}`} />
-                 </Button>
+            </Button>
 
                  {showCategoryDropdown && (
                    <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
@@ -289,10 +289,94 @@ export function Leaderboard() {
             </div>
           </Card>
         ) : (
-          <>
-                         {/* Leaderboard Table */}
-             <div className="relative">
-               <Card className="border border-gray-200 overflow-hidden">
+                    <>
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowRowsDropdown(!showRowsDropdown)}
+                    className="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2 px-3 rounded-lg shadow-sm"
+                  >
+                    Rows per page: {rowsPerPage}
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                  
+                  {showRowsDropdown && (
+                    <div className="absolute top-full left-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                      <div className="py-1">
+                        {[10, 25, 50, 100].map((size) => (
+                          <button
+                            key={size}
+                            onClick={() => {
+                              setRowsPerPage(size);
+                              setCurrentPage(1);
+                              setShowRowsDropdown(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm ${
+                              rowsPerPage === size 
+                                ? 'bg-gray-50 text-black font-medium' 
+                                : 'text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <span className="text-sm text-gray-600">
+                  Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, stats?.totalUsers || 0)} of {stats?.totalUsers || 0} traders
+                </span>
+              </div>
+              
+                <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {[...Array(Math.min(5, totalPages))].map((_, idx) => {
+                  const pageNum = currentPage <= 3 ? idx + 1 : currentPage - 2 + idx;
+                  if (pageNum > totalPages) return null;
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={currentPage === pageNum ? "bg-black text-white" : "border-gray-300 hover:bg-gray-50"}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Leaderboard Table */}
+            <div className="relative">
+              <Card className="border border-gray-200 overflow-hidden">
                  <div className="overflow-hidden">
                    <table className="w-full">
                      <thead className="bg-gray-50 border-b border-gray-200">
@@ -415,7 +499,7 @@ export function Leaderboard() {
                                      </div>
                                    )}
                                  </div>
-                               </div>
+                  </div>
                              </td>
                              
                              <td className="px-8 py-4">
@@ -520,87 +604,7 @@ export function Leaderboard() {
                )}
                 </div>
 
-                         {/* Pagination */}
-             <div className="flex items-center justify-between mt-6 py-4">
-               <div className="flex items-center gap-6">
-                 <div className="relative">
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => setShowRowsDropdown(!showRowsDropdown)}
-                     className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                   >
-                     <span className="text-sm">Rows per page: {rowsPerPage}</span>
-                     <ChevronDown className="h-4 w-4 ml-2" />
-                   </Button>
-                   
-                                        {showRowsDropdown && (
-                       <div className="absolute top-full left-0 mt-2 w-32 bg-white border border-gray-200 rounded shadow-lg z-20">
-                         {[10, 25, 50, 100].map((size) => (
-                           <button
-                             key={size}
-                             onClick={() => {
-                               setRowsPerPage(size);
-                               setCurrentPage(1);
-                               setShowRowsDropdown(false);
-                             }}
-                             className={`w-full text-left px-3 py-2 text-sm ${
-                               rowsPerPage === size 
-                                 ? 'bg-gray-900 text-white' 
-                                 : 'text-gray-700 hover:bg-gray-50'
-                             }`}
-                           >
-                             {size}
-                           </button>
-                         ))}
-                       </div>
-                     )}
-                 </div>
-                 
-                 <span className="text-sm text-gray-600">
-                   Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, stats?.totalUsers || 0)} of {stats?.totalUsers || 0} traders
-                 </span>
-               </div>
-               
-               <div className="flex items-center gap-2">
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                   disabled={currentPage === 1}
-                   className="border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-                 >
-                   <ChevronLeft className="h-4 w-4" />
-                 </Button>
-                 
-                 {[...Array(Math.min(5, totalPages))].map((_, idx) => {
-                   const pageNum = currentPage <= 3 ? idx + 1 : currentPage - 2 + idx;
-                   if (pageNum > totalPages) return null;
-                   
-                   return (
-                     <Button
-                       key={pageNum}
-                       variant={currentPage === pageNum ? "default" : "outline"}
-                       size="sm"
-                       onClick={() => setCurrentPage(pageNum)}
-                       className={currentPage === pageNum ? "bg-gray-900 text-white" : "border-gray-300 hover:bg-gray-50"}
-                     >
-                       {pageNum}
-                     </Button>
-                   );
-                 })}
-                 
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                   disabled={currentPage === totalPages}
-                   className="border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-                 >
-                   <ChevronRight className="h-4 w-4" />
-                 </Button>
-               </div>
-                    </div>
+                         
           </>
         )}
                     </div>
