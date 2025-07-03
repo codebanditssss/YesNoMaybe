@@ -98,7 +98,7 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
             `)
             .or(`yes_user_id.eq.${entry.id},no_user_id.eq.${entry.id}`)
             .order('created_at', { ascending: false })
-            .limit(5) // Recent trades limit
+            .limit(30) // Fetch last 30 trades for better Sharpe calculation
 
                   if (!tradesError && userTrades) {
             // Transform trades to analytics format
@@ -133,8 +133,8 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
               description: b.description
             }));
 
-            // Add recent trades (limit to 1)
-            entry.recentTrades = userTrades.slice(0, 1).map(trade => {
+            // Add recent trades
+            entry.recentTrades = userTrades.map(trade => {
               const isYesSide = trade.yes_user_id === entry.id;
               const pnl = isYesSide ? trade.yes_user_payout : trade.no_user_payout;
               

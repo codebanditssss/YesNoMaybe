@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +28,73 @@ interface FollowedTrader {
   isFollowed: boolean;
 }
 
+// Virtual scrolling configuration
+const ITEM_HEIGHT = 80; // Height of each row in pixels
+const CONTAINER_HEIGHT = 600; // Height of the scrollable container
+const BUFFER_SIZE = 5; // Number of items to render outside visible area
+
+interface VirtualScrollProps {
+  items: LeaderboardEntry[];
+  renderItem: (item: LeaderboardEntry, index: number) => React.ReactNode;
+  itemHeight: number;
+  containerHeight: number;
+  bufferSize?: number;
+}
+
+function VirtualScroll({ 
+  items, 
+  renderItem, 
+  itemHeight, 
+  containerHeight, 
+  bufferSize = 5 
+}: VirtualScrollProps) {
+  const [scrollTop, setScrollTop] = useState(0);
+  const scrollElementRef = useRef<HTMLDivElement>(null);
+
+  const totalHeight = items.length * itemHeight;
+  const visibleItems = Math.ceil(containerHeight / itemHeight);
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - bufferSize);
+  const endIndex = Math.min(items.length - 1, startIndex + visibleItems + bufferSize * 2);
+  
+  const visibleData = items.slice(startIndex, endIndex + 1);
+  const offsetY = startIndex * itemHeight;
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrollTop(e.currentTarget.scrollTop);
+  }, []);
+
+  return (
+    <div
+      ref={scrollElementRef}
+      style={{ height: containerHeight, overflow: 'auto' }}
+      onScroll={handleScroll}
+      className="relative"
+    >
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        <div
+          style={{
+            transform: `translateY(${offsetY}px)`,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+          }}
+        >
+          {visibleData.map((item, index) => 
+            renderItem(item, startIndex + index)
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Leaderboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTimeRange, setSelectedTimeRange] = useState<'all' | '1d' | '7d' | '30d'>('all');
   const [selectedCategory, setSelectedCategory] = useState<'overall' | 'streak' | 'consistency' | 'volume'>('overall');
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(50); // Increased for virtual scrolling
   const [hoveredTrader, setHoveredTrader] = useState<string | null>(null);
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
   const [selectedTrader, setSelectedTrader] = useState<string | null>(null);
@@ -55,11 +116,19 @@ export function Leaderboard() {
   } = useLeaderboard({ 
     search: searchTerm,
     timeRange: selectedTimeRange,
-    limit: rowsPerPage,
-    offset: (currentPage - 1) * rowsPerPage,
+    limit: 1000, // Fetch more data for virtual scrolling
+    offset: 0,
     autoRefresh: true,
     refreshInterval: 60000
   });
+
+  // Memoize filtered and sorted data for performance
+  const processedData = useMemo(() => {
+    if (!leaderboard) return [];
+    
+    // Apply any additional client-side filtering or sorting here
+    return leaderboard;
+  }, [leaderboard, searchTerm]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { 
@@ -75,8 +144,7 @@ export function Leaderboard() {
   };
 
   const getRankChange = (currentRank: number) => {
-    // Real rank change from previous rank in trader_rankings table
-    return 0; // For now, until we implement historical rank tracking
+    return 0;
   };
 
   const getPerformanceStreak = (trader: any) => {
@@ -87,14 +155,64 @@ export function Leaderboard() {
   };
 
   const getSharpRatio = (trader: any) => {
-    // Calculate Sharpe ratio from win rate and returns
-    const riskFreeRate = 0.04; // 4% annual risk-free rate
-    const excessReturn = (trader.totalPnL / trader.balance) - (riskFreeRate / 252); // Daily excess return
-    const volatility = Math.sqrt(
-      (trader.winRate / 100) * Math.pow(excessReturn, 2) + 
-      (1 - trader.winRate / 100) * Math.pow(-excessReturn, 2)
-    );
-    return volatility === 0 ? 0 : ((excessReturn / volatility) * Math.sqrt(252)).toFixed(2);
+    // For new traders with very few trades
+    if (!trader.totalTrades || trader.totalTrades <= 3) {
+      return '0.00';
+    }
+
+    // For traders with moderate activity, use a simplified measure
+    if (trader.totalTrades <= 10) {
+      const winRate = trader.winningTrades / trader.totalTrades;
+      const simpleRatio = (winRate - 0.5) * 2; // Scale -1 to +1
+      return simpleRatio.toFixed(2);
+    }
+
+    // For established traders with enough trades, calculate full Sharpe ratio
+    if (!trader.recentTrades || trader.recentTrades.length === 0) {
+      return '0.00';
+    }
+
+    // Calculate daily returns
+    const dailyReturns = new Map<string, number>();
+    trader.recentTrades.forEach((trade: any) => {
+      const date = new Date(trade.timestamp).toISOString().split('T')[0];
+      dailyReturns.set(date, (dailyReturns.get(date) || 0) + (trade.pnl || 0));
+    });
+
+    const returns = Array.from(dailyReturns.values());
+    
+    // Need at least 5 days of data for meaningful calculation
+    if (returns.length < 5) {
+      const totalReturn = returns.reduce((sum, r) => sum + r, 0);
+      const avgReturn = totalReturn / returns.length;
+      // Use ROI as a simple measure
+      const roi = avgReturn / trader.balance;
+      return (Math.max(-1, Math.min(1, roi)) * 2).toFixed(2);
+    }
+
+    // Calculate average daily return
+    const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+
+    // Calculate daily volatility
+    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1);
+    const stdDev = Math.sqrt(variance || 0);
+
+    if (stdDev === 0) {
+      return avgReturn > 0 ? '1.00' : '0.00';
+    }
+
+    // Annualize (√252 is the standard annualization factor for daily returns)
+    const annualizedReturn = avgReturn * 252;
+    const annualizedStdDev = stdDev * Math.sqrt(252);
+
+    // Risk-free rate (4% annual)
+    const riskFreeRate = 0.04;
+
+    // Calculate Sharpe Ratio and normalize it to a reasonable range (-3 to +3)
+    const sharpeRatio = (annualizedReturn - riskFreeRate) / annualizedStdDev;
+    const normalizedSharpe = Math.max(-3, Math.min(3, sharpeRatio));
+
+    return normalizedSharpe.toFixed(2);
   };
 
   interface Badge {
@@ -130,10 +248,142 @@ export function Leaderboard() {
 
   const closeTraderPanel = () => {
     setShowTraderPanel(false);
-    setTimeout(() => setSelectedTrader(null), 300); // Wait for animation to complete
+    setTimeout(() => setSelectedTrader(null), 300);
   };
 
-  const totalPages = Math.ceil((stats?.totalUsers || 0) / rowsPerPage);
+  // Render a single row for virtual scrolling
+  const renderLeaderboardRow = useCallback((trader: LeaderboardEntry, index: number) => {
+    const rankChange = getRankChange(trader.rank);
+    const streak = getPerformanceStreak(trader);
+    const sharpeRatio = getSharpRatio(trader);
+    const badges = getBadges(trader);
+    
+    return (
+      <div
+        key={trader.id}
+        style={{ height: ITEM_HEIGHT }}
+        className="flex items-center border-b border-gray-100 hover:bg-gray-50 cursor-pointer px-8"
+        onMouseEnter={(e) => {
+          setHoveredTrader(trader.id);
+          const rect = e.currentTarget.getBoundingClientRect();
+          setHoverPosition({ x: rect.right + 10, y: rect.top });
+        }}
+        onMouseLeave={() => setHoveredTrader(null)}
+        onClick={() => handleTraderClick(trader.id)}
+      >
+        {/* Rank */}
+        <div className="w-24 flex items-center justify-center">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-bold text-gray-900">
+              {trader.rank}
+            </div>
+            {rankChange !== 0 && (
+              <div className="flex items-center">
+                {rankChange > 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-500" />
+                ) : rankChange < 0 ? (
+                  <TrendingDown className="h-3 w-3 text-red-500" />
+                ) : (
+                  <Minus className="h-3 w-3 text-gray-400" />
+                )}
+                <span className={`text-xs font-medium ${
+                  rankChange > 0 ? 'text-green-500' : 
+                  rankChange < 0 ? 'text-red-500' : 
+                  'text-gray-500'
+                }`}>
+                  {Math.abs(rankChange)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Trader Name */}
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-gray-900 truncate">{trader.name}</div>
+        </div>
+        
+        {/* P&L Column */}
+        <div className="w-32 flex flex-col items-start pl-2">
+          <div className={`font-semibold tabular-nums ${
+            trader.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {formatCurrency(trader.totalPnL)}
+          </div>
+          <div className={`text-sm tabular-nums ${
+            trader.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'
+          }`}>
+            {formatPercentage((trader.totalPnL / 10000) * 100)}
+          </div>
+        </div>
+
+        {/* Score Column */}
+        <div className="w-24 flex items-center justify-center">
+          <div className={`font-semibold tabular-nums ${
+            streak.isWinning ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {streak.streakLength}{streak.isWinning ? 'W' : 'L'}
+          </div>
+        </div>
+
+        {/* Badges Column */}
+        <div className="w-32 flex items-center justify-center">
+          {trader.achievements && badges.length > 0 ? (
+            <div className="flex items-center gap-2">
+              {badges.slice(0, 2).map((badge, i) => (
+                <Badge 
+                  key={i}
+                  className={`text-xs px-2.5 py-1 flex items-center gap-1.5 ${
+                    badge.tier === 'bronze' ? 'bg-orange-100 text-orange-700' :
+                    badge.tier === 'silver' ? 'bg-gray-100 text-gray-700' :
+                    badge.tier === 'gold' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-blue-100 text-blue-700'
+                  }`}
+                >
+                  {badge.name === 'First Trade' && <Target className="h-3.5 w-3.5" />}
+                  {badge.name === 'Win Streak' && <Zap className="h-3.5 w-3.5" />}
+                  {badge.name === 'High Volume' && <TrendingUp className="h-3.5 w-3.5" />}
+                  {badge.name === 'Consistent' && <Trophy className="h-3.5 w-3.5" />}
+                  <span className="text-xs font-medium">{badge.name}</span>
+                </Badge>
+              ))}
+              {badges.length > 2 && (
+                <span className="text-xs text-gray-500 font-medium">+{badges.length - 2}</span>
+              )}
+            </div>
+          ) : (
+            <span className="text-xs text-gray-400">—</span>
+          )}
+        </div>
+
+        {/* Sharpe Column */}
+        <div className="w-24 flex items-center justify-center">
+          <div className="font-semibold text-gray-900 tabular-nums">{sharpeRatio}</div>
+        </div>
+
+        {/* Action Column */}
+        <div className="w-24 flex items-center justify-center">
+          <Button
+            size="sm"
+            variant={isFollowed(trader.id) ? "default" : "outline"}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleFollow(trader.id);
+            }}
+            className={`h-7 px-3 text-xs font-medium ${
+              isFollowed(trader.id)
+                ? 'bg-black text-white hover:bg-gray-800'
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            {isFollowed(trader.id) ? 'Following' : 'Follow'}
+          </Button>
+        </div>
+      </div>
+    );
+  }, []);
+
+  const totalPages = Math.ceil((processedData.length || 0) / rowsPerPage);
 
   return (
     <div className="min-h-screen bg-white">
@@ -155,118 +405,128 @@ export function Leaderboard() {
               </div>
             </div>
             
-                         <div className="flex items-center gap-4">
-               {/* Search */}
-               <div className="relative group">
-                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
-                 <input
-                   type="text"
-                   placeholder="Search traders..."
-                   value={searchTerm}
-                   onChange={(e) => setSearchTerm(e.target.value)}
-                   className="w-64 pl-12 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black bg-white shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
-                 />
-          </div>
-          
-               {/* Time Range Filter */}
-               <div className="relative">
-                 <Button 
-                   variant="outline"
-                   size="sm"
-                   onClick={() => {
-                     setShowTimeRangeDropdown(!showTimeRangeDropdown);
-                     setShowCategoryDropdown(false);
-                   }}
-                   className={`border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2.5 px-4 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md ${
-                     showTimeRangeDropdown ? 'bg-gray-50 border-gray-300' : ''
-                   }`}
-                 >
-                   <Clock className="h-4 w-4 mr-2" />
-                   {selectedTimeRange === 'all' ? 'All Time' : 
-                    selectedTimeRange === '30d' ? 'Last 30 Days' :
-                    selectedTimeRange === '7d' ? 'Last 7 Days' : 'Last 24 Hours'}
-                   <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showTimeRangeDropdown ? 'transform rotate-180' : ''}`} />
-                 </Button>
+            <div className="flex items-center gap-4">
+              {/* Search */}
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search traders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64 pl-12 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black bg-white shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
+                />
+              </div>
 
-                 {showTimeRangeDropdown && (
-                   <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                     <div className="py-1">
-                       {[
-                         { value: 'all', label: 'All Time' },
-                         { value: '30d', label: 'Last 30 Days' },
-                         { value: '7d', label: 'Last 7 Days' },
-                         { value: '1d', label: 'Last 24 Hours' }
-                       ].map((option) => (
-                         <button
-                           key={option.value}
-                           onClick={() => {
-                             setSelectedTimeRange(option.value as any);
-                             setShowTimeRangeDropdown(false);
-                           }}
-                           className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 ${
-                             selectedTimeRange === option.value 
-                               ? 'bg-gray-50 text-black font-medium' 
-                               : 'text-gray-700 hover:bg-gray-50'
-                           }`}
-                         >
-                           {option.label}
-                         </button>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-               </div>
+              {/* Time Range Filter */}
+              <div className="relative">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowTimeRangeDropdown(!showTimeRangeDropdown);
+                    setShowCategoryDropdown(false);
+                  }}
+                  className={`border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2.5 px-4 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md ${
+                    showTimeRangeDropdown ? 'bg-gray-50 border-gray-300' : ''
+                  }`}
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  {selectedTimeRange === 'all' ? 'All Time' : 
+                   selectedTimeRange === '30d' ? 'Last 30 Days' :
+                   selectedTimeRange === '7d' ? 'Last 7 Days' : 'Last 24 Hours'}
+                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showTimeRangeDropdown ? 'transform rotate-180' : ''}`} />
+                </Button>
 
-               {/* Category Filter */}
-               <div className="relative">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                     setShowCategoryDropdown(!showCategoryDropdown);
-                     setShowTimeRangeDropdown(false);
-                   }}
-                   className={`border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2.5 px-4 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md ${
-                     showCategoryDropdown ? 'bg-gray-50 border-gray-300' : ''
-                   }`}
-                 >
-                   <Filter className="h-4 w-4 mr-2" />
-                   {selectedCategory === 'overall' ? 'Overall Performance' :
-                    selectedCategory === 'streak' ? 'Win Streak Leaders' :
-                    selectedCategory === 'consistency' ? 'Most Consistent' : 'Volume Leaders'}
-                   <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showCategoryDropdown ? 'transform rotate-180' : ''}`} />
-            </Button>
+                {showTimeRangeDropdown && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    <div className="py-1">
+                      {[
+                        { value: 'all', label: 'All Time' },
+                        { value: '30d', label: 'Last 30 Days' },
+                        { value: '7d', label: 'Last 7 Days' },
+                        { value: '1d', label: 'Last 24 Hours' }
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setSelectedTimeRange(option.value as any);
+                            setShowTimeRangeDropdown(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 ${
+                            selectedTimeRange === option.value 
+                              ? 'bg-gray-50 text-black font-medium' 
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Category Filter */}
+              <div className="relative">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setShowCategoryDropdown(!showCategoryDropdown);
+                    setShowTimeRangeDropdown(false);
+                  }}
+                  className={`border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2.5 px-4 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md ${
+                    showCategoryDropdown ? 'bg-gray-50 border-gray-300' : ''
+                  }`}
+                >
+                  <Filter className="h-4 w-4 mr-2" />
+                  {selectedCategory === 'overall' ? 'Overall Performance' :
+                   selectedCategory === 'streak' ? 'Win Streak Leaders' :
+                   selectedCategory === 'consistency' ? 'Most Consistent' : 'Volume Leaders'}
+                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showCategoryDropdown ? 'transform rotate-180' : ''}`} />
+                </Button>
 
-                 {showCategoryDropdown && (
-                   <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                     <div className="py-1">
-                       {[
-                         { value: 'overall', label: 'Overall Performance', icon: Trophy },
-                         { value: 'streak', label: 'Win Streak Leaders', icon: Zap },
-                         { value: 'consistency', label: 'Most Consistent', icon: Target },
-                         { value: 'volume', label: 'Volume Leaders', icon: TrendingUp }
-                       ].map((option) => (
-                         <button
-                           key={option.value}
-                           onClick={() => {
-                             setSelectedCategory(option.value as any);
-                             setShowCategoryDropdown(false);
-                           }}
-                           className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 flex items-center ${
-                             selectedCategory === option.value 
-                               ? 'bg-gray-50 text-black font-medium' 
-                               : 'text-gray-700 hover:bg-gray-50'
-                           }`}
-                         >
-                           <option.icon className="h-4 w-4 mr-2" />
-                           {option.label}
-                         </button>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-               </div>
-             </div>
+                {showCategoryDropdown && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    <div className="py-1">
+                      {[
+                        { value: 'overall', label: 'Overall Performance', icon: Trophy },
+                        { value: 'streak', label: 'Win Streak Leaders', icon: Zap },
+                        { value: 'consistency', label: 'Most Consistent', icon: Target },
+                        { value: 'volume', label: 'Volume Leaders', icon: TrendingUp }
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setSelectedCategory(option.value as any);
+                            setShowCategoryDropdown(false);
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 flex items-center ${
+                            selectedCategory === option.value 
+                              ? 'bg-gray-50 text-black font-medium' 
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <option.icon className="h-4 w-4 mr-2" />
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Refresh Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refresh}
+                className="border-gray-300 hover:bg-gray-50"
+              >
+                Refresh Data
+              </Button>
+            </div>
           </div>
           </div>
         </div>
@@ -289,325 +549,110 @@ export function Leaderboard() {
             </div>
           </Card>
         ) : (
-                    <>
-            {/* Pagination Controls */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowRowsDropdown(!showRowsDropdown)}
-                    className="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2 px-3 rounded-lg shadow-sm"
-                  >
-                    Rows per page: {rowsPerPage}
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                  
-                  {showRowsDropdown && (
-                    <div className="absolute top-full left-0 mt-2 w-32 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                      <div className="py-1">
-                        {[10, 25, 50, 100].map((size) => (
-                          <button
-                            key={size}
-                            onClick={() => {
-                              setRowsPerPage(size);
-                              setCurrentPage(1);
-                              setShowRowsDropdown(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 text-sm ${
-                              rowsPerPage === size 
-                                ? 'bg-gray-50 text-black font-medium' 
-                                : 'text-gray-700 hover:bg-gray-50'
-                            }`}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+          <>
+            <Card className="border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50 border-b border-gray-200 px-8 py-4">
+                <div className="flex items-center">
+                  <div className="w-24 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Rank</div>
+                  <div className="flex-1 text-xs font-semibold text-gray-600 uppercase tracking-wide">Trader</div>
+                  <div className="w-32 text-xs font-semibold text-gray-600 uppercase tracking-wide pl-2">P&L</div>
+                  <div className="w-24 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Score</div>
+                  <div className="w-32 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Badges</div>
+                  <div className="w-24 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Sharpe</div>
+                  <div className="w-24 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Action</div>
                 </div>
-                
-                <span className="text-sm text-gray-600">
-                  Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, stats?.totalUsers || 0)} of {stats?.totalUsers || 0} traders
-                </span>
               </div>
-              
-                <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                
-                {[...Array(Math.min(5, totalPages))].map((_, idx) => {
-                  const pageNum = currentPage <= 3 ? idx + 1 : currentPage - 2 + idx;
-                  if (pageNum > totalPages) return null;
-                  
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={currentPage === pageNum ? "bg-black text-white" : "border-gray-300 hover:bg-gray-50"}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
 
-            {/* Leaderboard Table */}
-            <div className="relative">
-              <Card className="border border-gray-200 overflow-hidden">
-                 <div className="overflow-hidden">
-                   <table className="w-full">
-                     <thead className="bg-gray-50 border-b border-gray-200">
-                       <tr>
-                         <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Rank</th>
-                         <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Trader</th>
-                         <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">P&L</th>
-                         <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Streak</th>
-                         <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Badges</th>
-                         <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Sharpe</th>
-                         <th className="px-8 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Action</th>
-                       </tr>
-                     </thead>
-                     <tbody className="bg-white divide-y divide-gray-50">
-                       {leaderboard.map((trader, index) => {
-                         const rankChange = getRankChange(trader.rank);
-                         const streak = getPerformanceStreak(trader);
-                         const sharpeRatio = getSharpRatio(trader);
-                         const badges = getBadges(trader);
-                         
-                         return (
-                           <tr 
-                             key={trader.id}
-                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                             onMouseEnter={(e) => {
-                               setHoveredTrader(trader.id);
-                               const rect = e.currentTarget.getBoundingClientRect();
-                               setHoverPosition({ x: rect.right + 10, y: rect.top });
-                             }}
-                             onMouseLeave={() => setHoveredTrader(null)}
-                             onClick={() => handleTraderClick(trader.id)}
-                           >
-                             <td className="px-8 py-4">
-                               <div className="flex items-center gap-4">
-                                 <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-gray-900">
-                                   {trader.rank}
-                                 </div>
-                                 {rankChange !== 0 && (
-                                   <div className="flex items-center gap-1">
-                                     {rankChange > 0 ? (
-                                       <TrendingUp className="h-3 w-3 text-green-500" />
-                                     ) : rankChange < 0 ? (
-                                       <TrendingDown className="h-3 w-3 text-red-500" />
-                                     ) : (
-                                       <Minus className="h-3 w-3 text-gray-400" />
-                                     )}
-                                     <span className={`text-xs font-medium ${
-                                       rankChange > 0 ? 'text-green-500' : 
-                                       rankChange < 0 ? 'text-red-500' : 
-                                       'text-gray-500'
-                                     }`}>
-                                       {Math.abs(rankChange)}
-                                     </span>
-                                   </div>
-                                 )}
-                               </div>
-                             </td>
-                             
-                             <td className="px-8 py-4">
-                               <div>
-                                 <div className="font-semibold text-gray-900">{trader.name}</div>
-                               </div>
-                             </td>
-                             
-                             <td className="px-8 py-4">
-                               <div className="space-y-1">
-                                 <div className={`font-semibold tabular-nums ${
-                                   trader.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
-                                 }`}>
-                                   {formatCurrency(trader.totalPnL)}
-                                 </div>
-                                 <div className={`text-sm tabular-nums ${
-                                   trader.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'
-                                 }`}>
-                                   {formatPercentage((trader.totalPnL / 10000) * 100)}
-                                 </div>
-                               </div>
-                             </td>
-                             
-                             <td className="px-8 py-4">
-                               <div className="space-y-1">
-                                 <div className={`font-semibold tabular-nums ${
-                                   streak.isWinning ? 'text-green-600' : 'text-red-600'
-                                 }`}>
-                                   {streak.streakLength} {streak.isWinning ? 'W' : 'L'}
-                                 </div>
-                                 <div className={`text-sm ${
-                                   streak.isWinning ? 'text-green-500' : 'text-red-500'
-                                 }`}>
-                                   {streak.streakLength} days
-                                 </div>
-                               </div>
-                             </td>
-                             
-                             <td className="px-8 py-4">
-                               <div className="space-y-1">
-                                 <div className="font-semibold text-gray-900 tabular-nums">
-                                   {badges.length}
-                                 </div>
-                                 <div className="text-sm text-gray-500">
-                                   {trader.achievements && (
-                                     <div className="flex gap-1 mt-1">
-                                       {getBadges(trader).map((badge, i) => (
-                                         <div key={i} className="relative group">
-                                           <Badge 
-                                             className={`
-                                               ${badge.tier === 'bronze' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : ''}
-                                               ${badge.tier === 'silver' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : ''}
-                                               ${badge.tier === 'gold' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : ''}
-                                               ${badge.tier === 'platinum' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : ''}
-                                             `}
-                                           >
-                                             {badge.name}
-                                           </Badge>
-                                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                                             {badge.description}
-                                           </div>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   )}
-                                 </div>
-                  </div>
-                             </td>
-                             
-                             <td className="px-8 py-4">
-                               <div className="space-y-1">
-                                 <div className="font-semibold text-gray-900 tabular-nums">{sharpeRatio}</div>
-                                 <div className="text-sm text-gray-500">sharpe ratio</div>
-                </div>
-                             </td>
-                             
-                             <td className="px-8 py-4">
-                               <Button
-                                 size="sm"
-                                 variant={isFollowed(trader.id) ? "default" : "outline"}
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   handleFollow(trader.id);
-                                 }}
-                                 className={`h-8 px-3 text-xs font-medium ${
-                                   isFollowed(trader.id)
-                                     ? 'bg-black text-white hover:bg-gray-800'
-                                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                                 }`}
-                               >
-                                 {isFollowed(trader.id) ? 'Following' : 'Follow'}
-                               </Button>
-                             </td>
-                           </tr>
-                         );
-                       })}
-                     </tbody>
-                   </table>
-              </div>
+              {/* Virtual Scrolled Content */}
+              <VirtualScroll
+                items={processedData}
+                renderItem={renderLeaderboardRow}
+                itemHeight={ITEM_HEIGHT}
+                containerHeight={CONTAINER_HEIGHT}
+                bufferSize={BUFFER_SIZE}
+              />
             </Card>
 
-               {/* Professional Hover Card */}
-               {hoveredTrader && typeof window !== 'undefined' && (
-                 <div 
-                   className="fixed w-80 bg-white border border-gray-300 shadow-lg z-50 p-4 pointer-events-none"
-                   style={{
-                     left: Math.min(hoverPosition.x, window.innerWidth - 320),
-                     top: Math.min(hoverPosition.y, window.innerHeight - 200),
-                   }}
-                 >
-                   {(() => {
-                     const trader = leaderboard.find(t => t.id === hoveredTrader);
-                     if (!trader) return null;
-                     
-                     const badges = getBadges(trader);
-                     const streak = getPerformanceStreak(trader);
-                     const sharpeRatio = getSharpRatio(trader);
-                     
-                     return (
-                       <div className="space-y-3">
-                         <div className="border-b border-gray-200 pb-2">
-                           <div className="font-semibold text-gray-900">{trader.name}</div>
-                           <div className="text-sm text-gray-500 font-mono">Rank #{trader.rank}</div>
-                         </div>
-                         
-                         <div className="grid grid-cols-2 gap-3 text-sm">
-                           <div>
-                             <div className="text-gray-500 uppercase text-xs">Total P&L</div>
-                             <div className="font-semibold text-gray-900 tabular-nums">
-                               {formatCurrency(trader.totalPnL)}
-                             </div>
-                           </div>
-                           <div>
-                             <div className="text-gray-500 uppercase text-xs">ROI</div>
-                             <div className="font-semibold text-gray-900 tabular-nums">
-                               {formatPercentage((trader.totalPnL / 10000) * 100)}
-                             </div>
-                           </div>
-                           <div>
-                             <div className="text-gray-500 uppercase text-xs">Win Rate</div>
-                             <div className="font-semibold text-gray-900 tabular-nums">{trader.winRate.toFixed(1)}%</div>
-                           </div>
-                           <div>
-                             <div className="text-gray-500 uppercase text-xs">Total Trades</div>
-                             <div className="font-semibold text-gray-900 tabular-nums">{trader.totalTrades}</div>
-                           </div>
-                           <div>
-                             <div className="text-gray-500 uppercase text-xs">Streak</div>
-                             <div className="font-semibold text-gray-900 tabular-nums">
-                               {streak.streakLength} {streak.isWinning ? 'W' : 'L'}
-                             </div>
-                           </div>
-                           <div>
-                             <div className="text-gray-500 uppercase text-xs">Sharpe Ratio</div>
-                             <div className="font-semibold text-gray-900 tabular-nums">{sharpeRatio}</div>
-                           </div>
-                         </div>
-                         
-                         <div className="border-t border-gray-200 pt-2">
-                           <div className="text-gray-500 uppercase text-xs mb-1">Achievements</div>
-                           <div className="text-sm text-gray-700">
-                             {badges.length > 0 ? badges.join(', ') : 'No badges earned'}
-                           </div>
-                         </div>
-                       </div>
-                     );
-                   })()}
-                  </div>
-               )}
-                </div>
-
-                         
+            {/* Professional Hover Card */}
+            {hoveredTrader && typeof window !== 'undefined' && (
+              <div 
+                className="fixed w-80 bg-white border border-gray-300 shadow-lg z-50 p-4 pointer-events-none"
+                style={{
+                  left: Math.min(hoverPosition.x, window.innerWidth - 1050),
+                  top: Math.min(hoverPosition.y, window.innerHeight - 200),
+                }}
+              >
+                {(() => {
+                  const trader = processedData.find(t => t.id === hoveredTrader);
+                  if (!trader) return null;
+                  
+                  const badges = getBadges(trader);
+                  const streak = getPerformanceStreak(trader);
+                  const sharpeRatio = getSharpRatio(trader);
+                  
+                  return (
+                    <div className="space-y-3">
+                      <div className="border-b border-gray-200 pb-2">
+                        <div className="font-semibold text-gray-900">{trader.name}</div>
+                        <div className="text-sm text-gray-500 font-mono">Rank #{trader.rank}</div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <div className="text-gray-500 uppercase text-xs">Total P&L</div>
+                          <div className="font-semibold text-gray-900 tabular-nums">
+                            {formatCurrency(trader.totalPnL)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 uppercase text-xs">ROI</div>
+                          <div className="font-semibold text-gray-900 tabular-nums">
+                            {formatPercentage((trader.totalPnL / 10000) * 100)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 uppercase text-xs">Win Rate</div>
+                          <div className="font-semibold text-gray-900 tabular-nums">{trader.winRate.toFixed(1)}%</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 uppercase text-xs">Total Trades</div>
+                          <div className="font-semibold text-gray-900 tabular-nums">{trader.totalTrades}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 uppercase text-xs">Streak</div>
+                          <div className="font-semibold text-gray-900 tabular-nums">
+                            {streak.streakLength} {streak.isWinning ? 'W' : 'L'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 uppercase text-xs">Sharpe Ratio</div>
+                          <div className="font-semibold text-gray-900 tabular-nums">{sharpeRatio}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-gray-500 uppercase text-xs">Achievements</div>
+                      <div className="flex gap-1 flex-wrap">
+                        {badges.length > 0 ? badges.map((badge, i) => (
+                          <Badge key={i} variant="outline" className={`text-xs ${
+                            badge.tier === 'platinum' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                            badge.tier === 'gold' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                            badge.tier === 'silver' ? 'bg-gray-100 text-gray-700 border-gray-300' :
+                            'bg-orange-50 text-orange-700 border-orange-200'
+                          }`}>
+                            {badge.name}
+                          </Badge>
+                        )) : (
+                          <span className="text-xs text-gray-400">No achievements</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </>
         )}
-                    </div>
+      </div>
 
       {/* Right Slide-out Panel */}
       <div 
@@ -616,7 +661,7 @@ export function Leaderboard() {
         }`}
       >
         {selectedTrader && (() => {
-          const trader = leaderboard.find(t => t.id === selectedTrader);
+          const trader = processedData.find(t => t.id === selectedTrader);
           if (!trader) return null;
           
           const badges = getBadges(trader);
@@ -656,18 +701,18 @@ export function Leaderboard() {
                       </div>
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="text-xs text-gray-500 uppercase tracking-wide">Total P&L</div>
-                                                 <div className={`text-2xl font-bold mt-1 tabular-nums ${
-                           trader.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
-                         }`}>
-                           {formatCurrency(trader.totalPnL)}
-                         </div>
-                         <div className={`text-xs mt-1 tabular-nums ${
-                           trader.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'
-                         }`}>
-                           {formatPercentage((trader.totalPnL / 10000) * 100)} ROI
-                  </div>
-                </div>
-              </div>
+                        <div className={`text-2xl font-bold mt-1 tabular-nums ${
+                          trader.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {formatCurrency(trader.totalPnL)}
+                        </div>
+                        <div className={`text-xs mt-1 tabular-nums ${
+                          trader.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {formatPercentage((trader.totalPnL / 10000) * 100)} ROI
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Trading Statistics */}
@@ -677,40 +722,40 @@ export function Leaderboard() {
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Win Rate</span>
                         <span className="font-semibold text-gray-900 tabular-nums">{trader.winRate.toFixed(1)}%</span>
-                </div>
+                      </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Total Trades</span>
                         <span className="font-semibold text-gray-900 tabular-nums">{trader.totalTrades}</span>
-              </div>
+                      </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Current Streak</span>
-                                                 <span className={`font-semibold tabular-nums ${
-                           streak.isWinning ? 'text-green-600' : 'text-red-600'
-                         }`}>
-                           {streak.streakLength} {streak.isWinning ? 'Wins' : 'Losses'}
-                         </span>
-          </div>
+                        <span className={`font-semibold tabular-nums ${
+                          streak.isWinning ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {streak.streakLength} {streak.isWinning ? 'Wins' : 'Losses'}
+                        </span>
+                      </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Sharpe Ratio</span>
                         <span className="font-semibold text-gray-900 tabular-nums">{sharpeRatio}</span>
-            </div>
+                      </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Average Trade Size</span>
                         <span className="font-semibold text-gray-900 tabular-nums">
                           {formatCurrency(Math.floor(Math.random() * 5000) + 1000)}
                         </span>
-                </div>
+                      </div>
                       <div className="flex justify-between items-center py-2">
                         <span className="text-sm text-gray-600">Portfolio Value</span>
                         <span className="font-semibold text-gray-900 tabular-nums">
                           {formatCurrency(10000 + trader.totalPnL)}
                         </span>
-                          </div>
-                              </div>
-                          </div>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Achievements */}
-                          <div>
+                  <div>
                     <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Achievements</h3>
                     {badges.length > 0 ? (
                       <div className="grid grid-cols-1 gap-2">
@@ -725,7 +770,7 @@ export function Leaderboard() {
                                 'bg-orange-50 text-orange-700 border-orange-200'
                               }`}>
                                 {badge.tier}
-                                </Badge>
+                              </Badge>
                             </div>
                           </div>
                         ))}
@@ -736,8 +781,8 @@ export function Leaderboard() {
                         <div className="text-xs mt-1">Keep trading to earn badges</div>
                       </div>
                     )}
-                        </div>
-                        
+                  </div>
+                  
                   {/* Recent Activity */}
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Recent Activity</h3>
@@ -756,11 +801,11 @@ export function Leaderboard() {
                             <div className="text-right">
                               <div className={`text-sm font-semibold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
-                          </div>
+                              </div>
                               <div className="text-xs text-gray-500">
                                 {trade.side} @ {trade.price}
-                          </div>
-                          </div>
+                              </div>
+                            </div>
                           </div>
                         ))
                       ) : (
