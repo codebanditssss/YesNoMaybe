@@ -2,6 +2,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 
+export interface RecentTrade {
+  id: string;
+  marketTitle: string;
+  timestamp: string;
+  side: 'YES' | 'NO';
+  price: number;
+  pnl: number;
+}
+
 export interface LeaderboardEntry {
   id: string;
   rank: number;
@@ -17,8 +26,14 @@ export interface LeaderboardEntry {
   balance: number;
   isCurrentUser: boolean;
   streak: number;
-  badges: string[];
+  achievements: Array<{
+    name: string;
+    tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+    icon: string;
+    description?: string;
+  }>;
   lastActive: string;
+  recentTrades?: RecentTrade[];
 }
 
 export interface LeaderboardStats {

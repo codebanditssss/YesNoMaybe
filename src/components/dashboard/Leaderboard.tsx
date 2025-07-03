@@ -16,7 +16,7 @@ import {
   UserPlus,
   X
 } from "lucide-react";
-import { useLeaderboard } from '@/hooks/useLeaderboard';
+import { useLeaderboard, LeaderboardEntry, RecentTrade } from '@/hooks/useLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface FollowedTrader {
@@ -71,30 +71,37 @@ export function Leaderboard() {
   };
 
   const getRankChange = (currentRank: number) => {
-    // Mock historical data - in real app, this would come from API
-    const change = Math.floor(Math.random() * 5) - 2;
-    return change;
+    // Real rank change from previous rank in trader_rankings table
+    return 0; // For now, until we implement historical rank tracking
   };
 
   const getPerformanceStreak = (trader: any) => {
-    // Mock streak data - in real app, this would come from API
-    const isWinning = trader.winRate > 60;
-    const streakLength = Math.floor(Math.random() * 10) + 1;
-    return { isWinning, streakLength };
+    return {
+      streakLength: trader.streak || 0,
+      isWinning: trader.totalPnL > 0
+    };
   };
 
   const getSharpRatio = (trader: any) => {
-    // Mock Sharpe ratio calculation - in real app, this would be calculated from historical data
-    return (1.2 + Math.random() * 1.5).toFixed(2);
+    // Calculate Sharpe ratio from win rate and returns
+    const riskFreeRate = 0.04; // 4% annual risk-free rate
+    const excessReturn = (trader.totalPnL / trader.balance) - (riskFreeRate / 252); // Daily excess return
+    const volatility = Math.sqrt(
+      (trader.winRate / 100) * Math.pow(excessReturn, 2) + 
+      (1 - trader.winRate / 100) * Math.pow(-excessReturn, 2)
+    );
+    return volatility === 0 ? 0 : ((excessReturn / volatility) * Math.sqrt(252)).toFixed(2);
   };
 
-  const getBadges = (trader: any) => {
-    const badges = [];
-    if (trader.winRate >= 80) badges.push('Expert');
-    if (trader.totalTrades >= 100) badges.push('Active');
-    if (trader.totalPnL >= 50000) badges.push('High Performer');
-    if (trader.rank <= 3) badges.push('Top Trader');
-    return badges;
+  interface Badge {
+    name: string;
+    tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+    icon: string;
+    description?: string;
+  }
+
+  const getBadges = (trader: LeaderboardEntry): Badge[] => {
+    return trader.achievements || [];
   };
 
   const handleFollow = (traderId: string) => {
@@ -126,16 +133,16 @@ export function Leaderboard() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
+        {/* Header */}
       <div className="border-b border-gray-100 bg-white">
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <div>
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div>
               <h1 className="text-4xl font-bold text-black tracking-tight">Leaderboard</h1>
               <p className="text-gray-500 mt-2 text-lg">Performance rankings and trader analytics</p>
               <div className="flex items-center gap-6 mt-4">
                 <div className="flex items-center gap-2 text-sm">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-gray-600">Live rankings</span>
                 </div>
                 <div className="text-sm text-gray-500">
@@ -155,13 +162,13 @@ export function Leaderboard() {
                    onChange={(e) => setSearchTerm(e.target.value)}
                    className="w-80 pl-12 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-black focus:border-black bg-white shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
                  />
-               </div>
-               
+          </div>
+          
                {/* Filters */}
                <div className="relative">
-                 <Button
-                   variant="outline"
-                   size="sm"
+            <Button 
+              variant="outline" 
+              size="sm"
                    onClick={() => setShowTimeRangeDropdown(!showTimeRangeDropdown)}
                    className="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-3 px-4 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md"
                  >
@@ -205,7 +212,7 @@ export function Leaderboard() {
                          ].map((option) => (
                            <button
                              key={option.value}
-                             onClick={() => {
+              onClick={() => {
                                setSelectedCategory(option.value as any);
                                setShowTimeRangeDropdown(false);
                              }}
@@ -225,8 +232,8 @@ export function Leaderboard() {
               </div>
             </div>
           </div>
+          </div>
         </div>
-      </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -238,8 +245,8 @@ export function Leaderboard() {
         ) : error ? (
           <Card className="p-6 bg-red-50 border-red-200">
             <div className="text-center">
-              <h3 className="text-sm font-medium text-red-800">Error loading leaderboard</h3>
-              <p className="text-sm text-red-600 mt-1">{error}</p>
+                <h3 className="text-sm font-medium text-red-800">Error loading leaderboard</h3>
+                <p className="text-sm text-red-600 mt-1">{error}</p>
               <Button variant="outline" size="sm" onClick={refresh} className="mt-3">
                 Try again
               </Button>
@@ -350,7 +357,27 @@ export function Leaderboard() {
                                    {badges.length}
                                  </div>
                                  <div className="text-sm text-gray-500">
-                                   badges
+                                   {trader.achievements && (
+                                     <div className="flex gap-1 mt-1">
+                                       {getBadges(trader).map((badge, i) => (
+                                         <div key={i} className="relative group">
+                                           <Badge 
+                                             className={`
+                                               ${badge.tier === 'bronze' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' : ''}
+                                               ${badge.tier === 'silver' ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : ''}
+                                               ${badge.tier === 'gold' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : ''}
+                                               ${badge.tier === 'platinum' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : ''}
+                                             `}
+                                           >
+                                             {badge.name}
+                                           </Badge>
+                                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                                             {badge.description}
+                                           </div>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   )}
                                  </div>
                                </div>
                              </td>
@@ -359,7 +386,7 @@ export function Leaderboard() {
                                <div className="space-y-1">
                                  <div className="font-semibold text-gray-900 tabular-nums">{sharpeRatio}</div>
                                  <div className="text-sm text-gray-500">sharpe ratio</div>
-                               </div>
+                </div>
                              </td>
                              
                              <td className="px-8 py-4">
@@ -384,8 +411,8 @@ export function Leaderboard() {
                        })}
                      </tbody>
                    </table>
-                 </div>
-               </Card>
+              </div>
+            </Card>
 
                {/* Professional Hover Card */}
                {hoveredTrader && typeof window !== 'undefined' && (
@@ -453,9 +480,9 @@ export function Leaderboard() {
                        </div>
                      );
                    })()}
-                 </div>
+                  </div>
                )}
-             </div>
+                </div>
 
                          {/* Pagination */}
              <div className="flex items-center justify-between mt-6 py-4">
@@ -537,10 +564,10 @@ export function Leaderboard() {
                    <ChevronRight className="h-4 w-4" />
                  </Button>
                </div>
-             </div>
+                    </div>
           </>
         )}
-      </div>
+                    </div>
 
       {/* Right Slide-out Panel */}
       <div 
@@ -598,9 +625,9 @@ export function Leaderboard() {
                            trader.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'
                          }`}>
                            {formatPercentage((trader.totalPnL / 10000) * 100)} ROI
-                         </div>
-                      </div>
-                    </div>
+                  </div>
+                </div>
+              </div>
                   </div>
 
                   {/* Trading Statistics */}
@@ -610,11 +637,11 @@ export function Leaderboard() {
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Win Rate</span>
                         <span className="font-semibold text-gray-900 tabular-nums">{trader.winRate.toFixed(1)}%</span>
-                      </div>
+                </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Total Trades</span>
                         <span className="font-semibold text-gray-900 tabular-nums">{trader.totalTrades}</span>
-                      </div>
+              </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Current Streak</span>
                                                  <span className={`font-semibold tabular-nums ${
@@ -622,37 +649,44 @@ export function Leaderboard() {
                          }`}>
                            {streak.streakLength} {streak.isWinning ? 'Wins' : 'Losses'}
                          </span>
-                      </div>
+          </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Sharpe Ratio</span>
                         <span className="font-semibold text-gray-900 tabular-nums">{sharpeRatio}</span>
-                      </div>
+            </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Average Trade Size</span>
                         <span className="font-semibold text-gray-900 tabular-nums">
                           {formatCurrency(Math.floor(Math.random() * 5000) + 1000)}
                         </span>
-                      </div>
+                </div>
                       <div className="flex justify-between items-center py-2">
                         <span className="text-sm text-gray-600">Portfolio Value</span>
                         <span className="font-semibold text-gray-900 tabular-nums">
                           {formatCurrency(10000 + trader.totalPnL)}
                         </span>
-                      </div>
-                    </div>
-                  </div>
+                          </div>
+                              </div>
+                          </div>
 
                   {/* Achievements */}
-                  <div>
+                          <div>
                     <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Achievements</h3>
                     {badges.length > 0 ? (
                       <div className="grid grid-cols-1 gap-2">
                         {badges.map((badge, index) => (
                           <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <span className="text-sm font-medium text-gray-900">{badge}</span>
-                            <Badge variant="outline" className="text-xs">
-                              Active
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-gray-900">{badge.name}</span>
+                              <Badge variant="outline" className={`text-xs ${
+                                badge.tier === 'platinum' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                badge.tier === 'gold' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                                badge.tier === 'silver' ? 'bg-gray-100 text-gray-700 border-gray-300' :
+                                'bg-orange-50 text-orange-700 border-orange-200'
+                              }`}>
+                                {badge.tier}
+                                </Badge>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -662,33 +696,39 @@ export function Leaderboard() {
                         <div className="text-xs mt-1">Keep trading to earn badges</div>
                       </div>
                     )}
-                  </div>
-
+                        </div>
+                        
                   {/* Recent Activity */}
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Recent Activity</h3>
                     <div className="space-y-3">
-                      {/* Mock recent trades */}
-                      {[1, 2, 3].map((_, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {index === 0 ? 'MARKET A' : index === 1 ? 'MARKET B' : 'MARKET C'}
+                      {(trader.recentTrades || []).length > 0 ? (
+                        (trader.recentTrades || []).map((trade: RecentTrade) => (
+                          <div key={trade.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {trade.marketTitle}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(trade.timestamp).toLocaleString()}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-500">
-                              {index === 0 ? '2 hours ago' : index === 1 ? '1 day ago' : '3 days ago'}
-                            </div>
+                            <div className="text-right">
+                              <div className={`text-sm font-semibold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
                           </div>
-                          <div className="text-right">
-                            <div className={`text-sm font-semibold ${index % 2 === 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {index % 2 === 0 ? '+' : '-'}{formatCurrency(Math.floor(Math.random() * 2000) + 100)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {index % 2 === 0 ? 'YES' : 'NO'} @ {(Math.random() * 0.5 + 0.25).toFixed(2)}
-                            </div>
+                              <div className="text-xs text-gray-500">
+                                {trade.side} @ {trade.price}
                           </div>
+                          </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-6 text-gray-500">
+                          <div className="text-sm">No recent trades</div>
+                          <div className="text-xs mt-1">Trades will appear here when available</div>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>

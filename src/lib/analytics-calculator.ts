@@ -29,6 +29,7 @@ export interface BadgeEligibility {
   requirement: number
   category: 'trading' | 'achievement' | 'milestone'
   icon: string
+  tier: 'bronze' | 'silver' | 'gold' | 'platinum'
 }
 
 export interface AdvancedMetrics {
@@ -146,7 +147,8 @@ export class AnalyticsCalculator {
         progress: Math.min(trades.length, 1),
         requirement: 1,
         category: "milestone",
-        icon: "Play"
+        icon: "Play",
+        tier: "bronze"
       },
       {
         name: "Active Trader",
@@ -155,7 +157,8 @@ export class AnalyticsCalculator {
         progress: Math.min(trades.length, 10),
         requirement: 10,
         category: "trading",
-        icon: "Activity"
+        icon: "Activity",
+        tier: "silver"
       },
       {
         name: "Volume King",
@@ -164,7 +167,8 @@ export class AnalyticsCalculator {
         progress: Math.min(totalVolume, 10000),
         requirement: 10000,
         category: "trading",
-        icon: "TrendingUp"
+        icon: "TrendingUp",
+        tier: "gold"
       },
       
       // Win Streak Badges
@@ -175,7 +179,8 @@ export class AnalyticsCalculator {
         progress: winStreak.streakType === 'winning' ? Math.min(winStreak.currentStreak, 3) : 0,
         requirement: 3,
         category: "achievement",
-        icon: "Zap"
+        icon: "Zap",
+        tier: "silver"
       },
       {
         name: "Streak Master",
@@ -184,7 +189,8 @@ export class AnalyticsCalculator {
         progress: winStreak.streakType === 'winning' ? Math.min(winStreak.currentStreak, 5) : 0,
         requirement: 5,
         category: "achievement",
-        icon: "Crown"
+        icon: "Crown",
+        tier: "gold"
       },
       
       // Performance Badges
@@ -195,7 +201,8 @@ export class AnalyticsCalculator {
         progress: resolvedTrades.length >= 10 ? Math.min(winRate, 60) : 0,
         requirement: 60,
         category: "achievement",
-        icon: "Target"
+        icon: "Target",
+        tier: "platinum"
       },
       {
         name: "Consistent Winner",

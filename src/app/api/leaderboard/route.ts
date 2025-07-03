@@ -70,62 +70,84 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
         balance: parseFloat(entry.available_balance || '0'),
         isCurrentUser: entry.user_id === user.id,
         streak: 0, // Will be calculated below
-        badges: [], // Will be calculated below
+        achievements: [], // Will be calculated below
         lastActive: entry.updated_at
       }
     })
 
-    // Calculate win streak and badges for current user only (for performance)
-    const currentUserEntry = leaderboardEntries.find(entry => entry.isCurrentUser)
-    if (currentUserEntry) {
-      try {
-        // Fetch current user's trade history for analytics
-        const { data: userTrades, error: tradesError } = await supabaseAdmin!
-          .from('orders')
-          .select(`
-            id,
-            side,
-            quantity,
-            price,
-            filled_quantity,
-            status,
-            created_at,
-            updated_at,
-            markets (
-              title,
-              category,
-              status,
-              actual_outcome
-            )
-          `)
-          .eq('user_id', user.id)
-          .eq('status', 'filled')
-          .order('created_at', { ascending: false })
-          .limit(100) // Limit for performance
+          // Fetch recent trades and calculate analytics for each user
+      for (const entry of leaderboardEntries) {
+        try {
+          // Fetch user's trade history for analytics
+          const { data: userTrades, error: tradesError } = await supabaseAdmin!
+            .from('trades')
+            .select(`
+              id,
+              yes_user_id,
+              no_user_id,
+              yes_user_payout,
+              no_user_payout,
+              winner_user_id,
+              created_at,
+              price,
+              markets (
+                title,
+                category,
+                status
+              )
+            `)
+            .or(`yes_user_id.eq.${entry.id},no_user_id.eq.${entry.id}`)
+            .order('created_at', { ascending: false })
+            .limit(5) // Recent trades limit
 
-        if (!tradesError && userTrades) {
-          // Transform to analytics format
-          const analyticsData: TradeForAnalytics[] = userTrades.map(trade => ({
-            id: trade.id,
-            pnl: 0, // Will be calculated by AnalyticsCalculator if needed
-            status: 'filled' as const,
-            marketStatus: (trade.markets?.status === 'resolved' ? 'resolved' : 'active') as 'resolved' | 'active',
-            timestamp: trade.created_at,
-            volume: ((trade.price || 0) * (trade.filled_quantity || 0)) / 100,
-            side: trade.side as 'YES' | 'NO',
-            marketCategory: trade.markets?.category || 'other'
-          }))
+                  if (!tradesError && userTrades) {
+            // Transform trades to analytics format
+            const analyticsData: TradeForAnalytics[] = userTrades.map(trade => {
+              const isYesSide = trade.yes_user_id === entry.id;
+              const pnl = isYesSide ? trade.yes_user_payout : trade.no_user_payout;
+              
+              return {
+                id: trade.id,
+                pnl: pnl || 0,
+                status: 'filled' as const,
+                marketStatus: (trade.markets?.status === 'resolved' ? 'resolved' : 'active') as 'resolved' | 'active',
+                timestamp: trade.created_at,
+                volume: trade.price || 0,
+                side: isYesSide ? 'YES' as const : 'NO' as const,
+                marketCategory: trade.markets?.category || 'other'
+              };
+            });
 
-          // Calculate win streak
-          const winStreak = AnalyticsCalculator.calculateWinStreak(analyticsData)
-          currentUserEntry.streak = winStreak.currentStreak
+            // Calculate win streak
+            const winStreak = AnalyticsCalculator.calculateWinStreak(analyticsData);
+            entry.streak = winStreak.currentStreak;
 
-          // Calculate badges  
-          const totalVolume = analyticsData.reduce((sum, t) => sum + t.volume, 0)
-          const winRate = currentUserEntry.winRate
-          const badges = AnalyticsCalculator.calculateBadges(analyticsData, winStreak, totalVolume, winRate)
-          currentUserEntry.badges = badges.filter(b => b.earned).map(b => b.name)
-        }
+            // Calculate badges  
+            const totalVolume = analyticsData.reduce((sum, t) => sum + t.volume, 0);
+            const winRate = entry.winRate;
+            const badges = AnalyticsCalculator.calculateBadges(analyticsData, winStreak, totalVolume, winRate);
+            entry.achievements = badges.filter(b => b.earned).map(b => ({
+              name: b.name,
+              tier: b.tier || 'bronze',
+              icon: b.icon || 'award',
+              description: b.description
+            }));
+
+            // Add recent trades (limit to 1)
+            entry.recentTrades = userTrades.slice(0, 1).map(trade => {
+              const isYesSide = trade.yes_user_id === entry.id;
+              const pnl = isYesSide ? trade.yes_user_payout : trade.no_user_payout;
+              
+              return {
+                id: trade.id,
+                marketTitle: trade.markets?.title || 'Unknown Market',
+                timestamp: trade.created_at,
+                side: isYesSide ? 'YES' : 'NO',
+                price: trade.price || 0,
+                pnl: pnl || 0
+              };
+            });
+          }
       } catch (error) {
         console.error('Error calculating user analytics:', error)
         // Continue without analytics - don't fail the entire request
