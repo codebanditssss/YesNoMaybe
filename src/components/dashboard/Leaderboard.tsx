@@ -13,7 +13,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  UserPlus
+  UserPlus,
+  X
 } from "lucide-react";
 import { useLeaderboard } from '@/hooks/useLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +32,8 @@ export function Leaderboard() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [hoveredTrader, setHoveredTrader] = useState<string | null>(null);
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+  const [selectedTrader, setSelectedTrader] = useState<string | null>(null);
+  const [showTraderPanel, setShowTraderPanel] = useState(false);
   const [followedTraders, setFollowedTraders] = useState<FollowedTrader[]>([]);
   const [showTimeRangeDropdown, setShowTimeRangeDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
@@ -107,6 +110,16 @@ export function Leaderboard() {
 
   const isFollowed = (traderId: string) => {
     return followedTraders.find(f => f.id === traderId)?.isFollowed || false;
+  };
+
+  const handleTraderClick = (traderId: string) => {
+    setSelectedTrader(traderId);
+    setShowTraderPanel(true);
+  };
+
+  const closeTraderPanel = () => {
+    setShowTraderPanel(false);
+    setTimeout(() => setSelectedTrader(null), 300); // Wait for animation to complete
   };
 
   const totalPages = Math.ceil((stats?.totalUsers || 0) / rowsPerPage);
@@ -260,13 +273,14 @@ export function Leaderboard() {
                          return (
                            <tr 
                              key={trader.id}
-                             className="border-b border-gray-100 hover:bg-gray-50"
+                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                              onMouseEnter={(e) => {
                                setHoveredTrader(trader.id);
                                const rect = e.currentTarget.getBoundingClientRect();
                                setHoverPosition({ x: rect.right + 10, y: rect.top });
                              }}
                              onMouseLeave={() => setHoveredTrader(null)}
+                             onClick={() => handleTraderClick(trader.id)}
                            >
                              <td className="px-8 py-4">
                                <div className="flex items-center gap-4">
@@ -293,7 +307,6 @@ export function Leaderboard() {
                              <td className="px-8 py-4">
                                <div>
                                  <div className="font-semibold text-gray-900">{trader.name}</div>
-                                 <div className="text-sm text-gray-500 font-mono">ID: {trader.id.slice(0, 8)}...</div>
                                </div>
                              </td>
                              
@@ -341,7 +354,10 @@ export function Leaderboard() {
                                <Button
                                  size="sm"
                                  variant={isFollowed(trader.id) ? "default" : "outline"}
-                                 onClick={() => handleFollow(trader.id)}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   handleFollow(trader.id);
+                                 }}
                                  className={`h-8 px-3 text-xs font-medium ${
                                    isFollowed(trader.id)
                                      ? 'bg-black text-white hover:bg-gray-800'
@@ -380,7 +396,7 @@ export function Leaderboard() {
                        <div className="space-y-3">
                          <div className="border-b border-gray-200 pb-2">
                            <div className="font-semibold text-gray-900">{trader.name}</div>
-                           <div className="text-sm text-gray-500 font-mono">Rank #{trader.rank} • ID: {trader.id.slice(0, 8)}...</div>
+                           <div className="text-sm text-gray-500 font-mono">Rank #{trader.rank}</div>
                          </div>
                          
                          <div className="grid grid-cols-2 gap-3 text-sm">
@@ -513,6 +529,179 @@ export function Leaderboard() {
           </>
         )}
       </div>
+
+      {/* Right Slide-out Panel */}
+      <div 
+        className={`fixed inset-y-0 right-0 w-96 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
+          showTraderPanel ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {selectedTrader && (() => {
+          const trader = leaderboard.find(t => t.id === selectedTrader);
+          if (!trader) return null;
+          
+          const badges = getBadges(trader);
+          const streak = getPerformanceStreak(trader);
+          const sharpeRatio = getSharpRatio(trader);
+          
+          return (
+            <div className="h-full flex flex-col">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{trader.name}</h2>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={closeTraderPanel}
+                    className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto px-6 py-6">
+                <div className="space-y-8">
+                  {/* Rank & Performance Overview */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Performance Overview</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-xs text-gray-500 uppercase tracking-wide">Current Rank</div>
+                        <div className="text-2xl font-bold text-gray-900 mt-1">#{trader.rank}</div>
+                        <div className="text-xs text-gray-500 mt-1">out of {stats?.totalUsers || 'N/A'} traders</div>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <div className="text-xs text-gray-500 uppercase tracking-wide">Total P&L</div>
+                        <div className="text-2xl font-bold text-gray-900 mt-1 tabular-nums">
+                          {formatCurrency(trader.totalPnL)}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1 tabular-nums">
+                          {formatPercentage((trader.totalPnL / 10000) * 100)} ROI
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trading Statistics */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Trading Statistics</h3>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">Win Rate</span>
+                        <span className="font-semibold text-gray-900 tabular-nums">{trader.winRate.toFixed(1)}%</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">Total Trades</span>
+                        <span className="font-semibold text-gray-900 tabular-nums">{trader.totalTrades}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">Current Streak</span>
+                        <span className="font-semibold text-gray-900 tabular-nums">
+                          {streak.streakLength} {streak.isWinning ? 'Wins' : 'Losses'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">Sharpe Ratio</span>
+                        <span className="font-semibold text-gray-900 tabular-nums">{sharpeRatio}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">Average Trade Size</span>
+                        <span className="font-semibold text-gray-900 tabular-nums">
+                          {formatCurrency(Math.floor(Math.random() * 5000) + 1000)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-sm text-gray-600">Portfolio Value</span>
+                        <span className="font-semibold text-gray-900 tabular-nums">
+                          {formatCurrency(10000 + trader.totalPnL)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Achievements */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Achievements</h3>
+                    {badges.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2">
+                        {badges.map((badge, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <span className="text-sm font-medium text-gray-900">{badge}</span>
+                            <Badge variant="outline" className="text-xs">
+                              Active
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-gray-500">
+                        <div className="text-sm">No achievements yet</div>
+                        <div className="text-xs mt-1">Keep trading to earn badges</div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Recent Activity */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Recent Activity</h3>
+                    <div className="space-y-3">
+                      {/* Mock recent trades */}
+                      {[1, 2, 3].map((_, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {index === 0 ? 'MARKET A' : index === 1 ? 'MARKET B' : 'MARKET C'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {index === 0 ? '2 hours ago' : index === 1 ? '1 day ago' : '3 days ago'}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-sm font-semibold ${index % 2 === 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {index % 2 === 0 ? '+' : '-'}{formatCurrency(Math.floor(Math.random() * 2000) + 100)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {index % 2 === 0 ? 'YES' : 'NO'} @ {(Math.random() * 0.5 + 0.25).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <Button
+                  variant={isFollowed(trader.id) ? "default" : "outline"}
+                  onClick={() => handleFollow(trader.id)}
+                  className={`w-full ${
+                    isFollowed(trader.id)
+                      ? 'bg-black text-white hover:bg-gray-800'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {isFollowed(trader.id) ? 'Following' : 'Follow Trader'}
+                </Button>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Overlay */}
+      {showTraderPanel && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-25 z-40"
+          onClick={closeTraderPanel}
+        />
+      )}
     </div>
   );
 } 
