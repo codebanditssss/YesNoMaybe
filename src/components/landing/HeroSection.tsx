@@ -10,7 +10,7 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
   const { user, loading } = useAuth();
 
   return (
-    <section className="pt-40 pb-28 px-6 bg-white">
+    <section className="pt-14 pb-20 px-6 bg-white">
       <div className="max-w-6xl mx-auto text-center space-y-14">
         {/* Animated Badge */}
         <motion.div
