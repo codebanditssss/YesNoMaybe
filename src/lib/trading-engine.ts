@@ -26,6 +26,7 @@ export interface TradeExecution {
   quantity: number;
   price: number;
   marketId: string;
+  side: 'YES' | 'NO'; // Which side is being bought (the side of the buy order)
 }
 
 /**
@@ -210,6 +211,90 @@ export class TradingEngine {
   }
 
   /**
+   * Attempt to match a newly placed order against existing orders
+   */
+  private async attemptOrderMatching(
+    newOrder: any,
+    marketId: string
+  ): Promise<{ trades: any[]; filledQuantity: number; remainingQuantity: number }> {
+    try {
+      const { side, quantity, price, id: orderId, user_id: userId } = newOrder;
+      let remainingQuantity = quantity;
+      let filledQuantity = 0;
+      const trades: any[] = [];
+
+      // Find matching orders on the opposite side
+      const matchingResult = await this.findMatchingOrdersWithLock(
+        this.supabase,
+        marketId,
+        side,
+        price,
+        remainingQuantity
+      );
+
+      if (matchingResult.error || !matchingResult.orders.length) {
+        // No matching orders or error - order remains open
+        return { trades: [], filledQuantity: 0, remainingQuantity: quantity };
+      }
+
+      // Process each matching order
+      for (const matchingOrder of matchingResult.orders) {
+        if (remainingQuantity <= 0) break;
+
+        const matchQuantity = Math.min(remainingQuantity, matchingOrder.remaining_quantity || matchingOrder.quantity);
+        
+        // Create trade execution
+        const trade: TradeExecution = {
+          buyOrderId: side === 'YES' ? orderId : matchingOrder.id,
+          sellOrderId: side === 'YES' ? matchingOrder.id : orderId,
+          buyUserId: side === 'YES' ? userId : matchingOrder.user_id,
+          sellUserId: side === 'YES' ? matchingOrder.user_id : userId,
+          quantity: matchQuantity,
+          price: price,
+          marketId: marketId,
+          side: side
+        };
+
+        // Execute the trade
+        const tradeResult = await this.executeTradeTransaction(this.supabase, trade);
+        
+        if (tradeResult.success) {
+          trades.push({
+            tradeId: tradeResult.tradeId,
+            quantity: matchQuantity,
+            price: price,
+            matchedOrderId: matchingOrder.id,
+            matchedUserId: matchingOrder.user_id
+          });
+
+          remainingQuantity -= matchQuantity;
+          filledQuantity += matchQuantity;
+
+          // Update the new order's filled quantity
+          await this.supabase
+            .from('orders')
+            .update({
+              filled_quantity: filledQuantity,
+              remaining_quantity: remainingQuantity,
+              status: remainingQuantity === 0 ? 'filled' : 'partial'
+            })
+            .eq('id', orderId);
+
+        } else {
+          console.error(`Trade execution failed: ${tradeResult.error}`);
+          // Continue with next matching order on failure
+        }
+      }
+
+      return { trades, filledQuantity, remainingQuantity };
+
+    } catch (error) {
+      console.error('Order matching failed:', error);
+      return { trades: [], filledQuantity: 0, remainingQuantity: newOrder.quantity };
+    }
+  }
+
+  /**
    * Place an order with atomic transaction guarantees
    */
   async placeOrder(orderRequest: OrderRequest): Promise<OrderResult> {
@@ -349,15 +434,15 @@ export class TradingEngine {
         return { success: false, error: 'Failed to lock funds - balance may have changed' };
       }
 
-      // 4. Attempt immediate matching (simplified for now)
-      // TODO: Implement proper atomic matching
+      // 4. Attempt immediate matching with proper atomic transaction
+      const matchingResult = await this.attemptOrderMatching(newOrder, marketId);
       
       return {
         success: true,
         orderId: newOrder.id,
-        trades: [],
-        filledQuantity: 0,
-        remainingQuantity: quantity
+        trades: matchingResult.trades || [],
+        filledQuantity: matchingResult.filledQuantity || 0,
+        remainingQuantity: matchingResult.remainingQuantity || quantity
       };
 
     } catch (error) {
