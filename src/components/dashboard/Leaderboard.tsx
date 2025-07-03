@@ -290,13 +290,17 @@ export function Leaderboard() {
                                  {rankChange !== 0 && (
                                    <div className="flex items-center gap-1">
                                      {rankChange > 0 ? (
-                                       <TrendingUp className="h-3 w-3 text-gray-500" />
+                                       <TrendingUp className="h-3 w-3 text-green-500" />
                                      ) : rankChange < 0 ? (
-                                       <TrendingDown className="h-3 w-3 text-gray-500" />
+                                       <TrendingDown className="h-3 w-3 text-red-500" />
                                      ) : (
                                        <Minus className="h-3 w-3 text-gray-400" />
                                      )}
-                                     <span className="text-xs font-medium text-gray-500">
+                                     <span className={`text-xs font-medium ${
+                                       rankChange > 0 ? 'text-green-500' : 
+                                       rankChange < 0 ? 'text-red-500' : 
+                                       'text-gray-500'
+                                     }`}>
                                        {Math.abs(rankChange)}
                                      </span>
                                    </div>
@@ -312,10 +316,14 @@ export function Leaderboard() {
                              
                              <td className="px-8 py-4">
                                <div className="space-y-1">
-                                 <div className="font-semibold text-gray-900 tabular-nums">
+                                 <div className={`font-semibold tabular-nums ${
+                                   trader.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                                 }`}>
                                    {formatCurrency(trader.totalPnL)}
                                  </div>
-                                 <div className="text-sm text-gray-500 tabular-nums">
+                                 <div className={`text-sm tabular-nums ${
+                                   trader.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'
+                                 }`}>
                                    {formatPercentage((trader.totalPnL / 10000) * 100)}
                                  </div>
                                </div>
@@ -323,10 +331,14 @@ export function Leaderboard() {
                              
                              <td className="px-8 py-4">
                                <div className="space-y-1">
-                                 <div className="font-semibold text-gray-900 tabular-nums">
+                                 <div className={`font-semibold tabular-nums ${
+                                   streak.isWinning ? 'text-green-600' : 'text-red-600'
+                                 }`}>
                                    {streak.streakLength} {streak.isWinning ? 'W' : 'L'}
                                  </div>
-                                 <div className="text-sm text-gray-500">
+                                 <div className={`text-sm ${
+                                   streak.isWinning ? 'text-green-500' : 'text-red-500'
+                                 }`}>
                                    {streak.streakLength} days
                                  </div>
                                </div>
@@ -577,12 +589,16 @@ export function Leaderboard() {
                       </div>
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="text-xs text-gray-500 uppercase tracking-wide">Total P&L</div>
-                        <div className="text-2xl font-bold text-gray-900 mt-1 tabular-nums">
-                          {formatCurrency(trader.totalPnL)}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1 tabular-nums">
-                          {formatPercentage((trader.totalPnL / 10000) * 100)} ROI
-                        </div>
+                                                 <div className={`text-2xl font-bold mt-1 tabular-nums ${
+                           trader.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'
+                         }`}>
+                           {formatCurrency(trader.totalPnL)}
+                         </div>
+                         <div className={`text-xs mt-1 tabular-nums ${
+                           trader.totalPnL >= 0 ? 'text-green-500' : 'text-red-500'
+                         }`}>
+                           {formatPercentage((trader.totalPnL / 10000) * 100)} ROI
+                         </div>
                       </div>
                     </div>
                   </div>
@@ -601,9 +617,11 @@ export function Leaderboard() {
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Current Streak</span>
-                        <span className="font-semibold text-gray-900 tabular-nums">
-                          {streak.streakLength} {streak.isWinning ? 'Wins' : 'Losses'}
-                        </span>
+                                                 <span className={`font-semibold tabular-nums ${
+                           streak.isWinning ? 'text-green-600' : 'text-red-600'
+                         }`}>
+                           {streak.streakLength} {streak.isWinning ? 'Wins' : 'Losses'}
+                         </span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b border-gray-100">
                         <span className="text-sm text-gray-600">Sharpe Ratio</span>
