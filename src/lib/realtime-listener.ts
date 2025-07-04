@@ -20,7 +20,7 @@ class RealtimeListener {
   }
 
   private initializeChannels() {
-    const channels = ['orders_changes', 'trades_changes', 'user_balances_changes', 'markets_changes']
+    const channels = ['orders_changes', 'trades_changes', 'user_balances_changes', 'markets_changes', 'realtime_test_changes']
     channels.forEach(channel => {
       this.eventBuffer.set(channel, [])
       this.subscribers.set(channel, new Set())
@@ -63,7 +63,7 @@ class RealtimeListener {
   private async setupListeners(): Promise<void> {
     if (!this.client) return
 
-    const channels = ['orders_changes', 'trades_changes', 'user_balances_changes', 'markets_changes']
+    const channels = ['orders_changes', 'trades_changes', 'user_balances_changes', 'markets_changes', 'realtime_test_changes']
     
     // Listen to each channel
     for (const channel of channels) {
@@ -140,6 +140,24 @@ class RealtimeListener {
       if (subscribers) {
         subscribers.delete(callback)
       }
+    }
+  }
+
+  // Subscribe to events on all channels
+  subscribeAll(callback: (event: { channel: string; event: RealtimeEvent }) => void): () => void {
+    const unsubscribeFunctions: (() => void)[] = []
+    
+    // Subscribe to each channel
+    this.subscribers.forEach((_, channel) => {
+      const unsubscribe = this.subscribe(channel, (event) => {
+        callback({ channel, event })
+      })
+      unsubscribeFunctions.push(unsubscribe)
+    })
+
+    // Return function to unsubscribe from all channels
+    return () => {
+      unsubscribeFunctions.forEach(fn => fn())
     }
   }
 
