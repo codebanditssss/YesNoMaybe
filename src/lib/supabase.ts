@@ -2,7 +2,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/supabase'
 
-const supabaseUrl = 'https://cyrnkrvlxvoufvazmgqf.supabase.co'
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cyrnkrvlxvoufvazmgqf.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 if (!supabaseAnonKey) {
@@ -12,7 +12,22 @@ if (!supabaseAnonKey) {
 // Create a client for use in the browser with cookie-based auth
 export const supabase = createBrowserClient<Database>(
   supabaseUrl,
-  supabaseAnonKey
+  supabaseAnonKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    },
+    db: {
+      schema: 'public'
+    },
+    global: {
+      headers: {
+        'x-my-custom-header': 'yesnomaybe'
+      }
+    }
+  }
 )
 
 // Enable realtime (WebSocket connections will be established on subscription)
@@ -29,6 +44,9 @@ export const supabaseAdmin = process.env.SUPABASE_SERVICE_ROLE_KEY
         auth: {
           autoRefreshToken: false,
           persistSession: false
+        },
+        db: {
+          schema: 'public'
         }
       }
     )

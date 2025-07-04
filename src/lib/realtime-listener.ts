@@ -29,7 +29,7 @@ class RealtimeListener {
 
   async connect(): Promise<void> {
     if (this.isConnected) {
-      console.log('🔌 Already connected to PostgreSQL')
+      console.log('Already connected to PostgreSQL')
       return
     }
 
@@ -49,13 +49,13 @@ class RealtimeListener {
       await this.client.connect()
       this.isConnected = true
       
-      console.log('🔌 Connected to PostgreSQL for realtime notifications')
+      console.log('Connected to PostgreSQL for realtime notifications')
       
       // Set up listeners for each channel
       await this.setupListeners()
       
     } catch (error) {
-      console.error('❌ Failed to connect to PostgreSQL:', error)
+      console.error('Failed to connect to PostgreSQL:', error)
       throw error
     }
   }
@@ -68,7 +68,7 @@ class RealtimeListener {
     // Listen to each channel
     for (const channel of channels) {
       await this.client.query(`LISTEN ${channel}`)
-      console.log(`👂 Listening to channel: ${channel}`)
+      console.log(`Listening to channel: ${channel}`)
     }
 
     // Handle notifications
@@ -81,23 +81,23 @@ class RealtimeListener {
         this.handleEvent(channel, event)
         
       } catch (error) {
-        console.error('❌ Error processing notification:', error)
+        console.error('Error processing notification:', error)
       }
     })
 
     this.client.on('error', (error) => {
-      console.error('❌ PostgreSQL client error:', error)
+      console.error('PostgreSQL client error:', error)
       this.isConnected = false
     })
 
     this.client.on('end', () => {
-      console.log('🔌 PostgreSQL connection ended')
+      console.log('PostgreSQL connection ended')
       this.isConnected = false
     })
   }
 
   private handleEvent(channel: string, event: RealtimeEvent): void {
-    console.log(`📡 Received event on ${channel}:`, {
+    console.log(`Received event on ${channel}:`, {
       operation: event.operation,
       table: event.table,
       timestamp: new Date(event.timestamp).toISOString()
@@ -121,7 +121,7 @@ class RealtimeListener {
         try {
           callback(event)
         } catch (error) {
-          console.error('❌ Error in subscriber callback:', error)
+          console.error('Error in subscriber callback:', error)
         }
       })
     }
@@ -183,7 +183,7 @@ class RealtimeListener {
       await this.client.end()
       this.client = null
       this.isConnected = false
-      console.log('🔌 Disconnected from PostgreSQL')
+      console.log('Disconnected from PostgreSQL')
     }
   }
 
