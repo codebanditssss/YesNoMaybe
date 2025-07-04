@@ -1,335 +1,228 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
-import { RealtimeChannel } from '@supabase/supabase-js';
 
-// Connection states
-export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
-
-// Retry configuration
-interface RetryConfig {
-  maxRetries: number;
-  baseDelay: number; // in milliseconds
-  maxDelay: number;
-  retryCount: number;
+// Types for real-time events
+export interface RealtimeEvent {
+  type: 'connection' | 'heartbeat' | 'database_change';
+  channel?: string;
+  operation?: 'INSERT' | 'UPDATE' | 'DELETE';
+  table?: string;
+  data?: any;
+  timestamp: string;
+  message?: string;
 }
 
-// Context interface
-interface RealtimeContextType {
-  // Connection state
-  connectionState: ConnectionState;
+export interface RealtimeContextType {
   isConnected: boolean;
-  lastError: string | null;
-  retryCount: number;
-  
-  // Connection management
+  connectionState: 'disconnected' | 'connecting' | 'connected' | 'error';
+  lastEvent: RealtimeEvent | null;
+  events: RealtimeEvent[];
+  error: string | null;
   connect: () => void;
   disconnect: () => void;
-  forceReconnect: () => void;
-  
-  // Subscription management
-  subscribeToChannel: (channelName: string, config: any) => RealtimeChannel | null;
-  unsubscribeFromChannel: (channelName: string) => void;
-  getActiveChannels: () => string[];
-  channelCount: number;
+  clearEvents: () => void;
+  subscribe: (callback: (event: RealtimeEvent) => void) => () => void;
 }
 
 const RealtimeContext = createContext<RealtimeContextType | null>(null);
 
-// Retry configuration
-const DEFAULT_RETRY_CONFIG: RetryConfig = {
-  maxRetries: 5,
-  baseDelay: 1000,    // Start with 1 second
-  maxDelay: 30000,    // Max 30 seconds
-  retryCount: 0
-};
+interface RealtimeProviderProps {
+  children: React.ReactNode;
+  autoConnect?: boolean;
+  maxEvents?: number;
+}
 
-export function RealtimeProvider({ children }: { children: React.ReactNode }) {
-  // Connection state
-  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [retryConfig, setRetryConfig] = useState<RetryConfig>(DEFAULT_RETRY_CONFIG);
+export function RealtimeProvider({ 
+  children, 
+  autoConnect = true, 
+  maxEvents = 100 
+}: RealtimeProviderProps) {
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+  const [lastEvent, setLastEvent] = useState<RealtimeEvent | null>(null);
+  const [events, setEvents] = useState<RealtimeEvent[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
-  // Active channels tracking
-  const activeChannels = useRef<Map<string, RealtimeChannel>>(new Map());
-  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const heartbeatIntervalRef = useRef<NodeJS.Interval | null>(null);
-  
-  // Computed values
-  const isConnected = connectionState === 'connected';
-  
-  // Calculate exponential backoff delay
-  const getRetryDelay = useCallback((retryCount: number): number => {
-    const delay = retryConfig.baseDelay * Math.pow(2, retryCount);
-    return Math.min(delay, retryConfig.maxDelay);
-  }, [retryConfig]);
-  
-  // Clear retry timeout
-  const clearRetryTimeout = useCallback(() => {
-    if (retryTimeoutRef.current) {
-      clearTimeout(retryTimeoutRef.current);
-      retryTimeoutRef.current = null;
-    }
-  }, []);
-  
-  // Clear heartbeat interval
-  const clearHeartbeat = useCallback(() => {
-    if (heartbeatIntervalRef.current) {
-      clearInterval(heartbeatIntervalRef.current);
-      heartbeatIntervalRef.current = null;
-    }
-  }, []);
-  
-  // Start heartbeat monitoring
-  const startHeartbeat = useCallback(() => {
-    clearHeartbeat();
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const subscribersRef = useRef<Set<(event: RealtimeEvent) => void>>(new Set());
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
+
+  // Add event to buffer
+  const addEvent = useCallback((event: RealtimeEvent) => {
+    setEvents(prev => {
+      const newEvents = [...prev, event];
+      // Keep only the last maxEvents
+      return newEvents.slice(-maxEvents);
+    });
+    setLastEvent(event);
     
-    heartbeatIntervalRef.current = setInterval(() => {
-      // Check if realtime is still connected
-      const currentStatus = supabase.realtime.isConnected();
-      
-      if (!currentStatus && isConnected) {
-        console.warn('🔄 Heartbeat detected disconnection, attempting reconnect...');
-        setConnectionState('reconnecting');
-        connect();
+    // Notify all subscribers
+    subscribersRef.current.forEach(callback => {
+      try {
+        callback(event);
+      } catch (error) {
+        console.error('Error in realtime subscriber:', error);
       }
-    }, 15000); // Check every 15 seconds
-  }, [isConnected]);
-  
-  // Connect to Supabase Realtime
-  const connect = useCallback(async () => {
+    });
+  }, [maxEvents]);
+
+  // Connect to SSE endpoint
+  const connect = useCallback(() => {
+    if (eventSourceRef.current?.readyState === EventSource.OPEN) {
+      console.log('🔗 Already connected to realtime');
+      return;
+    }
+
+    setConnectionState('connecting');
+    setError(null);
+    
+    console.log('🔗 Connecting to realtime SSE...');
+    
     try {
-      setConnectionState('connecting');
-      setLastError(null);
-      
-      console.log('🔌 Attempting Supabase Realtime connection...');
-      
-      // Check if we have an existing session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        console.log('🔐 No session found, creating anonymous session for Realtime...');
-        
-        // Try to sign in anonymously for Realtime access
-        try {
-          const { data, error } = await supabase.auth.signInAnonymously();
-          
-          if (error) {
-            console.warn('⚠️ Anonymous sign-in failed, trying without auth:', error.message);
-          } else {
-            console.log('✅ Anonymous session created for Realtime');
-            // Wait a moment for the session to be established
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        } catch (authError) {
-          console.warn('⚠️ Auth error, continuing with anon key:', authError);
-        }
-      }
-      
-      // Connect to Supabase Realtime
-      supabase.realtime.connect();
-      
-      // Set up connection success handler
-      const handleConnection = () => {
+      const eventSource = new EventSource('/api/realtime');
+      eventSourceRef.current = eventSource;
+
+      eventSource.onopen = () => {
+        console.log('✅ Connected to realtime SSE');
+        setIsConnected(true);
         setConnectionState('connected');
-        setRetryConfig(prev => ({ ...prev, retryCount: 0 }));
-        setLastError(null);
-        console.log('✅ Supabase Realtime Connected Successfully');
-        startHeartbeat();
+        setError(null);
+        reconnectAttempts.current = 0;
       };
-      
-      // Set up error handler
-      const handleError = (error: any) => {
-        console.error('❌ Supabase Realtime Error:', error);
-        setLastError(error?.message || 'Connection error');
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data: RealtimeEvent = JSON.parse(event.data);
+          
+          if (data.type === 'connection') {
+            console.log('🎉 Realtime connection confirmed');
+          } else if (data.type === 'heartbeat') {
+            console.log('💓 Realtime heartbeat');
+          } else if (data.type === 'database_change') {
+            console.log(`📊 Database change: ${data.table} (${data.operation})`);
+          }
+          
+          addEvent(data);
+        } catch (error) {
+          console.error('❌ Error parsing SSE data:', error);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('❌ SSE connection error:', error);
+        setIsConnected(false);
         setConnectionState('error');
+        setError('Connection lost');
         
-        // Attempt retry with exponential backoff
-        if (retryConfig.retryCount < retryConfig.maxRetries) {
-          const delay = getRetryDelay(retryConfig.retryCount);
-          console.log(`🔄 Retrying connection in ${delay}ms (attempt ${retryConfig.retryCount + 1}/${retryConfig.maxRetries})`);
+        // Attempt reconnection with exponential backoff
+        if (reconnectAttempts.current < maxReconnectAttempts) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
+          console.log(`🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`);
           
-          setConnectionState('reconnecting');
-          setRetryConfig(prev => ({ ...prev, retryCount: prev.retryCount + 1 }));
-          
-          retryTimeoutRef.current = setTimeout(() => {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            reconnectAttempts.current++;
             connect();
           }, delay);
         } else {
-          console.error('❌ Max retry attempts reached. Realtime may not be enabled for this project.');
-          setConnectionState('error');
-          setLastError('Realtime service unavailable - may need to be enabled in Supabase dashboard');
+          console.error('❌ Max reconnection attempts reached');
+          setError('Failed to reconnect after multiple attempts');
         }
       };
-      
-      // Set up disconnect handler
-      const handleDisconnect = () => {
-        console.log('❌ Supabase Realtime Disconnected');
-        setConnectionState('disconnected');
-        clearHeartbeat();
-        
-        // Auto-reconnect if it wasn't a manual disconnect
-        if (connectionState !== 'disconnected') {
-          setTimeout(() => {
-            connect();
-          }, 2000);
-        }
-      };
-      
-      // Monitor connection state with more aggressive checking
-      let connectionChecks = 0;
-      const maxChecks = 5;
-      
-      const checkConnection = () => {
-        connectionChecks++;
-        
-        if (supabase.realtime.isConnected()) {
-          handleConnection();
-        } else if (connectionChecks < maxChecks) {
-          // Keep checking every 2 seconds up to 5 times (10 seconds total)
-          setTimeout(checkConnection, 2000);
-        } else {
-          handleError(new Error('Realtime service may not be enabled for client connections on this project'));
-        }
-      };
-      
-      // Start checking after 1 second
-      setTimeout(checkConnection, 1000);
-      
+
     } catch (error) {
-      console.error('❌ Failed to initiate Supabase Realtime connection:', error);
+      console.error('❌ Failed to create SSE connection:', error);
       setConnectionState('error');
-      setLastError(error instanceof Error ? error.message : 'Connection failed');
+      setError('Failed to establish connection');
     }
-  }, [retryConfig.retryCount, retryConfig.maxRetries, getRetryDelay, startHeartbeat, connectionState]);
-  
-  // Disconnect from Supabase Realtime
+  }, [addEvent]);
+
+  // Disconnect from SSE
   const disconnect = useCallback(() => {
-    console.log('🔌 Disconnecting from Supabase Realtime...');
+    console.log('🔌 Disconnecting from realtime SSE');
     
-    // Clear all timeouts and intervals
-    clearRetryTimeout();
-    clearHeartbeat();
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     
-    // Unsubscribe from all channels
-    activeChannels.current.forEach((channel, channelName) => {
-      console.log(`📤 Unsubscribing from channel: ${channelName}`);
-      supabase.removeChannel(channel);
-    });
-    activeChannels.current.clear();
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
     
-    // Disconnect from Supabase Realtime
-    supabase.realtime.disconnect();
-    
+    setIsConnected(false);
     setConnectionState('disconnected');
-    setLastError(null);
-    setRetryConfig(DEFAULT_RETRY_CONFIG);
-  }, [clearRetryTimeout, clearHeartbeat]);
-  
-  // Force reconnection (manual retry)
-  const forceReconnect = useCallback(() => {
-    console.log('🔄 Force reconnecting...');
-    disconnect();
-    setTimeout(() => {
-      setRetryConfig(DEFAULT_RETRY_CONFIG); // Reset retry count
-      connect();
-    }, 1000);
-  }, [disconnect, connect]);
-  
-  // Subscribe to a channel
-  const subscribeToChannel = useCallback((channelName: string, config: any): RealtimeChannel | null => {
-    if (!isConnected) {
-      console.warn(`❌ Cannot subscribe to ${channelName}: Not connected to realtime`);
-      return null;
-    }
-    
-    // Check if already subscribed
-    if (activeChannels.current.has(channelName)) {
-      console.log(`📡 Already subscribed to channel: ${channelName}`);
-      return activeChannels.current.get(channelName)!;
-    }
-    
-    try {
-      const channel = supabase.channel(channelName, config);
-      
-      channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log(`✅ Successfully subscribed to channel: ${channelName}`);
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error(`❌ Error subscribing to channel: ${channelName}`);
-          activeChannels.current.delete(channelName);
-        } else if (status === 'TIMED_OUT') {
-          console.warn(`⏰ Subscription timeout for channel: ${channelName}`);
-          activeChannels.current.delete(channelName);
-        }
-      });
-      
-      activeChannels.current.set(channelName, channel);
-      console.log(`📡 Subscribing to channel: ${channelName}`);
-      
-      return channel;
-    } catch (error) {
-      console.error(`❌ Failed to subscribe to channel ${channelName}:`, error);
-      return null;
-    }
-  }, [isConnected]);
-  
-  // Unsubscribe from a channel
-  const unsubscribeFromChannel = useCallback((channelName: string) => {
-    const channel = activeChannels.current.get(channelName);
-    if (channel) {
-      console.log(`📤 Unsubscribing from channel: ${channelName}`);
-      supabase.removeChannel(channel);
-      activeChannels.current.delete(channelName);
-    }
+    setError(null);
+    reconnectAttempts.current = 0;
   }, []);
-  
-  // Get list of active channels
-  const getActiveChannels = useCallback((): string[] => {
-    return Array.from(activeChannels.current.keys());
+
+  // Clear event history
+  const clearEvents = useCallback(() => {
+    setEvents([]);
+    setLastEvent(null);
   }, []);
-  
-  // Auto-connect on mount (disabled temporarily for testing)
+
+  // Subscribe to real-time events
+  const subscribe = useCallback((callback: (event: RealtimeEvent) => void) => {
+    subscribersRef.current.add(callback);
+    
+    // Return unsubscribe function
+    return () => {
+      subscribersRef.current.delete(callback);
+    };
+  }, []);
+
+  // Auto-connect on mount
   useEffect(() => {
-    // Temporarily disabled auto-connect until Supabase Realtime is enabled
-    console.log('🔧 Auto-connect disabled - use manual connection for testing');
-    
+    if (autoConnect) {
+      connect();
+    }
+
     // Cleanup on unmount
     return () => {
       disconnect();
     };
-  }, []); // Only run on mount/unmount
-  
-  // Context value
-  const contextValue: RealtimeContextType = {
-    // Connection state
-    connectionState,
+  }, [autoConnect, connect, disconnect]);
+
+  // Handle page visibility changes to reconnect when tab becomes active
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && connectionState === 'error') {
+        console.log('📱 Page became visible, attempting to reconnect...');
+        connect();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [connectionState, connect]);
+
+  const value: RealtimeContextType = {
     isConnected,
-    lastError,
-    retryCount: retryConfig.retryCount,
-    
-    // Connection management
+    connectionState,
+    lastEvent,
+    events,
+    error,
     connect,
     disconnect,
-    forceReconnect,
-    
-    // Subscription management
-    subscribeToChannel,
-    unsubscribeFromChannel,
-    getActiveChannels,
-    channelCount: activeChannels.current.size
+    clearEvents,
+    subscribe
   };
-  
+
   return (
-    <RealtimeContext.Provider value={contextValue}>
+    <RealtimeContext.Provider value={value}>
       {children}
     </RealtimeContext.Provider>
   );
 }
 
-// Hook to use the realtime context
-export function useRealtime(): RealtimeContextType {
+// Hook to use realtime context
+export function useRealtime() {
   const context = useContext(RealtimeContext);
   if (!context) {
     throw new Error('useRealtime must be used within a RealtimeProvider');
@@ -337,21 +230,83 @@ export function useRealtime(): RealtimeContextType {
   return context;
 }
 
-// Hook for connection status
-export function useRealtimeConnection() {
-  const { connectionState, isConnected, lastError, retryCount, forceReconnect } = useRealtime();
-  
-  return {
-    connectionState,
-    isConnected,
-    lastError,
-    retryCount,
-    forceReconnect,
-    
-    // Helper functions
-    isConnecting: connectionState === 'connecting',
-    isReconnecting: connectionState === 'reconnecting',
-    hasError: connectionState === 'error',
-    canRetry: retryCount < DEFAULT_RETRY_CONFIG.maxRetries
-  };
+// Specific hooks for different data types
+export function useRealtimeOrders() {
+  const { subscribe } = useRealtime();
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    return subscribe((event) => {
+      if (event.type === 'database_change' && event.table === 'orders') {
+        console.log(`📝 Order ${event.operation}:`, event.data);
+        
+        if (event.operation === 'INSERT') {
+          setOrders(prev => [event.data, ...prev]);
+        } else if (event.operation === 'UPDATE') {
+          setOrders(prev => prev.map(order => 
+            order.id === event.data.id ? { ...order, ...event.data } : order
+          ));
+        } else if (event.operation === 'DELETE') {
+          setOrders(prev => prev.filter(order => order.id !== event.data.id));
+        }
+      }
+    });
+  }, [subscribe]);
+
+  return orders;
+}
+
+export function useRealtimeTrades() {
+  const { subscribe } = useRealtime();
+  const [trades, setTrades] = useState<any[]>([]);
+
+  useEffect(() => {
+    return subscribe((event) => {
+      if (event.type === 'database_change' && event.table === 'trades') {
+        console.log(`💰 Trade ${event.operation}:`, event.data);
+        
+        if (event.operation === 'INSERT') {
+          setTrades(prev => [event.data, ...prev]);
+        } else if (event.operation === 'UPDATE') {
+          setTrades(prev => prev.map(trade => 
+            trade.id === event.data.id ? { ...trade, ...event.data } : trade
+          ));
+        }
+      }
+    });
+  }, [subscribe]);
+
+  return trades;
+}
+
+export function useRealtimeMarkets() {
+  const { subscribe } = useRealtime();
+  const [marketUpdates, setMarketUpdates] = useState<any[]>([]);
+
+  useEffect(() => {
+    return subscribe((event) => {
+      if (event.type === 'database_change' && event.table === 'markets') {
+        console.log(`📊 Market ${event.operation}:`, event.data);
+        setMarketUpdates(prev => [event.data, ...prev.slice(0, 9)]); // Keep last 10
+      }
+    });
+  }, [subscribe]);
+
+  return marketUpdates;
+}
+
+export function useRealtimeBalances() {
+  const { subscribe } = useRealtime();
+  const [balanceUpdates, setBalanceUpdates] = useState<any[]>([]);
+
+  useEffect(() => {
+    return subscribe((event) => {
+      if (event.type === 'database_change' && event.table === 'user_balances') {
+        console.log(`💰 Balance ${event.operation}:`, event.data);
+        setBalanceUpdates(prev => [event.data, ...prev.slice(0, 4)]); // Keep last 5
+      }
+    });
+  }, [subscribe]);
+
+  return balanceUpdates;
 } 

@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { ClientRedirectManager } from '@/lib/redirect-manager';
 import ProfileDropdown from '@/components/dashboard/ProfileDropdown';
 import { ConnectionStatusCompact } from '@/components/realtime/ConnectionStatus';
+import { RealtimeProvider } from '@/contexts/RealtimeContext';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, signOut } = useAuth();
@@ -69,7 +70,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="h-screen flex bg-gray-50">
+    <RealtimeProvider autoConnect={true} maxEvents={50}>
+      <div className="h-screen flex bg-gray-50">
       {/* Sidebar for desktop */}
       <div
         className={`
@@ -362,5 +364,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
     </div>
+    </RealtimeProvider>
   );
 } 
