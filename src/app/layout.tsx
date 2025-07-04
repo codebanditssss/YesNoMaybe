@@ -33,7 +33,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <RealtimeProvider>
-            {children}
+          {children}
           </RealtimeProvider>
         </AuthProvider>
       </body>
