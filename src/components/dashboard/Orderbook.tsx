@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMarkets } from "@/hooks/useMarkets";
-import { useOrderbook } from "@/hooks/useOrderbook";
+import { useRealtimeOrderbook } from "@/hooks/useRealtimeOrderbook";
 import { 
   TrendingUp, 
   TrendingDown,
@@ -23,7 +23,8 @@ import {
   BarChart,
   Target,
   AlertCircle,
-  Loader2
+  Loader2,
+  Radio
 } from "lucide-react";
 
 import type { Market } from "@/hooks/useMarkets";
@@ -55,7 +56,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
     }
   }, [markets, currentMarket, selectedMarket]);
 
-  // Fetch orderbook data for current market
+  // Fetch orderbook data with real-time updates
   const {
     orderbook,
     marketInfo,
@@ -70,8 +71,10 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
     bestPrices,
     marketStats,
     spread,
-    spreadPercentage
-  } = useOrderbook(currentMarket?.id, {
+    spreadPercentage,
+    realtimeUpdates
+  } = useRealtimeOrderbook({
+    marketId: currentMarket?.id,
     autoRefresh,
     refreshInterval: refreshInterval * 1000
   });
@@ -133,7 +136,17 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Book</h1>
             <p className="text-gray-600">Real-time market depth and order flow</p>
           </div>
+          
+          {/* Real-time status indicator */}
+          <div className="flex items-center gap-2">
+            <Radio className={`h-4 w-4 ${realtimeUpdates.type ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+            <span className="text-sm text-gray-600">
+              {realtimeUpdates.type 
+                ? `Last update: ${realtimeUpdates.type} (${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()})`
+                : 'Waiting for updates...'}
+            </span>
           </div>
+        </div>
 
         {/* Market Selector */}
 

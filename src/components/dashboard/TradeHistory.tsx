@@ -29,9 +29,10 @@ import {
   Users,
   Volume2,
   Zap,
-  BookOpen
+  BookOpen,
+  Radio
 } from "lucide-react";
-import { useTradeHistory, type TradeHistoryEntry, type TradeHistoryStats } from '@/hooks/useTradeHistory';
+import { useRealtimeTradeHistory } from '@/hooks/useRealtimeTradeHistory';
 import { exportTradeHistoryToCSV } from '@/lib/csvExport';
 
 export function TradeHistory() {
@@ -43,11 +44,10 @@ export function TradeHistory() {
   const [filterSide, setFilterSide] = useState<'all' | 'YES' | 'NO'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'filled' | 'open' | 'cancelled'>('all');
   const [dateRange, setDateRange] = useState<'all' | '1d' | '7d' | '30d' | '90d'>('all');
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
 
-  // Use real trade history data
+  // Use real-time trade history data
   const { 
     trades, 
     stats, 
@@ -56,8 +56,9 @@ export function TradeHistory() {
     refresh,
     loadMore,
     hasData,
-    canLoadMore 
-  } = useTradeHistory({ 
+    canLoadMore,
+    realtimeUpdates
+  } = useRealtimeTradeHistory({ 
     status: filterStatus === 'all' ? undefined : filterStatus,
     side: filterSide === 'all' ? undefined : filterSide,
     dateRange: dateRange === 'all' ? undefined : dateRange,
@@ -68,21 +69,10 @@ export function TradeHistory() {
     refreshInterval: 60000 // 1 minute
   });
 
-  // Initialize timestamp on client side only
+  // Initialize on client side only
   useEffect(() => {
     setMounted(true);
-    setLastUpdate(new Date());
   }, []);
-
-  // Auto-refresh timestamp
-  useEffect(() => {
-    if (!mounted) return;
-    
-    const interval = setInterval(() => {
-      setLastUpdate(new Date());
-    }, 60000); // Update timestamp every minute
-    return () => clearInterval(interval);
-  }, [mounted]);
 
   // Filter trades client-side for tab functionality
   const filteredTrades = trades.filter(trade => {
@@ -158,30 +148,23 @@ export function TradeHistory() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Trade History</h1>
             <p className="text-gray-600">Track all your trading activity and performance</p>
-            <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-            {mounted && lastUpdate && (
-              <span>
-                Last updated: {lastUpdate.toISOString().slice(11, 19)}
-              </span>
-            )}
-              {/* <span>Last updated: {lastUpdate.toLocaleTimeString()}</span> */}
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Live updates</span>
-              </div>
-            </div>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {/* Real-time status indicator */}
+            <div className="flex items-center gap-2">
+              <Radio className={`h-4 w-4 ${realtimeUpdates.type ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+              <span className="text-sm text-gray-600">
+                {realtimeUpdates.type 
+                  ? `Last update: ${realtimeUpdates.type} (${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()})`
+                  : 'Waiting for updates...'}
+              </span>
+            </div>
+
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => {
-                if (mounted) {
-                  setLastUpdate(new Date());
-                }
-                refresh();
-              }}
+              onClick={refresh}
               className="flex items-center gap-2"
               disabled={loading}
             >
@@ -478,7 +461,13 @@ export function TradeHistory() {
                         {filteredTrades.map((trade) => (
                           <div 
                             key={trade.id} 
-                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                            className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow ${
+                              realtimeUpdates.type === 'trade' && 
+                              realtimeUpdates.tradeId === trade.id &&
+                              new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
+                                ? 'animate-highlight bg-green-50' 
+                                : ''
+                            }`}
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">

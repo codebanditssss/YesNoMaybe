@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { usePortfolio } from '@/hooks/usePortfolio';
+import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 import { useDailyChanges } from '@/hooks/useDailyChanges';
 import { 
   TrendingUp, 
@@ -32,7 +32,8 @@ import {
   Minus,
   Settings,
   BookOpen,
-  Award
+  Award,
+  Radio
 } from "lucide-react";
 import { PortfolioCharts } from './PortfolioCharts';
 import { PortfolioAnalytics } from './PortfolioAnalytics';
@@ -75,10 +76,9 @@ export function Portfolio() {
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL'>('ALL');
   const [sortBy, setSortBy] = useState<'pnl' | 'value' | 'alphabetical' | 'date'>('pnl');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved'>('all');
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Use real portfolio data
+  // Use real-time portfolio data
   const { 
     portfolio, 
     loading, 
@@ -86,29 +86,18 @@ export function Portfolio() {
     refresh,
     positions,
     getTotalPnL,
-    getPnLPercentage
-  } = usePortfolio({ 
+    getPnLPercentage,
+    realtimeUpdates
+  } = useRealtimePortfolio({ 
     includeHistory: true,
     autoRefresh: true,
     timeframe: timeframe
   });
 
-  // Initialize timestamp on client side only
+  // Initialize on client side only
   useEffect(() => {
     setMounted(true);
-    setLastUpdate(new Date());
   }, []);
-
-  // Auto-refresh portfolio data
-  useEffect(() => {
-    if (!mounted) return;
-    
-    const interval = setInterval(() => {
-      setLastUpdate(new Date());
-      refresh();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [refresh, mounted]);
 
   const currentTotalValue = portfolio?.summary?.totalValue || (portfolio?.balance?.available_balance || 0);
   
@@ -326,7 +315,6 @@ export function Portfolio() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setLastUpdate(new Date());
                   refresh();
                 }}
               >
@@ -349,28 +337,31 @@ export function Portfolio() {
             <p className="text-gray-500 mt-2 font-light">Your prediction market performance</p>
           </div>
           
+          {/* Real-time status indicator */}
           <div className="flex items-center gap-6">
             <div className="text-right">
               <div className="text-sm text-gray-400 font-light">Last updated</div>
               <div className="text-sm text-black font-medium">
-                {mounted && lastUpdate ? lastUpdate.toLocaleTimeString('en-US', { 
-                  hour: '2-digit', 
-                  minute: '2-digit', 
-                  hour12: true 
-                }) : '--:--'}
+                {mounted && realtimeUpdates.type ? realtimeUpdates.type + ' (' + new Date(realtimeUpdates.lastUpdate).toLocaleTimeString() + ')' : '--:--'}
               </div>
             </div>
-            <button 
-              onClick={() => {
-                if (mounted) {
-                  setLastUpdate(new Date());
-                }
-                refresh();
-              }}
-              className="w-10 h-10 rounded-full border border-gray-200 hover:border-gray-300 transition-all duration-300 flex items-center justify-center group hover:shadow-md"
+            <div className="flex items-center gap-2">
+              <Radio className={`h-4 w-4 ${realtimeUpdates.type ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+              <span className="text-sm text-gray-600">
+                {realtimeUpdates.type 
+                  ? `Last update: ${realtimeUpdates.type} (${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()})`
+                  : 'Waiting for updates...'}
+              </span>
+            </div>
+            <Button
+              onClick={refresh}
+              size="sm"
+              variant="outline"
+              className="text-gray-600 hover:text-gray-900"
             >
-              <RefreshCw className="h-4 w-4 text-gray-400 group-hover:text-black transition-colors" />
-            </button>
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Refresh
+            </Button>
           </div>
         </div>
 
@@ -408,7 +399,12 @@ export function Portfolio() {
             <div className="relative">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Portfolio Value */}
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50">
+                <div className={`relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50 ${
+                  realtimeUpdates.type === 'balance' && 
+                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
+                    ? 'animate-highlight bg-green-50' 
+                    : ''
+                }`}>
                   <div className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">Total Value</div>
                   <div className="text-3xl font-light text-black mb-2">{formatCurrency(stats.totalValue)}</div>
                   <div className={`text-sm font-medium flex items-center gap-1 ${
@@ -422,7 +418,12 @@ export function Portfolio() {
                 </div>
 
                 {/* P&L */}
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50">
+                <div className={`relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50 ${
+                  realtimeUpdates.type === 'pnl' && 
+                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
+                    ? 'animate-highlight bg-green-50' 
+                    : ''
+                }`}>
                   <div className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">Profit & Loss</div>
                   <div className={`text-3xl font-light mb-2 ${
                     stats.totalPnl >= 0 ? 'text-emerald-700' : 'text-red-600'
@@ -433,7 +434,12 @@ export function Portfolio() {
                 </div>
 
                 {/* Available Balance */}
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50">
+                <div className={`relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50 ${
+                  realtimeUpdates.type === 'balance' && 
+                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
+                    ? 'animate-highlight bg-green-50' 
+                    : ''
+                }`}>
                   <div className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">Available</div>
                   <div className="text-3xl font-light text-black mb-2">{formatCurrency(stats.availableBalance)}</div>
                   <div className="text-sm text-gray-500 font-light">Ready to trade</div>
@@ -605,7 +611,12 @@ export function Portfolio() {
                   .map((position, index) => (
                   <div key={position.id} className={`relative bg-white/80 backdrop-blur-sm p-6 hover:bg-white/95 transition-all duration-300 group border border-gray-200/50 shadow-lg shadow-gray-100/50 hover:shadow-xl hover:-translate-y-0.5 ${
                     index % 2 === 0 ? 'rounded-l-2xl rounded-r-lg' : 'rounded-r-2xl rounded-l-lg'
-                  } hover:shadow-gray-200/50`}>
+                  } hover:shadow-gray-200/50 ${
+                    realtimeUpdates.type === 'position' && 
+                    new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
+                      ? 'animate-highlight bg-green-50' 
+                      : ''
+                  }`}>
                     {/* Subtle left accent */}
                     <div className={`absolute left-0 top-0 w-1 h-full rounded-l-2xl ${
                       position.pnl >= 0 ? 'bg-gradient-to-b from-emerald-400 to-emerald-600' : 'bg-gradient-to-b from-red-400 to-red-600'
