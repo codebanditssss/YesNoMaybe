@@ -72,21 +72,21 @@ export function RealtimeProvider({
   // Connect to SSE endpoint
   const connect = useCallback(() => {
     if (eventSourceRef.current?.readyState === EventSource.OPEN) {
-      console.log('🔗 Already connected to realtime');
+      console.log('Already connected to realtime');
       return;
     }
 
     setConnectionState('connecting');
     setError(null);
     
-    console.log('🔗 Connecting to realtime SSE...');
+    console.log('Connecting to realtime SSE...');
     
     try {
       const eventSource = new EventSource('/api/realtime');
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = () => {
-        console.log('✅ Connected to realtime SSE');
+        console.log('Connected to realtime SSE');
         setIsConnected(true);
         setConnectionState('connected');
         setError(null);
@@ -98,21 +98,21 @@ export function RealtimeProvider({
           const data: RealtimeEvent = JSON.parse(event.data);
           
           if (data.type === 'connection') {
-            console.log('🎉 Realtime connection confirmed');
+            console.log('Realtime connection confirmed');
           } else if (data.type === 'heartbeat') {
-            console.log('💓 Realtime heartbeat');
+            console.log('Realtime heartbeat');
           } else if (data.type === 'database_change') {
-            console.log(`📊 Database change: ${data.table} (${data.operation})`);
+            console.log(`Database change: ${data.table} (${data.operation})`);
           }
           
           addEvent(data);
         } catch (error) {
-          console.error('❌ Error parsing SSE data:', error);
+          console.error('Error parsing SSE data:', error);
         }
       };
 
       eventSource.onerror = (error) => {
-        console.error('❌ SSE connection error:', error);
+        console.error('SSE connection error:', error);
         setIsConnected(false);
         setConnectionState('error');
         setError('Connection lost');
@@ -120,20 +120,20 @@ export function RealtimeProvider({
         // Attempt reconnection with exponential backoff
         if (reconnectAttempts.current < maxReconnectAttempts) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
-          console.log(`🔄 Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`);
+          console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;
             connect();
           }, delay);
         } else {
-          console.error('❌ Max reconnection attempts reached');
+          console.error('Max reconnection attempts reached');
           setError('Failed to reconnect after multiple attempts');
         }
       };
 
     } catch (error) {
-      console.error('❌ Failed to create SSE connection:', error);
+      console.error('Failed to create SSE connection:', error);
       setConnectionState('error');
       setError('Failed to establish connection');
     }
@@ -141,7 +141,7 @@ export function RealtimeProvider({
 
   // Disconnect from SSE
   const disconnect = useCallback(() => {
-    console.log('🔌 Disconnecting from realtime SSE');
+    console.log('Disconnecting from realtime SSE');
     
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -191,7 +191,7 @@ export function RealtimeProvider({
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && connectionState === 'error') {
-        console.log('📱 Page became visible, attempting to reconnect...');
+        console.log('Page became visible, attempting to reconnect...');
         connect();
       }
     };
@@ -238,7 +238,7 @@ export function useRealtimeOrders() {
   useEffect(() => {
     return subscribe((event) => {
       if (event.type === 'database_change' && event.table === 'orders') {
-        console.log(`📝 Order ${event.operation}:`, event.data);
+        console.log(`Order ${event.operation}:`, event.data);
         
         if (event.operation === 'INSERT') {
           setOrders(prev => [event.data, ...prev]);
@@ -263,7 +263,7 @@ export function useRealtimeTrades() {
   useEffect(() => {
     return subscribe((event) => {
       if (event.type === 'database_change' && event.table === 'trades') {
-        console.log(`💰 Trade ${event.operation}:`, event.data);
+        console.log(`Trade ${event.operation}:`, event.data);
         
         if (event.operation === 'INSERT') {
           setTrades(prev => [event.data, ...prev]);
@@ -286,7 +286,7 @@ export function useRealtimeMarkets() {
   useEffect(() => {
     return subscribe((event) => {
       if (event.type === 'database_change' && event.table === 'markets') {
-        console.log(`📊 Market ${event.operation}:`, event.data);
+        console.log(`Market ${event.operation}:`, event.data);
         setMarketUpdates(prev => [event.data, ...prev.slice(0, 9)]); // Keep last 10
       }
     });
@@ -302,7 +302,7 @@ export function useRealtimeBalances() {
   useEffect(() => {
     return subscribe((event) => {
       if (event.type === 'database_change' && event.table === 'user_balances') {
-        console.log(`💰 Balance ${event.operation}:`, event.data);
+        console.log(`Balance ${event.operation}:`, event.data);
         setBalanceUpdates(prev => [event.data, ...prev.slice(0, 4)]); // Keep last 5
       }
     });

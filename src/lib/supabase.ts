@@ -32,7 +32,7 @@ export const supabase = createBrowserClient<Database>(
 
 // Enable realtime (WebSocket connections will be established on subscription)
 if (typeof window !== 'undefined') {
-  console.log('🔌 Supabase Realtime Enabled - WebSocket connections will start on subscription')
+  console.log('Supabase Realtime Enabled - WebSocket connections will start on subscription')
 }
 
 // Create a client with the service role key for admin operations
