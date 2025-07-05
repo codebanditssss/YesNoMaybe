@@ -1,7 +1,7 @@
-const { TextEncoder, TextDecoder } = require('util');
-
 // Setup testing environment
 require('@testing-library/jest-dom');
+
+const { TextEncoder, TextDecoder } = require('util');
 
 // Add TextEncoder/TextDecoder to global scope for Node.js
 global.TextEncoder = TextEncoder;
