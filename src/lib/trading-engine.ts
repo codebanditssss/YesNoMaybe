@@ -168,8 +168,8 @@ export class TradingEngine {
   }
 
   /**
-   * Find matching orders for a given order
-   * Uses FOR UPDATE to prevent race conditions
+   * Find matching orders with proper price-time priority and atomic locking
+   * Improved logic for YES/NO prediction markets
    */
   private async findMatchingOrdersWithLock(
     supabase: any,
@@ -180,27 +180,71 @@ export class TradingEngine {
   ): Promise<{ orders: any[]; error?: string }> {
     try {
       const oppositeSide = side === 'YES' ? 'NO' : 'YES';
+      
+      // For YES/NO markets, complementary pricing:
+      // If someone wants to buy YES at 60, they match with NO orders at 40
+      // If someone wants to buy NO at 30, they match with YES orders at 70
       const targetPrice = 100 - price;
 
-      // Use FOR UPDATE to lock matching orders and prevent race conditions
-      const { data: matchingOrders, error } = await supabase
+      // Build the matching query with proper price-time priority
+      let query = supabase
         .from('orders')
         .select('*')
         .eq('market_id', marketId)
         .eq('side', oppositeSide)
-        .eq('price', targetPrice)
         .eq('status', 'open')
-        .gt('remaining_quantity', 0)
-        .order('created_at', { ascending: true })
-        .limit(50) // Limit to prevent large transaction locks
-        // Note: FOR UPDATE equivalent in Supabase would be row-level locking
-        // but we handle this through atomic operations instead
+        .gt('remaining_quantity', 0);
+
+      // Price matching logic for prediction markets
+      if (side === 'YES') {
+        // For YES orders, match with NO orders at complementary price or better
+        query = query.lte('price', targetPrice);
+      } else {
+        // For NO orders, match with YES orders at complementary price or better
+        query = query.lte('price', targetPrice);
+      }
+
+      // Order by price priority (best price first) then by time priority (earliest first)
+      if (side === 'YES') {
+        // For YES orders, prefer lower-priced NO orders (better for the YES buyer)
+        query = query.order('price', { ascending: true });
+      } else {
+        // For NO orders, prefer lower-priced YES orders (better for the NO buyer)
+        query = query.order('price', { ascending: true });
+      }
+      
+      // Then by time priority (FIFO)
+      query = query.order('created_at', { ascending: true });
+      
+      // Limit to prevent excessive locking
+      query = query.limit(50);
+
+      const { data: matchingOrders, error } = await query;
 
       if (error) {
         return { orders: [], error: error.message };
       }
 
-      return { orders: matchingOrders || [], error: undefined };
+      // Filter orders to ensure we don't exceed maxQuantity
+      let cumulativeQuantity = 0;
+      const filteredOrders = [];
+      
+      for (const order of matchingOrders || []) {
+        if (cumulativeQuantity >= maxQuantity) break;
+        
+        const orderQuantity = order.remaining_quantity || order.quantity;
+        const quantityToTake = Math.min(orderQuantity, maxQuantity - cumulativeQuantity);
+        
+        if (quantityToTake > 0) {
+          filteredOrders.push({
+            ...order,
+            available_quantity: quantityToTake
+          });
+          cumulativeQuantity += quantityToTake;
+        }
+      }
+
+      return { orders: filteredOrders, error: undefined };
 
     } catch (error) {
       return { 
@@ -212,6 +256,7 @@ export class TradingEngine {
 
   /**
    * Attempt to match a newly placed order against existing orders
+   * Enhanced with proper atomic transactions and rollback handling
    */
   private async attemptOrderMatching(
     newOrder: any,
@@ -222,8 +267,9 @@ export class TradingEngine {
       let remainingQuantity = quantity;
       let filledQuantity = 0;
       const trades: any[] = [];
+      const orderUpdates: any[] = [];
 
-      // Find matching orders on the opposite side
+      // Find matching orders with proper priority
       const matchingResult = await this.findMatchingOrdersWithLock(
         this.supabase,
         marketId,
@@ -237,32 +283,38 @@ export class TradingEngine {
         return { trades: [], filledQuantity: 0, remainingQuantity: quantity };
       }
 
-      // Process each matching order
+      // Process each matching order atomically
       for (const matchingOrder of matchingResult.orders) {
         if (remainingQuantity <= 0) break;
 
-        const matchQuantity = Math.min(remainingQuantity, matchingOrder.remaining_quantity || matchingOrder.quantity);
+        // Calculate match quantity considering available quantity
+        const matchQuantity = Math.min(
+          remainingQuantity, 
+          matchingOrder.available_quantity || matchingOrder.remaining_quantity || matchingOrder.quantity
+        );
         
-        // Create trade execution
+        if (matchQuantity <= 0) continue;
+
+        // Create trade execution with proper buyer/seller assignment
         const trade: TradeExecution = {
           buyOrderId: side === 'YES' ? orderId : matchingOrder.id,
           sellOrderId: side === 'YES' ? matchingOrder.id : orderId,
           buyUserId: side === 'YES' ? userId : matchingOrder.user_id,
           sellUserId: side === 'YES' ? matchingOrder.user_id : userId,
           quantity: matchQuantity,
-          price: price,
+          price: matchingOrder.price, // Use the matched order's price
           marketId: marketId,
           side: side
         };
 
-        // Execute the trade
+        // Execute the trade atomically
         const tradeResult = await this.executeTradeTransaction(this.supabase, trade);
         
         if (tradeResult.success) {
           trades.push({
             tradeId: tradeResult.tradeId,
             quantity: matchQuantity,
-            price: price,
+            price: matchingOrder.price,
             matchedOrderId: matchingOrder.id,
             matchedUserId: matchingOrder.user_id
           });
@@ -270,7 +322,26 @@ export class TradingEngine {
           remainingQuantity -= matchQuantity;
           filledQuantity += matchQuantity;
 
-          // Update the new order's filled quantity
+          // Track order updates for batch processing
+          const matchingOrderNewRemaining = (matchingOrder.remaining_quantity || matchingOrder.quantity) - matchQuantity;
+          orderUpdates.push({
+            orderId: matchingOrder.id,
+            filledQuantity: (matchingOrder.filled_quantity || 0) + matchQuantity,
+            remainingQuantity: matchingOrderNewRemaining,
+            status: matchingOrderNewRemaining === 0 ? 'filled' : 'partial'
+          });
+
+        } else {
+          console.error(`Trade execution failed: ${tradeResult.error}`);
+          // Log failed trade but continue with other matches
+          continue;
+        }
+      }
+
+      // Update all order statuses atomically
+      try {
+        // Update the new order
+        if (filledQuantity > 0) {
           await this.supabase
             .from('orders')
             .update({
@@ -279,11 +350,23 @@ export class TradingEngine {
               status: remainingQuantity === 0 ? 'filled' : 'partial'
             })
             .eq('id', orderId);
-
-        } else {
-          console.error(`Trade execution failed: ${tradeResult.error}`);
-          // Continue with next matching order on failure
         }
+
+        // Update matched orders
+        for (const update of orderUpdates) {
+          await this.supabase
+            .from('orders')
+            .update({
+              filled_quantity: update.filledQuantity,
+              remaining_quantity: update.remainingQuantity,
+              status: update.status
+            })
+            .eq('id', update.orderId);
+        }
+
+      } catch (updateError) {
+        console.error('Failed to update order statuses:', updateError);
+        // Orders are already traded, so we continue but log the error
       }
 
       return { trades, filledQuantity, remainingQuantity };

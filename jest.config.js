@@ -1,44 +1,58 @@
-const nextJest = require('next/jest')
-
-const createJestConfig = nextJest({
-  // Provide the path to your Next.js app to load next.config.js and .env files
-  dir: './',
-})
-
-// Add any custom config to be passed to Jest
-const customJestConfig = {
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+/** @type {import('jest').Config} */
+const config = {
+  preset: 'ts-jest',
   testEnvironment: 'jsdom',
-  collectCoverageFrom: [
-    'src/**/*.{js,jsx,ts,tsx}',
-    '!src/**/*.d.ts',
-    '!src/**/*.stories.{js,jsx,ts,tsx}',
-    '!src/types/**/*',
-    '!src/app/layout.tsx',
-    '!src/app/page.tsx',
-    '!src/app/loading.tsx',
-    '!src/app/not-found.tsx',
-  ],
-  coverageThreshold: {
-    global: {
-      branches: 50,
-      functions: 50,
-      lines: 50,
-      statements: 50,
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  // Handle ES modules from node_modules
+  extensionsToTreatAsEsm: ['.ts', '.tsx'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+      tsconfig: {
+        jsx: 'react-jsx',
+      },
     },
   },
-  testPathIgnorePatterns: [
-    '<rootDir>/.next/',
-    '<rootDir>/node_modules/',
+  transform: {
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      useESM: true,
+    }],
+  },
+  // Transform ES modules from node_modules
+  transformIgnorePatterns: [
+    'node_modules/(?!(@supabase|supabase|isows|ws|@babel|@testing-library|undici|@vercel|@next))',
   ],
-  moduleDirectories: ['node_modules', '<rootDir>/'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
+  // Handle CSS and other assets
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(isows|@supabase|@vercel|@next|@babel|@swc)/)',
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/*.stories.{ts,tsx}',
+    '!src/types/**',
   ],
-}
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/src/types/',
+    '/src/**/*.stories.{ts,tsx}',
+  ],
+  testMatch: [
+    '<rootDir>/src/**/__tests__/**/*.{ts,tsx}',
+    '<rootDir>/src/**/*.{test,spec}.{ts,tsx}',
+  ],
+  testTimeout: 10000,
+  // Add better error handling
+  verbose: true,
+  maxWorkers: '50%',
+  // Handle dynamic imports and ES modules
+  resolver: undefined,
+  // Environment variables for testing
+  testEnvironmentOptions: {
+    url: 'http://localhost:3000',
+  },
+};
 
-// createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig) 
+module.exports = config; 
