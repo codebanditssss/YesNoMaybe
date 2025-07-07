@@ -433,7 +433,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
             </div>
           ) : (
             /* Single Side View */
-            <div className="p-6">
+            <div className="p-6 border-1 border border-gray-20">
               <div className="flex items-center justify-between mb-4">
                 <h4 className={`font-semibold ${viewMode === 'yes' ? 'text-blue-600' : 'text-gray-600'}`}>
                   {viewMode === 'yes' ? 'YES' : 'NO'} Orders
@@ -504,9 +504,9 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
           )}
 
           {/* Order Actions */}
-          <div className="p-4 bg-gray-50 border-t border-gray-100">
+          <div className="p-4 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2 text-gray-600">
                   <Clock className="h-4 w-4" />
                   <span>Updated: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString('en-US', { 

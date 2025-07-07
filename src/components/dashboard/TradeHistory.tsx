@@ -193,6 +193,25 @@ export function TradeHistory() {
     },
   ];
 
+  // Arrays for mapping Trading Performance and Financial Summary stats
+  const tradingPerformanceStats = [
+    { label: "Total Trades", value: stats.totalTrades, valueClass: "font-bold text-gray-900" },
+    { label: "Completed", value: stats.completedTrades, valueClass: "font-bold text-green-600" },
+    { label: "Pending", value: stats.pendingTrades, valueClass: "font-bold text-yellow-600" },
+    { label: "Cancelled", value: stats.cancelledTrades, valueClass: "font-bold text-gray-600" },
+    { label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, valueClass: "font-bold text-gray-900" },
+    { label: "Avg Execution Time", value: `${stats.avgExecutionTime.toFixed(2)}s`, valueClass: "font-bold text-gray-900" },
+  ];
+
+  const financialSummaryStats = [
+    { label: "Total Volume", value: formatCurrency(stats.totalVolume), valueClass: "font-bold text-gray-900" },
+    { label: "Total Fees", value: formatCurrency(stats.totalFees), valueClass: "font-bold text-gray-900" },
+    { label: "Total P&L", value: formatCurrency(stats.totalPnL), valueClass: `font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}` },
+    { label: "Average Trade Size", value: formatCurrency(stats.avgTradeSize), valueClass: "font-bold text-gray-900" },
+    { label: "Best Trade", value: formatCurrency(stats.bestTrade), valueClass: "font-bold text-green-600" },
+    { label: "Worst Trade", value: formatCurrency(stats.worstTrade), valueClass: "font-bold text-red-600" },
+  ];
+
   return (
     <div className="p-2 sm:p-4 md:p-8 bg-gray-50 min-h-full overflow-x-hidden">
       <div className="max-w-full md:max-w-7xl mx-auto space-y-6">
@@ -286,7 +305,7 @@ export function TradeHistory() {
         {/* Navigation Tabs */}
         {!loading && !error && (
           <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm flex-wrap">
-            <div className="flex rounded-lg bg-gray-100 p-1 flex-wrap">
+            <div className="flex border-1 border border-gray-300 rounded-lg bg-gray-100 p-1 flex-wrap">
               {[
                 { id: 'all', label: 'All Trades', icon: Activity },
                 { id: 'completed', label: 'Completed', icon: CheckCircle },
@@ -664,67 +683,29 @@ export function TradeHistory() {
 
             {selectedTab === 'analytics' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
-                <Card className="p-3 sm:p-6 bg-white border-0 shadow-sm">
+                <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lgshadow-sm">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Trading Performance</h3>
                   
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Total Trades</span>
-                      <span className="font-bold text-gray-900">{stats.totalTrades}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Completed</span>
-                      <span className="font-bold text-green-600">{stats.completedTrades}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Pending</span>
-                      <span className="font-bold text-yellow-600">{stats.pendingTrades}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Cancelled</span>
-                      <span className="font-bold text-gray-600">{stats.cancelledTrades}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Win Rate</span>
-                      <span className="font-bold text-gray-900">{stats.winRate.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Avg Execution Time</span>
-                      <span className="font-bold text-gray-900">{stats.avgExecutionTime.toFixed(2)}s</span>
-                    </div>
+                    {tradingPerformanceStats.map(stat => (
+                      <div key={stat.label} className="flex items-center justify-between p-3 bg-gray-50 border-1 border border-gray-300 rounded-lg">
+                        <span className="text-gray-600">{stat.label}</span>
+                        <span className={stat.valueClass}>{stat.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </Card>
 
-                <Card className="p-3 sm:p-6 bg-white border-0 shadow-sm">
+                <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Summary</h3>
                   
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Total Volume</span>
-                      <span className="font-bold text-gray-900">{formatCurrency(stats.totalVolume)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Total Fees</span>
-                      <span className="font-bold text-gray-900">{formatCurrency(stats.totalFees)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Total P&L</span>
-                      <span className={`font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(stats.totalPnL)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Average Trade Size</span>
-                      <span className="font-bold text-gray-900">{formatCurrency(stats.avgTradeSize)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Best Trade</span>
-                      <span className="font-bold text-green-600">{formatCurrency(stats.bestTrade)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Worst Trade</span>
-                      <span className="font-bold text-red-600">{formatCurrency(stats.worstTrade)}</span>
-                    </div>
+                  <div className="space-y-4 ">
+                    {financialSummaryStats.map(stat => (
+                      <div key={stat.label} className="flex items-center justify-between p-3 bg-gray-50 border-1 border border-gray-300 rounded-lg">
+                        <span className="text-gray-600">{stat.label}</span>
+                        <span className={stat.valueClass}>{stat.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </Card>
               </div>
