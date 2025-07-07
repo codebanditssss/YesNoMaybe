@@ -472,9 +472,9 @@ export function TradeHistory() {
                     </div>
                   </Card>
                 ) : (
-                  <Card className="bg-gray-50 rounded-lg border-1 shadow-sm">
+                  <Card className="bg-white rounded-lg border-1 border border-gray-200 shadow-sm">
                     <div className="p-6">
-                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center justify-between mb-6">
                         <h3 className="text-xl font-semibold text-gray-900">
                           {selectedTab === 'all' ? 'All Trades' : 
                            selectedTab === 'completed' ? 'Completed Trades' : 'Pending Trades'}
@@ -483,6 +483,7 @@ export function TradeHistory() {
                           {filteredTrades.length} {filteredTrades.length === 1 ? 'trade' : 'trades'}
                         </div>
                       </div>
+                      <div className="border-b border-gray-200 my-2" />
                       
                       {viewMode === 'list' ? (
                         <div className="space-y-4">
@@ -605,7 +606,7 @@ export function TradeHistory() {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                           {filteredTrades.map((trade) => (
-                            <Card key={trade.id} className="p-5 bg-white border-0 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full">
+                            <Card key={trade.id} className="p-5 bg-white border-2 border border-gray-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full">
                               {/* Header */}
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex gap-1 flex-wrap">

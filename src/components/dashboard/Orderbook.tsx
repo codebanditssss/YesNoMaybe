@@ -643,7 +643,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
 
         {/* Trading Actions */}
         
-        <Card className="p-6 bg-gray-50 rounded-lg border-1 shadow-sm">
+        <Card className="p-6 bg-white rounded-lg border-1 border border-gray-200  shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Select Market</h2>
             <div className="flex items-center gap-3">
@@ -685,6 +685,8 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               </div>
             </div>
           </div>
+
+          <div className="border-b border-gray-200 my-2" />
           
           {marketsLoading ? (
             <div className="flex items-center justify-center py-8">
