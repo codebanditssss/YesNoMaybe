@@ -21,7 +21,6 @@ import {
   Gamepad2,
   Tv,
   ArrowUpDown,
-  Star,
   BarChart3,
   Volume2,
   AlertCircle,
@@ -205,6 +204,46 @@ export function Markets() {
     refreshMarkets();
   };
 
+  // Market summary cards array for DRY rendering
+  const marketSummaryCards = [
+    {
+      icon: <Globe className="h-5 w-5 text-blue-600" />,
+      iconBg: "bg-blue-100",
+      label: "Total Markets",
+      value: formatNumber(markets.length),
+      valueClass: "text-2xl font-bold text-gray-900",
+      subtext: `${activeMarkets} active`,
+      subtextClass: "text-xs text-gray-500 mt-1",
+    },
+    {
+      icon: <Users className="h-5 w-5 text-green-600" />,
+      iconBg: "bg-green-100",
+      label: "Active Traders",
+      value: formatNumber(totalTraders),
+      valueClass: "text-2xl font-bold text-gray-900",
+      subtext: "+12% this week",
+      subtextClass: "text-xs text-gray-500 mt-1",
+    },
+    {
+      icon: <Volume2 className="h-5 w-5 text-purple-600" />,
+      iconBg: "bg-purple-100",
+      label: "24h Volume",
+      value: `₹${formatNumber(totalVolume)}`,
+      valueClass: "text-2xl font-bold text-gray-900",
+      subtext: "+8% from yesterday",
+      subtextClass: "text-xs text-gray-500 mt-1",
+    },
+    {
+      icon: <Clock className="h-5 w-5 text-orange-600" />,
+      iconBg: "bg-orange-100",
+      label: "Closing Soon",
+      value: markets.filter(m => m.status === 'closing_soon').length,
+      valueClass: "text-2xl font-bold text-gray-900",
+      subtext: "Within 24 hours",
+      subtextClass: "text-xs text-gray-500 mt-1",
+    },
+  ];
+
   return (
     <div className="p-8 bg-gray-50 min-h-full">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -262,7 +301,7 @@ export function Markets() {
 
         {/* Advanced Filters */}
         {showFilters && (
-          <Card className="p-6 bg-white border-0 shadow-sm max-w-lg">
+          <Card className="p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm max-w-lg">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Advanced Filters</h3>
@@ -375,70 +414,29 @@ export function Markets() {
 
         {/* Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Globe className="h-5 w-5 text-blue-600" />
+          {marketSummaryCards.map(card => (
+            <Card key={card.label} className="p-4 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${card.iconBg}`}>{card.icon}</div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{card.label}</p>
+                  <p className={card.valueClass}>{card.value}</p>
+                  <p className={card.subtextClass}>{card.subtext}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Total Markets</p>
-                <p className="text-2xl font-bold text-gray-900">{formatNumber(markets.length)}</p>
-                <p className="text-xs text-gray-500 mt-1">{activeMarkets} active</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Users className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Active Traders</p>
-                <p className="text-2xl font-bold text-gray-900">{formatNumber(totalTraders)}</p>
-                <p className="text-xs text-gray-500 mt-1">+12% this week</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Volume2 className="h-5 w-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">24h Volume</p>
-                <p className="text-2xl font-bold text-gray-900">₹{formatNumber(totalVolume)}</p>
-                <p className="text-xs text-gray-500 mt-1">+8% from yesterday</p>
-              </div>
-            </div>
-          </Card>
-          
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <Clock className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">Closing Soon</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {markets.filter(m => m.status === 'closing_soon').length}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Within 24 hours</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
 
         {/* Sorting and View Controls */}
-        <Card className="p-4 bg-white border-0 shadow-sm">
+        <Card className="p-4 bg-white border-1 border border-gray-300 rounded-lg shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-900">Sort by:</span>
               </div>
-              <div className="flex flex-col sm:flex-row gap-1 rounded-lg bg-gray-100 p-1 w-full sm:w-auto overflow-x-auto">
+              <div className="flex flex-col border-1 border border-gray-300 rounded-lg sm:flex-row gap-1 rounded-lg bg-gray-100 p-1 w-full sm:w-auto overflow-x-auto">
                 {[
                   { value: 'trending', label: 'Trending', icon: TrendingUp },
                   { value: 'volume', label: 'Volume', icon: Volume2 },
@@ -490,63 +488,194 @@ export function Markets() {
         </Card>
 
         {/* Markets List */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {selectedCategory === 'all' ? 'All Markets' : `${categories.find(c => c.id === selectedCategory)?.name} Markets`}
-            </h2>
-          </div>
-
-          {/* Loading State */}
-          {loading && (
-            <Card className="p-8 bg-white border-0 shadow-sm">
-              <div className="text-center">
-                <RefreshCw className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading markets...</h3>
-                <p className="text-gray-600">Fetching the latest market data for you</p>
+        <Card className="bg-white rounded-lg border-1 border border-gray-300 shadow-sm">
+          <div className="p-3 sm:p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                {selectedCategory === 'all' ? 'All Markets' : `${categories.find(c => c.id === selectedCategory)?.name} Markets`}
+              </h3>
+              <div className="text-sm text-gray-600">
+                {filteredMarkets.length} {filteredMarkets.length === 1 ? 'market' : 'markets'}
               </div>
-            </Card>
-          )}
+            </div>
+            <div className="border-b border-gray-200 my-2" />
 
-          {/* Error State */}
-          {error && (
-            <Card className="p-8 bg-white border-0 shadow-sm border-red-200">
-              <div className="text-center">
-                <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Error loading markets</h3>
-                <p className="text-gray-600 mb-4">{error}</p>
-                <Button 
-                  onClick={refreshMarkets}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Try Again
-                </Button>
-              </div>
-            </Card>
-          )}
+            {/* Loading State */}
+            {loading && (
+              <Card className="p-8 bg-white border-0 shadow-sm">
+                <div className="text-center">
+                  <RefreshCw className="h-8 w-8 text-gray-400 mx-auto mb-4 animate-spin" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading markets...</h3>
+                  <p className="text-gray-600">Fetching the latest market data for you</p>
+                </div>
+              </Card>
+            )}
 
-          {/* Markets Data */}
-          {!loading && !error && (
-            <>
-          {viewMode === 'list' ? (
-            /* List View */
-            <div className="space-y-4">
-              {filteredMarkets.map((market) => {
-                const Icon = market.icon;
-                return (
-                  <Card key={market.id} className="p-6 bg-white border-0 shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                    <div className="flex items-start gap-4">
-                      {/* Market Icon */}
-                      <div className="p-3 bg-gray-100 rounded-lg flex-shrink-0 group-hover:bg-gray-200 transition-colors">
-                        <Icon className="h-6 w-6 text-gray-700" />
-                      </div>
+            {/* Error State */}
+            {error && (
+              <Card className="p-8 bg-white border-0 shadow-sm border-red-200">
+                <div className="text-center">
+                  <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Error loading markets</h3>
+                  <p className="text-gray-600 mb-4">{error}</p>
+                  <Button 
+                    onClick={refreshMarkets}
+                    className="flex items-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Try Again
+                  </Button>
+                </div>
+              </Card>
+            )}
 
-                      {/* Market Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4 mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+            {/* Markets Data */}
+            {!loading && !error && (
+              <>
+                {viewMode === 'list' ? (
+                  /* List View */
+                  <div className="space-y-4">
+                    {filteredMarkets.map((market) => {
+                      const Icon = market.icon;
+                      return (
+                        <Card key={market.id} className="p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer group">
+                          <div className="flex items-start gap-4">
+                            {/* Market Icon */}
+                            <div className="p-3 bg-gray-100 rounded-lg flex-shrink-0 group-hover:bg-gray-200 transition-colors">
+                              <Icon className="h-6 w-6 text-gray-700" />
+                            </div>
+
+                            {/* Market Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-4 mb-3">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                    <Badge variant="outline" className="text-xs">
+                                      {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
+                                    </Badge>
+                                    <Badge className={`text-xs ${getStatusColor(market.status)}`}>
+                                      {getStatusText(market.status)}
+                                    </Badge>
+                                    <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
+                                      {market.riskLevel.toUpperCase()} RISK
+                                    </Badge>
+                                    {market.trending && (
+                                      <Badge className="text-xs bg-red-100 text-red-800">
+                                        <TrendingUp className="h-3 w-3 mr-1" />
+                                        Trending
+                                      </Badge>
+                                    )}
+                                    {market.featured && (
+                                      <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                                        Featured
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  
+                                  <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                                    {market.title}
+                                  </h3>
+                                  
+                                  {market.description && (
+                                    <p className="text-sm text-gray-600 mb-3">{market.description}</p>
+                                  )}
+                                  
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                    <div className="flex items-center gap-1 text-gray-500">
+                                      <Users className="h-3 w-3" />
+                                      <span>{formatNumber(market.traders)} traders</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-gray-500">
+                                      <Volume2 className="h-3 w-3" />
+                                      <span>₹{formatNumber(market.volume24h)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-gray-500">
+                                      <Calendar className="h-3 w-3" />
+                                      <span>Expires {market.expiryDate.toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-gray-500">
+                                      <Clock className="h-3 w-3" />
+                                      <span>Updated {market.lastUpdate}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Price Section */}
+                                <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                                  <div className="text-right">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-sm text-gray-500">Probability:</span>
+                                      <span className="text-lg font-bold text-gray-900">{market.probability}%</span>
+                                      <div className={`flex items-center text-xs ${
+                                        market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                                      }`}>
+                                        {market.priceChange >= 0 ? (
+                                          <TrendingUp className="h-3 w-3 mr-1" />
+                                        ) : (
+                                          <TrendingDown className="h-3 w-3 mr-1" />
+                                        )}
+                                        {market.priceChangePercent >= 0 ? '+' : ''}{market.priceChangePercent.toFixed(1)}%
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Trading Buttons */}
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOrderClick(market, 'yes');
+                                      }}
+                                    >
+                                      Yes ₹{market.yesPrice}
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 text-sm font-medium"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOrderClick(market, 'no');
+                                      }}
+                                    >
+                                      No ₹{market.noPrice}
+                                    </Button>
+                                  </div>
+                                  
+
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Grid View */
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredMarkets.map((market) => {
+                      const Icon = market.icon;
+                      return (
+                        <Card key={market.id} className="p-5 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-lg transition-all cursor-pointer group">
+                          <div className="space-y-4">
+                            {/* Header */}
+                            <div className="flex items-start justify-between">
+                              <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
+                                <Icon className="h-5 w-5 text-gray-700" />
+                              </div>
+                              <div className="flex gap-1">
+                                {market.featured}
+                                {market.trending && (
+                                  <TrendingUp className="h-4 w-4 text-red-500" />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Badges */}
+                            <div className="flex flex-wrap gap-1">
                               <Badge variant="outline" className="text-xs">
                                 {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
                               </Badge>
@@ -554,73 +683,45 @@ export function Markets() {
                                 {getStatusText(market.status)}
                               </Badge>
                               <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
-                                {market.riskLevel.toUpperCase()} RISK
+                                {market.riskLevel.toUpperCase()}
                               </Badge>
-                              {market.trending && (
-                                <Badge className="text-xs bg-red-100 text-red-800">
-                                  <TrendingUp className="h-3 w-3 mr-1" />
-                                  Trending
-                                </Badge>
-                              )}
-                              {market.featured && (
-                                <Badge className="text-xs bg-yellow-100 text-yellow-800">
-                                  <Star className="h-3 w-3 mr-1" />
-                                  Featured
-                                </Badge>
-                              )}
                             </div>
-                            
-                            <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+
+                            {/* Title */}
+                            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
                               {market.title}
                             </h3>
-                            
-                            {market.description && (
-                              <p className="text-sm text-gray-600 mb-3">{market.description}</p>
-                            )}
-                            
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                              <div className="flex items-center gap-1 text-gray-500">
+
+                            {/* Stats */}
+                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                              <div className="flex items-center gap-1">
                                 <Users className="h-3 w-3" />
-                                <span>{formatNumber(market.traders)} traders</span>
+                                <span>{formatNumber(market.traders)}</span>
                               </div>
-                              <div className="flex items-center gap-1 text-gray-500">
+                              <div className="flex items-center gap-1">
                                 <Volume2 className="h-3 w-3" />
                                 <span>₹{formatNumber(market.volume24h)}</span>
                               </div>
-                              <div className="flex items-center gap-1 text-gray-500">
-                                <Calendar className="h-3 w-3" />
-                                <span>Expires {market.expiryDate.toLocaleDateString()}</span>
+                              <div className="flex items-center gap-1">
+                                <Target className="h-3 w-3" />
+                                <span>{market.probability}%</span>
                               </div>
-                              <div className="flex items-center gap-1 text-gray-500">
-                                <Clock className="h-3 w-3" />
-                                <span>Updated {market.lastUpdate}</span>
+                              <div className={`flex items-center gap-1 ${
+                                market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {market.priceChange >= 0 ? (
+                                  <TrendingUp className="h-3 w-3" />
+                                ) : (
+                                  <TrendingDown className="h-3 w-3" />
+                                )}
+                                <span>{market.priceChangePercent >= 0 ? '+' : ''}{market.priceChangePercent.toFixed(1)}%</span>
                               </div>
                             </div>
-                          </div>
 
-                          {/* Price Section */}
-                          <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                            <div className="text-right">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-sm text-gray-500">Probability:</span>
-                                <span className="text-lg font-bold text-gray-900">{market.probability}%</span>
-                                <div className={`flex items-center text-xs ${
-                                  market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  {market.priceChange >= 0 ? (
-                                    <TrendingUp className="h-3 w-3 mr-1" />
-                                  ) : (
-                                    <TrendingDown className="h-3 w-3 mr-1" />
-                                  )}
-                                  {market.priceChangePercent >= 0 ? '+' : ''}{market.priceChangePercent.toFixed(1)}%
-                                </div>
-                              </div>
-                            </div>
-                            
                             {/* Trading Buttons */}
                             <div className="flex gap-2">
                               <Button 
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium"
+                                className="bg-blue-600 hover:bg-blue-700 text-white flex-1 text-sm"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -631,7 +732,7 @@ export function Markets() {
                               </Button>
                               <Button 
                                 variant="outline" 
-                                className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 text-sm font-medium"
+                                className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1 text-sm"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -641,149 +742,47 @@ export function Markets() {
                                 No ₹{market.noPrice}
                               </Button>
                             </div>
-                            
 
+                            {/* Footer */}
+                            <div className="flex items-center justify-between text-xs text-gray-500">
+                              <span>Expires {market.expiryDate.toLocaleDateString()}</span>
+                              <span>{market.lastUpdate}</span>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Empty State */}
+                {filteredMarkets.length === 0 && (
+                  <Card className="p-12 bg-white border-0 shadow-sm">
+                    <div className="text-center">
+                      <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">No markets found</h3>
+                      <p className="text-gray-600 mb-4">
+                        Try adjusting your search or filter criteria to find more markets.
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setSearchTerm('');
+                          setSelectedCategory('all');
+                          setStatusFilter('all');
+                          setRiskFilter('all');
+                          setFeaturedOnly(false);
+                        }}
+                      >
+                        Clear All Filters
+                      </Button>
                     </div>
                   </Card>
-                );
-              })}
-            </div>
-          ) : (
-            /* Grid View */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredMarkets.map((market) => {
-                const Icon = market.icon;
-                return (
-                  <Card key={market.id} className="p-5 bg-white border-0 shadow-sm hover:shadow-lg transition-all cursor-pointer group">
-                    <div className="space-y-4">
-                      {/* Header */}
-                      <div className="flex items-start justify-between">
-                        <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
-                          <Icon className="h-5 w-5 text-gray-700" />
-                        </div>
-                        <div className="flex gap-1">
-                          {market.featured && (
-                            <Star className="h-4 w-4 text-yellow-500" />
-                          )}
-                          {market.trending && (
-                            <TrendingUp className="h-4 w-4 text-red-500" />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Badges */}
-                      <div className="flex flex-wrap gap-1">
-                        <Badge variant="outline" className="text-xs">
-                          {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
-                        </Badge>
-                        <Badge className={`text-xs ${getStatusColor(market.status)}`}>
-                          {getStatusText(market.status)}
-                        </Badge>
-                        <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
-                          {market.riskLevel.toUpperCase()}
-                        </Badge>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {market.title}
-                      </h3>
-
-                      {/* Stats */}
-                      <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          <span>{formatNumber(market.traders)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Volume2 className="h-3 w-3" />
-                          <span>₹{formatNumber(market.volume24h)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Target className="h-3 w-3" />
-                          <span>{market.probability}%</span>
-                        </div>
-                        <div className={`flex items-center gap-1 ${
-                          market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {market.priceChange >= 0 ? (
-                            <TrendingUp className="h-3 w-3" />
-                          ) : (
-                            <TrendingDown className="h-3 w-3" />
-                          )}
-                          <span>{market.priceChangePercent >= 0 ? '+' : ''}{market.priceChangePercent.toFixed(1)}%</span>
-                        </div>
-                      </div>
-
-                      {/* Trading Buttons */}
-                      <div className="flex gap-2">
-                        <Button 
-                          className="bg-blue-600 hover:bg-blue-700 text-white flex-1 text-sm"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOrderClick(market, 'yes');
-                          }}
-                        >
-                          Yes ₹{market.yesPrice}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1 text-sm"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOrderClick(market, 'no');
-                          }}
-                        >
-                          No ₹{market.noPrice}
-                        </Button>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>Expires {market.expiryDate.toLocaleDateString()}</span>
-                        <span>{market.lastUpdate}</span>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Empty State */}
-          {filteredMarkets.length === 0 && (
-            <Card className="p-12 bg-white border-0 shadow-sm">
-              <div className="text-center">
-                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No markets found</h3>
-                <p className="text-gray-600 mb-4">
-                  Try adjusting your search or filter criteria to find more markets.
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCategory('all');
-                    setStatusFilter('all');
-                    setRiskFilter('all');
-                    setFeaturedOnly(false);
-                  }}
-                >
-                  Clear All Filters
-                </Button>
-              </div>
-            </Card>
-          )}
-
-      
-            </>
-          )}
-        </div>
+                )}
+              </>
+            )}
+          </div>
+        </Card>
 
         {/* Order Placement Modal */}
         {showOrderModal && selectedMarket && (

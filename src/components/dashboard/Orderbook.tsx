@@ -9,25 +9,17 @@ import { useRealtimeOrderbook } from "@/hooks/useRealtimeOrderbook";
 import { 
   TrendingUp, 
   TrendingDown,
-  Volume2,
   Clock,
   User,
-  ArrowUpDown,
   RefreshCw,
   Filter,
   Search,
   BookOpen,
-  Zap,
   Activity,
-  Eye,
   BarChart,
   Target,
-  AlertCircle,
   Loader2,
   Radio,
-  Users,
-  Calendar,
-  Star
 } from "lucide-react";
 
 import type { Market } from "@/hooks/useMarkets";
