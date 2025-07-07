@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 import type { Market } from "@/hooks/useMarkets";
+import { SelectDropdown } from "@/components/ui/select-dropdown";
 
 interface OrderbookProps {
   selectedMarket?: Market;
@@ -154,7 +155,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
 
         {/* Orderbook Controls */}
         <Card className="p-4 bg-white border-0 shadow-sm">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-gray-500" />
@@ -199,17 +200,17 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                 <Filter className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-900">Filter:</span>
               </div>
-              <select
-                value={priceFilter}
-                onChange={(e) => setPriceFilter(e.target.value as any)}
-                className="text-xs border border-gray-200 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Orders</option>
-                <option value="best">Best 5</option>
-                <option value="recent">Recent</option>
-              </select>
+              <SelectDropdown
+                options={[
+                  { value: "all", label: "All Orders" },
+                  { value: "best", label: "Best 5" },
+                  { value: "recent", label: "Recent" },
+                ]}
+                selected={priceFilter}
+                onSelect={val => setPriceFilter(val as any)}
+              />
               
-              <div className="flex items-center gap-2">
+              {/* <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-900">Refresh:</span>
                 <select
@@ -222,7 +223,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                   <option value={10}>10s</option>
                   <option value={30}>30s</option>
                 </select>
-              </div>
+              </div> */}
             </div>
           </div>
         </Card>

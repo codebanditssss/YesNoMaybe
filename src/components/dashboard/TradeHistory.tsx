@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useRealtimeTradeHistory } from '@/hooks/useRealtimeTradeHistory';
 import { exportTradeHistoryToCSV } from '@/lib/csvExport';
+import { SelectDropdown } from "@/components/ui/select-dropdown";
 
 export function TradeHistory() {
   const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'pending' | 'analytics'>('all');
@@ -139,6 +140,34 @@ export function TradeHistory() {
         : [...prev, tradeId]
     );
   };
+
+  const statusOptions = [
+    { value: "all", label: "All Status" },
+    { value: "filled", label: "Completed" },
+    { value: "open", label: "Pending" },
+    { value: "cancelled", label: "Cancelled" },
+  ];
+
+  const sideOptions = [
+    { value: "all", label: "All Sides" },
+    { value: "YES", label: "YES" },
+    { value: "NO", label: "NO" },
+  ];
+
+  const dateRangeOptions = [
+    { value: "all", label: "All Time" },
+    { value: "1d", label: "Last 24 hours" },
+    { value: "7d", label: "Last 7 days" },
+    { value: "30d", label: "Last 30 days" },
+    { value: "90d", label: "Last 90 days" },
+  ];
+
+  const sortByOptions = [
+    { value: "created_at", label: "Date" },
+    { value: "total", label: "Volume" },
+    { value: "pnl", label: "P&L" },
+    { value: "price", label: "Price" },
+  ];
 
   return (
     <div className="p-8 bg-gray-50 min-h-full">
@@ -363,52 +392,32 @@ export function TradeHistory() {
                     {/* Filter Controls */}
                     <div className="flex flex-wrap gap-3">
                       {/* Status Filter */}
-                      <select 
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value as any)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="all">All Status</option>
-                        <option value="filled">Completed</option>
-                        <option value="open">Pending</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+                      <SelectDropdown
+                        options={statusOptions}
+                        selected={filterStatus}
+                        onSelect={val => setFilterStatus(val as any)}
+                      />
 
                       {/* Side Filter */}
-                      <select 
-                        value={filterSide}
-                        onChange={(e) => setFilterSide(e.target.value as any)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="all">All Sides</option>
-                        <option value="YES">YES</option>
-                        <option value="NO">NO</option>
-                      </select>
+                      <SelectDropdown
+                        options={sideOptions}
+                        selected={filterSide}
+                        onSelect={val => setFilterSide(val as any)}
+                      />
 
                       {/* Date Range Filter */}
-                      <select 
-                        value={dateRange}
-                        onChange={(e) => setDateRange(e.target.value as any)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="all">All Time</option>
-                        <option value="1d">Last 24 hours</option>
-                        <option value="7d">Last 7 days</option>
-                        <option value="30d">Last 30 days</option>
-                        <option value="90d">Last 90 days</option>
-                      </select>
+                      <SelectDropdown
+                        options={dateRangeOptions}
+                        selected={dateRange}
+                        onSelect={val => setDateRange(val as any)}
+                      />
 
                       {/* Sort Controls */}
-                      <select 
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as any)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="created_at">Date</option>
-                        <option value="total">Volume</option>
-                        <option value="pnl">P&L</option>
-                        <option value="price">Price</option>
-                      </select>
+                      <SelectDropdown
+                        options={sortByOptions}
+                        selected={sortBy}
+                        onSelect={val => setSortBy(val as any)}
+                      />
 
                       <button
                         onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}

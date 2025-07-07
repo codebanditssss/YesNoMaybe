@@ -36,6 +36,7 @@ import {
   Target,
   TrendingDownIcon
 } from "lucide-react";
+import { SelectDropdown } from "@/components/ui/select-dropdown";
 
 // Helper function to get category icon
 const getCategoryIcon = (category: string) => {
@@ -261,12 +262,12 @@ export function Markets() {
 
         {/* Advanced Filters */}
         {showFilters && (
-          <Card className="p-6 bg-white border-0 shadow-sm">
+          <Card className="p-6 bg-white border-0 shadow-sm max-w-lg">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Advanced Filters</h3>
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   size="sm"
                   onClick={() => {
                     setStatusFilter('all');
@@ -279,36 +280,36 @@ export function Markets() {
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                  <select 
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as any)}
-                    className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="all">All Statuses</option>
-                    <option value="active">Active</option>
-                    <option value="closing_soon">Closing Soon</option>
-                    <option value="resolved">Resolved</option>
-                  </select>
+                  <SelectDropdown
+                    options={[
+                      { value: "all", label: "All Statuses" },
+                      { value: "active", label: "Active" },
+                      { value: "closing_soon", label: "Closing Soon" },
+                      { value: "resolved", label: "Resolved" },
+                    ]}
+                    selected={statusFilter}
+                    onSelect={val => setStatusFilter(val as any)}
+                  />
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
-                  <select 
-                    value={riskFilter}
-                    onChange={(e) => setRiskFilter(e.target.value as any)}
-                    className="w-full p-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="all">All Risk Levels</option>
-                    <option value="low">Low Risk</option>
-                    <option value="medium">Medium Risk</option>
-                    <option value="high">High Risk</option>
-                  </select>
+                  <SelectDropdown
+                    options={[
+                      { value: "all", label: "All Risk Levels" },
+                      { value: "low", label: "Low Risk" },
+                      { value: "medium", label: "Medium Risk" },
+                      { value: "high", label: "High Risk" },
+                    ]}
+                    selected={riskFilter}
+                    onSelect={val => setRiskFilter(val as any)}
+                  />
                 </div>
                 
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Price Range (Yes)</label>
                   <div className="flex items-center gap-2">
                     <input 
@@ -329,9 +330,9 @@ export function Markets() {
                       className="w-16 p-1 text-xs border border-gray-200 rounded"
                     />
                   </div>
-                </div>
+                </div> */}
                 
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Special</label>
                   <label className="flex items-center">
                     <input 
@@ -342,7 +343,7 @@ export function Markets() {
                     />
                     <span className="text-sm">Featured only</span>
                   </label>
-                </div>
+                </div> */}
               </div>
             </div>
           </Card>
@@ -437,7 +438,7 @@ export function Markets() {
                 <BarChart3 className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-900">Sort by:</span>
               </div>
-              <div className="flex rounded-lg bg-gray-100 p-1">
+              <div className="flex flex-col sm:flex-row gap-1 rounded-lg bg-gray-100 p-1 w-full sm:w-auto overflow-x-auto">
                 {[
                   { value: 'trending', label: 'Trending', icon: TrendingUp },
                   { value: 'volume', label: 'Volume', icon: Volume2 },
