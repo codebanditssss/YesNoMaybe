@@ -134,6 +134,66 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
   // View mode for market selector
   const [marketViewMode, setMarketViewMode] = useState<'list' | 'grid'>('list');
 
+  // Market stats cards array for DRY rendering
+  const marketStatsCards = [
+    {
+      label: "Total Liquidity",
+      value: marketStats ? formatNumber(marketStats.totalLiquidity) : '0',
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Active Orders",
+      value: yesBids.length + noAsks.length,
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Best Yes",
+      value: bestPrices?.bestYesBid ? `₹${formatPrice(bestPrices.bestYesBid)}` : 'N/A',
+      valueClass: "text-blue-600",
+    },
+    {
+      label: "Best No",
+      value: bestPrices?.bestNoAsk ? `₹${formatPrice(bestPrices.bestNoAsk)}` : 'N/A',
+      valueClass: "text-gray-600",
+    },
+  ];
+
+  // Orderbook stat cards array for DRY rendering
+  const orderbookCards = [
+    {
+      icon: <TrendingUp className="h-4 w-4 text-blue-600" />,
+      label: "Best Yes Bid",
+      value: bestPrices?.bestYesBid ? `₹${formatPrice(bestPrices.bestYesBid)}` : 'N/A',
+      valueClass: "text-2xl font-bold text-blue-600",
+      subtext: yesBids[0] ? `${formatNumber(yesBids[0].quantity)} qty` : 'No orders',
+      subtextClass: "text-xs text-gray-500 mt-1",
+    },
+    {
+      icon: <TrendingDown className="h-4 w-4 text-gray-600" />,
+      label: "Best No Bid",
+      value: bestPrices?.bestNoAsk ? `₹${formatPrice(bestPrices.bestNoAsk)}` : 'N/A',
+      valueClass: "text-2xl font-bold text-gray-700",
+      subtext: noAsks[0] ? `${formatNumber(noAsks[0].quantity)} qty` : 'No orders',
+      subtextClass: "text-xs text-gray-500 mt-1",
+    },
+    {
+      icon: <BarChart className="h-4 w-4 text-purple-600" />,
+      label: "Spread",
+      value: spread ? `₹${(spread / 10).toFixed(1)}` : 'N/A',
+      valueClass: "text-2xl font-bold text-gray-900",
+      subtext: spreadPercentage ? `${spreadPercentage.toFixed(1)}%` : 'No spread',
+      subtextClass: "text-xs text-gray-500 mt-1",
+    },
+    {
+      icon: <Target className="h-4 w-4 text-green-600" />,
+      label: "Mid Price",
+      value: bestPrices?.midPrice ? `₹${(bestPrices.midPrice / 10).toFixed(1)}` : 'N/A',
+      valueClass: "text-2xl font-bold text-gray-900",
+      subtext: "Market average",
+      subtextClass: "text-xs text-gray-500 mt-1",
+    },
+  ];
+
   return (
     <div className="p-8 bg-gray-50 min-h-full">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -160,14 +220,14 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
         {/* Current Market Info */}
 
         {/* Orderbook Controls */}
-        <Card className="p-4 bg-white border-0 shadow-sm">
+        <Card className="p-4 bg-white border-0 shadow-sm border-1 border border-gray-300 rounded-lg ">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-900">View Mode:</span>
               </div>
-              <div className="flex rounded-lg bg-gray-100 p-1">
+              <div className="flex rounded-lg bg-gray-100 p-1 border-1 border border-gray-300 rounded-lg ">
                 <button
                   onClick={() => setViewMode('combined')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
@@ -235,7 +295,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
         </Card>
 
         {/* Orderbook */}
-        <Card className="bg-white border-0 shadow-sm overflow-hidden">
+        <Card className="bg-white border-1 border border-gray-300 rounded-lg  shadow-sm overflow-hidden">
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Market Depth</h3>
@@ -252,7 +312,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
           </div>
 
           {viewMode === 'combined' ? (
-            <div className="grid lg:grid-cols-2">
+            <div className="grid lg:grid-cols-2 border-1 border border-gray-200">
               {/* YES Orders */}
               <div className="p-4">
                 <div className="flex items-center justify-between mb-4">
@@ -490,74 +550,29 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <TrendingUp className="h-4 w-4 text-blue-600" />
-                <p className="text-sm text-gray-500">Best Yes Bid</p>
+          {orderbookCards.map((card, idx) => (
+            <Card key={card.label} className="p-4 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  {card.icon}
+                  <p className="text-sm text-gray-500">{card.label}</p>
+                </div>
+                <p className={card.valueClass}>{card.value}</p>
+                <p className={card.subtextClass}>{card.subtext}</p>
               </div>
-              <p className="text-2xl font-bold text-blue-600">
-                {bestPrices?.bestYesBid ? `₹${formatPrice(bestPrices.bestYesBid)}` : 'N/A'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {yesBids[0] ? `${formatNumber(yesBids[0].quantity)} qty` : 'No orders'}
-              </p>
-            </div>
-          </Card>
-          
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <TrendingDown className="h-4 w-4 text-gray-600" />
-                <p className="text-sm text-gray-500">Best No Bid</p>
-              </div>
-              <p className="text-2xl font-bold text-gray-700">
-                {bestPrices?.bestNoAsk ? `₹${formatPrice(bestPrices.bestNoAsk)}` : 'N/A'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {noAsks[0] ? `${formatNumber(noAsks[0].quantity)} qty` : 'No orders'}
-              </p>
-            </div>
-          </Card>
-          
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <BarChart className="h-4 w-4 text-purple-600" />
-                <p className="text-sm text-gray-500">Spread</p>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {spread ? `₹${(spread / 10).toFixed(1)}` : 'N/A'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {spreadPercentage ? `${spreadPercentage.toFixed(1)}%` : 'No spread'}
-              </p>
-            </div>
-          </Card>
-          
-          <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Target className="h-4 w-4 text-green-600" />
-                <p className="text-sm text-gray-500">Mid Price</p>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">
-                {bestPrices?.midPrice ? `₹${(bestPrices.midPrice / 10).toFixed(1)}` : 'N/A'}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Market average</p>
-            </div>
-          </Card>
+            </Card>
+          ))}
         </div>
 
         {currentMarket && (
-        <Card className="p-6 bg-white border-0 shadow-sm">
+        <Card className="p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm flex-wrap">
             {orderbookError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-600">{orderbookError}</p>
               </div>
             )}
             
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-4 flex-wrap">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <Badge variant="outline" className="text-xs">
@@ -580,7 +595,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                 <p className="text-gray-600 text-sm mb-3">{currentMarket.description}</p>
               )}
               
-              <div className="flex items-center gap-6 text-sm text-gray-500">
+              <div className="flex items-center gap-6 text-sm text-gray-500 flex-wrap">
                   <span>Expires: {new Date(currentMarket.expiryDate).toLocaleDateString()}</span>
                   <span>24h Volume: ₹{formatNumber(marketInfo?.volume24h || 0)}</span>
                   <span>Last update: {orderbook ? new Date(orderbook.lastUpdated).toLocaleTimeString('en-US', { 
@@ -613,61 +628,43 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
 
           {/* Market Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Total Liquidity</p>
-              <p className="text-lg font-semibold text-gray-900">
-                  {marketStats ? formatNumber(marketStats.totalLiquidity) : '0'}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 mb-1">Active Orders</p>
-              <p className="text-lg font-semibold text-gray-900">
-                  {yesBids.length + noAsks.length}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 mb-1">Best Yes</p>
-              <p className="text-lg font-semibold text-blue-600">
-                  {bestPrices?.bestYesBid ? `₹${formatPrice(bestPrices.bestYesBid)}` : 'N/A'}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 mb-1">Best No</p>
-              <p className="text-lg font-semibold text-gray-600">
-                  {bestPrices?.bestNoAsk ? `₹${formatPrice(bestPrices.bestNoAsk)}` : 'N/A'}
-              </p>
-            </div>
+            {marketStatsCards.map(card => (
+              <div key={card.label} className="text-center p-3 bg-gray-50 border-1 border border-gray-300 rounded-lg ">
+                <p className="text-sm text-gray-500 mb-1">{card.label}</p>
+                <p className={`text-lg font-semibold ${card.valueClass}`}>{card.value}</p>
+              </div>
+            ))}
           </div>
         </Card>
         )}
 
         {/* Trading Actions */}
         
-        <Card className="p-6 bg-white rounded-lg border-1 border border-gray-200  shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Select Market</h2>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+        <Card className="p-6 bg-white rounded-lg border-1 border border-gray-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2 sm:mb-0">Select Market</h2>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   placeholder="Search markets..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-64 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-full text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-0"
                 />
               </div>
               <Button
                 onClick={handleRefresh}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto justify-center"
               >
                 <RefreshCw className="h-4 w-4" />
                 Refresh
               </Button>
               {/* View Mode Toggle for market selector (Markets style) */}
-              <div className="flex rounded-lg bg-gray-100 p-1 ml-2">
+              <div className="flex rounded-lg bg-gray-100 p-1 ml-0 sm:ml-2 w-full sm:w-auto justify-center">
                 <button
                   onClick={() => setMarketViewMode('list')}
                   className={`p-1.5 rounded transition-colors ${marketViewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
