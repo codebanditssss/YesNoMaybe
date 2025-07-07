@@ -47,6 +47,7 @@ export function TradeHistory() {
   const [dateRange, setDateRange] = useState<'all' | '1d' | '7d' | '30d' | '90d'>('all');
   const [mounted, setMounted] = useState(false);
   const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Use real-time trade history data
   const { 
@@ -390,7 +391,7 @@ export function TradeHistory() {
                     </div>
 
                     {/* Filter Controls */}
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3 items-center">
                       {/* Status Filter */}
                       <SelectDropdown
                         options={statusOptions}
@@ -425,6 +426,23 @@ export function TradeHistory() {
                       >
                         <ArrowUpDown className="h-4 w-4" />
                       </button>
+                      {/* View Mode Toggle (like Markets) */}
+                      <div className="flex rounded-lg bg-gray-100 p-1 ml-2">
+                        <button
+                          onClick={() => setViewMode('list')}
+                          className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
+                          title="List View"
+                        >
+                          <BookOpen className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setViewMode('grid')}
+                          className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
+                          title="Grid View"
+                        >
+                          <Target className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -454,10 +472,10 @@ export function TradeHistory() {
                     </div>
                   </Card>
                 ) : (
-                  <Card className="bg-white border-0 shadow-sm">
+                  <Card className="bg-gray-50 rounded-lg border-1 shadow-sm">
                     <div className="p-6">
                       <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-xl font-semibold text-gray-900">
                           {selectedTab === 'all' ? 'All Trades' : 
                            selectedTab === 'completed' ? 'Completed Trades' : 'Pending Trades'}
                         </h3>
@@ -466,143 +484,218 @@ export function TradeHistory() {
                         </div>
                       </div>
                       
-                      <div className="space-y-4">
-                        {filteredTrades.map((trade) => (
-                          <div 
-                            key={trade.id} 
-                            className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow ${
-                              realtimeUpdates.type === 'trade' && 
-                              realtimeUpdates.tradeId === trade.id &&
-                              new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
-                                ? 'animate-highlight bg-green-50' 
-                                : ''
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
-                                    {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
-                                  </Badge>
-                                  <Badge className={getStatusColor(trade.status)} variant="outline">
-                                    <div className="flex items-center gap-1">
-                                      {getStatusIcon(trade.status)}
-                                      {trade.status.toUpperCase()}
-                                    </div>
-                                  </Badge>
-                                  <Badge variant={trade.side === 'YES' ? 'default' : 'outline'} className={
-                                    trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                                  }>
-                                    {trade.side.toUpperCase()}
-                                  </Badge>
-                                  <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                                    {trade.orderType.toUpperCase()}
-                                  </Badge>
-                                  {trade.marketStatus === 'resolved' && (
-                                    <Badge variant="outline" className="bg-emerald-100 text-emerald-800">
-                                      RESOLVED
+                      {viewMode === 'list' ? (
+                        <div className="space-y-4">
+                          {filteredTrades.map((trade) => (
+                            <div 
+                              key={trade.id} 
+                              className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow ${
+                                realtimeUpdates.type === 'trade' && 
+                                realtimeUpdates.tradeId === trade.id &&
+                                new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
+                                  ? 'animate-highlight bg-green-50' 
+                                  : ''
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
+                                      {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
                                     </Badge>
-                                  )}
-                                  {trade.marketStatus === 'active' && (
-                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                                      ACTIVE
+                                    <Badge className={getStatusColor(trade.status)} variant="outline">
+                                      <div className="flex items-center gap-1">
+                                        {getStatusIcon(trade.status)}
+                                        {trade.status.toUpperCase()}
+                                      </div>
                                     </Badge>
-                                  )}
-                                </div>
-                                
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                  {trade.marketTitle}
-                                </h3>
-                                
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                  <div>
-                                    <span className="text-gray-500">Quantity:</span>
-                                    <p className="font-medium">{trade.quantity}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Price:</span>
-                                    <p className="font-medium">₹{trade.price.toFixed(2)}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Total:</span>
-                                    <p className="font-medium">{formatCurrency(trade.total)}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Date:</span>
-                                    <p className="font-medium">{new Date(trade.timestamp).toLocaleDateString()}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {new Date(trade.timestamp).toLocaleTimeString('en-US', { 
-                                        hour: '2-digit', 
-                                        minute: '2-digit', 
-                                        hour12: true 
-                                      })}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="text-right space-y-2">
-                                <div>
-                                  <p className="text-sm text-gray-500">Investment</p>
-                                  <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.total || 0)}</p>
-                                </div>
-                                
-                                <div>
-                                  <p className="text-sm text-gray-500">P&L</p>
-                                  <div className="flex items-center gap-1">
-                                    {trade.marketStatus === 'resolved' ? (
-                                      <span className={`font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
-                                        <span className="text-xs ml-1">
-                                          ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
-                                        </span>
-                                      </span>
-                                    ) : trade.status === 'filled' ? (
-                                      <span className="font-medium text-blue-600">
-                                        Pending
-                                        <span className="text-xs ml-1 text-gray-500">
-                                          (Active Market)
-                                        </span>
-                                      </span>
-                                    ) : (
-                                      <span className="font-medium text-gray-500">
-                                        -
-                                        <span className="text-xs ml-1">
-                                          (Not Filled)
-                                        </span>
-                                      </span>
+                                    <Badge variant={trade.side === 'YES' ? 'default' : 'outline'} className={
+                                      trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                    }>
+                                      {trade.side.toUpperCase()}
+                                    </Badge>
+                                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                                      {trade.orderType.toUpperCase()}
+                                    </Badge>
+                                    {trade.marketStatus === 'resolved' && (
+                                      <Badge variant="outline" className="bg-emerald-100 text-emerald-800">
+                                        RESOLVED
+                                      </Badge>
+                                    )}
+                                    {trade.marketStatus === 'active' && (
+                                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                        ACTIVE
+                                      </Badge>
                                     )}
                                   </div>
+                                  
+                                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                    {trade.marketTitle}
+                                  </h3>
+                                  
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-gray-500">Quantity:</span>
+                                      <p className="font-medium">{trade.quantity}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Price:</span>
+                                      <p className="font-medium">₹{trade.price.toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Total:</span>
+                                      <p className="font-medium">{formatCurrency(trade.total)}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Date:</span>
+                                      <p className="font-medium">{new Date(trade.timestamp).toLocaleDateString()}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {new Date(trade.timestamp).toLocaleTimeString('en-US', { 
+                                          hour: '2-digit', 
+                                          minute: '2-digit', 
+                                          hour12: true 
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
                                 </div>
-                                
-                                <div className="text-xs text-gray-500">
-                                  <p>Fees: {formatCurrency(trade.fees)}</p>
+
+                                <div className="text-right space-y-2">
+                                  <div>
+                                    <p className="text-sm text-gray-500">Investment</p>
+                                    <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.total || 0)}</p>
+                                  </div>
+                                  
+                                  <div>
+                                    <p className="text-sm text-gray-500">P&L</p>
+                                    <div className="flex items-center gap-1">
+                                      {trade.marketStatus === 'resolved' ? (
+                                        <span className={`font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                          {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
+                                          <span className="text-xs ml-1">
+                                            ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
+                                          </span>
+                                        </span>
+                                      ) : trade.status === 'filled' ? (
+                                        <span className="font-medium text-blue-600">
+                                          Pending
+                                          <span className="text-xs ml-1 text-gray-500">
+                                            (Active Market)
+                                          </span>
+                                        </span>
+                                      ) : (
+                                        <span className="font-medium text-gray-500">
+                                          -
+                                          <span className="text-xs ml-1">
+                                            (Not Filled)
+                                          </span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="text-xs text-gray-500">
+                                    <p>Fees: {formatCurrency(trade.fees)}</p>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                        
-                        {/* Load More Button */}
-                        {canLoadMore && (
-                          <div className="text-center pt-6">
-                            <Button 
-                              variant="outline" 
-                              onClick={loadMore}
-                              disabled={loading}
-                            >
-                              {loading ? (
-                                <>
-                                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                  Loading...
-                                </>
-                              ) : (
-                                'Load More Trades'
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {filteredTrades.map((trade) => (
+                            <Card key={trade.id} className="p-5 bg-white border-0 shadow-sm hover:shadow-lg transition-all cursor-pointer group">
+                              <div className="space-y-4">
+                                {/* Header */}
+                                <div className="flex items-start justify-between">
+                                  <div className="flex gap-1">
+                                    <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
+                                      {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
+                                    </Badge>
+                                    <Badge className={getStatusColor(trade.status)} variant="outline">
+                                      <div className="flex items-center gap-1">
+                                        {getStatusIcon(trade.status)}
+                                        {trade.status.toUpperCase()}
+                                      </div>
+                                    </Badge>
+                                    <Badge variant={trade.side === 'YES' ? 'default' : 'outline'} className={
+                                      trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                    }>
+                                      {trade.side.toUpperCase()}
+                                    </Badge>
+                                  </div>
+                                  <div className="text-xs text-gray-500 text-right">
+                                    {new Date(trade.timestamp).toLocaleDateString()}
+                                    <br />
+                                    {new Date(trade.timestamp).toLocaleTimeString('en-US', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit', 
+                                      hour12: true 
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Title */}
+                                <h3 className="text-md font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                  {trade.marketTitle}
+                                </h3>
+
+                                {/* Stats */}
+                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                                  <div className="flex items-center gap-1">
+                                    <span>Qty:</span>
+                                    <span>{trade.quantity}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span>Price:</span>
+                                    <span>₹{trade.price.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span>Total:</span>
+                                    <span>{formatCurrency(trade.total)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span>Fees:</span>
+                                    <span>{formatCurrency(trade.fees)}</span>
+                                  </div>
+                                </div>
+
+                                {/* P&L */}
+                                <div className="flex items-center justify-between text-xs">
+                                  <span className="text-gray-500">P&L</span>
+                                  <span className={`font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
+                                    <span className="ml-1">
+                                      ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
+                                    </span>
+                                  </span>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Load More Button */}
+                      {canLoadMore && (
+                        <div className="text-center pt-6">
+                          <Button 
+                            variant="outline" 
+                            onClick={loadMore}
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              'Load More Trades'
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </Card>
                 )}

@@ -24,7 +24,10 @@ import {
   Target,
   AlertCircle,
   Loader2,
-  Radio
+  Radio,
+  Users,
+  Calendar,
+  Star
 } from "lucide-react";
 
 import type { Market } from "@/hooks/useMarkets";
@@ -127,6 +130,9 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // View mode for market selector
+  const [marketViewMode, setMarketViewMode] = useState<'list' | 'grid'>('list');
 
   return (
     <div className="p-8 bg-gray-50 min-h-full">
@@ -637,7 +643,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
 
         {/* Trading Actions */}
         
-        <Card className="p-6 bg-white border-0 shadow-sm">
+        <Card className="p-6 bg-gray-50 rounded-lg border-1 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Select Market</h2>
             <div className="flex items-center gap-3">
@@ -652,14 +658,31 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                 />
               </div>
               <Button
-              onClick={handleRefresh}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
+                onClick={handleRefresh}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+              {/* View Mode Toggle for market selector (Markets style) */}
+              <div className="flex rounded-lg bg-gray-100 p-1 ml-2">
+                <button
+                  onClick={() => setMarketViewMode('list')}
+                  className={`p-1.5 rounded transition-colors ${marketViewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
+                  title="List View"
+                >
+                  <BookOpen className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setMarketViewMode('grid')}
+                  className={`p-1.5 rounded transition-colors ${marketViewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
+                  title="Grid View"
+                >
+                  <Target className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
           
@@ -668,50 +691,97 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
               <span className="ml-2 text-gray-600">Loading markets...</span>
             </div>
+          ) : filteredMarkets.length === 0 ? (
+            <Card className="p-12 bg-white border-0 shadow-sm">
+              <div className="text-center">
+                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No markets found</h3>
+                <p className="text-gray-600 mb-4">
+                  Try adjusting your search criteria to find more markets.
+                </p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSearchTerm('')}
+                >
+                  Clear Search
+                </Button>
+              </div>
+            </Card>
+          ) : marketViewMode === 'list' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredMarkets.map((market) => (
+                <div
+                  key={market.id}
+                  onClick={() => handleMarketChange(market)}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                      currentMarket?.id === market.id
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {market.category}
+                      </Badge>
+                      <Badge className={`text-xs ${getStatusColor(market.status)}`}>{market.status.replace('_', ' ').toUpperCase()}</Badge>
+                    </div>
+                    <div className={`text-sm font-medium ${
+                        market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                        {market.priceChange >= 0 ? '+' : ''}{market.priceChange.toFixed(1)}%
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                    {market.title}
+                  </h3>
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex gap-3">
+                      <span className="text-blue-600 font-medium">Yes ₹{market.yesPrice.toFixed(1)}</span>
+                      <span className="text-gray-600 font-medium">No ₹{market.noPrice.toFixed(1)}</span>
+                    </div>
+                    <div className="text-gray-500">
+                        Vol: {market.volume}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredMarkets.map((market) => (
-              <div
-                key={market.id}
-                onClick={() => handleMarketChange(market)}
-                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredMarkets.map((market) => (
+                <Card
+                  key={market.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
                     currentMarket?.id === market.id
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                 }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {market.category}
-                    </Badge>
-                    <Badge className={`text-xs ${getStatusColor(market.status)}`}>
-                      {market.status.replace('_', ' ').toUpperCase()}
-                    </Badge>
+                  onClick={() => handleMarketChange(market)}
+                >
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      <Badge variant="outline" className="text-xs">
+                        {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
+                      </Badge>
+                      <Badge className={`text-xs ${getStatusColor(market.status)}`}>{market.status.replace('_', ' ').toUpperCase()}</Badge>
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                      {market.title}
+                    </h3>
+                    <div className="flex items-center justify-between text-sm mt-2">
+                      <div className="flex gap-3">
+                        <span className="text-blue-600 font-medium">Yes ₹{market.yesPrice}</span>
+                        <span className="text-gray-600 font-medium">No ₹{market.noPrice}</span>
+                      </div>
+                      <div className="text-gray-500">
+                        Vol: {market.volume}
+                      </div>
+                    </div>
                   </div>
-                  <div className={`text-sm font-medium ${
-                      market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                      {market.priceChange >= 0 ? '+' : ''}{market.priceChange.toFixed(1)}%
-                  </div>
-                </div>
-                
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                  {market.title}
-                </h3>
-                
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex gap-3">
-                    <span className="text-blue-600 font-medium">Yes ₹{market.yesPrice.toFixed(1)}</span>
-                    <span className="text-gray-600 font-medium">No ₹{market.noPrice.toFixed(1)}</span>
-                  </div>
-                  <div className="text-gray-500">
-                      Vol: {market.volume}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
           )}
         </Card>
       </div>
