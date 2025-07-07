@@ -436,7 +436,7 @@ export function Markets() {
                 <BarChart3 className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-900">Sort by:</span>
               </div>
-              <div className="flex flex-col border-1 border border-gray-300 rounded-lg sm:flex-row gap-1 rounded-lg bg-gray-100 p-1 w-full sm:w-auto overflow-x-auto">
+              <div className="flex flex-col border-1 border border-gray-300 rounded-lg sm:flex-row gap-1 rounded-lg bg-white p-1 w-full sm:w-auto overflow-x-auto">
                 {[
                   { value: 'trending', label: 'Trending', icon: TrendingUp },
                   { value: 'volume', label: 'Volume', icon: Volume2 },
@@ -448,7 +448,7 @@ export function Markets() {
                     onClick={() => setSortBy(value as any)}
                     className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                       sortBy === value
-                        ? 'bg-white text-gray-900 shadow-sm'
+                        ? 'bg-white border border-gray-100 text-gray-900 shadow-lg'
                         : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >

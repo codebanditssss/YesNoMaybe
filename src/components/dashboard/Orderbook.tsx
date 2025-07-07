@@ -219,12 +219,12 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                 <BookOpen className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-900">View Mode:</span>
               </div>
-              <div className="flex rounded-lg bg-gray-100 p-1 border-1 border border-gray-300 rounded-lg ">
+              <div className="flex rounded-lg bg-white p-1 border-1 border border-gray-300 rounded-lg ">
                 <button
                   onClick={() => setViewMode('combined')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     viewMode === 'combined'
-                      ? 'bg-white text-gray-900 shadow-sm'
+                      ? 'bg-white border border-gray-100 text-gray-900 shadow-lg'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -234,7 +234,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                   onClick={() => setViewMode('yes')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     viewMode === 'yes'
-                      ? 'bg-white text-gray-900 shadow-sm'
+                      ? 'bg-white border border-gray-100 text-gray-900 shadow-lg'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -244,7 +244,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                   onClick={() => setViewMode('no')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     viewMode === 'no'
-                      ? 'bg-white text-gray-900 shadow-sm'
+                      ? 'bg-white border border-gray-100 text-gray-900 shadow-lg'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -621,7 +621,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
           {/* Market Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {marketStatsCards.map(card => (
-              <div key={card.label} className="text-center p-3 bg-gray-50 border-1 border border-gray-300 rounded-lg ">
+              <div key={card.label} className="text-center p-3 bg-white border-1 border border-gray-300 rounded-lg shadow-lg ">
                 <p className="text-sm text-gray-500 mb-1">{card.label}</p>
                 <p className={`text-lg font-semibold ${card.valueClass}`}>{card.value}</p>
               </div>

@@ -305,7 +305,7 @@ export function TradeHistory() {
         {/* Navigation Tabs */}
         {!loading && !error && (
           <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm flex-wrap">
-            <div className="flex border-1 border border-gray-300 rounded-lg bg-gray-100 p-1 flex-wrap">
+            <div className="flex border-1 border border-gray-300 rounded-lg bg-white p-1 flex-wrap">
               {[
                 { id: 'all', label: 'All Trades', icon: Activity },
                 { id: 'completed', label: 'Completed', icon: CheckCircle },
@@ -317,7 +317,7 @@ export function TradeHistory() {
                   onClick={() => setSelectedTab(id as any)}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors flex-1 justify-center ${
                     selectedTab === id
-                      ? 'bg-white text-gray-900 shadow-sm'
+                      ? 'bg-white border border-gray-100 text-gray-900 shadow-lg'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
