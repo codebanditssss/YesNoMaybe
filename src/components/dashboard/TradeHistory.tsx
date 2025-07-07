@@ -5,19 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, 
-  Minus, 
   TrendingUp, 
   TrendingDown,
-  Calendar,
   Clock,
   Search,
-  Filter,
   Download,
   RefreshCw,
   ArrowUpDown,
-  Eye,
-  BarChart3,
   PieChart,
   Activity,
   DollarSign,
@@ -26,8 +20,6 @@ import {
   XCircle,
   AlertCircle,
   History,
-  Users,
-  Volume2,
   Zap,
   BookOpen,
   Radio
@@ -41,12 +33,10 @@ export function TradeHistory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'created_at' | 'total' | 'pnl' | 'price'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [filterType, setFilterType] = useState<'all' | 'buy' | 'sell'>('all');
   const [filterSide, setFilterSide] = useState<'all' | 'YES' | 'NO'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'filled' | 'open' | 'cancelled'>('all');
   const [dateRange, setDateRange] = useState<'all' | '1d' | '7d' | '30d' | '90d'>('all');
   const [mounted, setMounted] = useState(false);
-  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Use real-time trade history data
@@ -92,12 +82,6 @@ export function TradeHistory() {
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': 
@@ -134,14 +118,6 @@ export function TradeHistory() {
     }
   };
 
-  const toggleTradeSelection = (tradeId: string) => {
-    setSelectedTrades(prev => 
-      prev.includes(tradeId) 
-        ? prev.filter(id => id !== tradeId)
-        : [...prev, tradeId]
-    );
-  };
-
   const statusOptions = [
     { value: "all", label: "All Status" },
     { value: "filled", label: "Completed" },
@@ -170,9 +146,56 @@ export function TradeHistory() {
     { value: "price", label: "Price" },
   ];
 
+  const statCards = [
+    {
+      label: "Total Trades",
+      value: stats.totalTrades,
+      icon: <Activity className="h-4 w-4 text-blue-600" />,
+      iconBg: "bg-blue-100",
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Total Volume",
+      value: formatCurrency(stats.totalVolume),
+      icon: <DollarSign className="h-4 w-4 text-purple-600" />,
+      iconBg: "bg-purple-100",
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Total P&L",
+      value: formatCurrency(stats.totalPnL),
+      icon: stats.totalPnL >= 0
+        ? <TrendingUp className="h-4 w-4 text-green-600" />
+        : <TrendingDown className="h-4 w-4 text-red-600" />,
+      iconBg: stats.totalPnL >= 0 ? "bg-green-100" : "bg-red-100",
+      valueClass: stats.totalPnL >= 0 ? "text-green-600" : "text-red-600",
+    },
+    {
+      label: "Win Rate",
+      value: `${stats.winRate.toFixed(1)}%`,
+      icon: <Target className="h-4 w-4 text-green-600" />,
+      iconBg: "bg-green-100",
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Avg Trade",
+      value: formatCurrency(stats.avgTradeSize),
+      icon: <BookOpen className="h-4 w-4 text-orange-600" />,
+      iconBg: "bg-orange-100",
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Total Fees",
+      value: formatCurrency(stats.totalFees),
+      icon: <Zap className="h-4 w-4 text-indigo-600" />,
+      iconBg: "bg-indigo-100",
+      valueClass: "text-gray-900",
+    },
+  ];
+
   return (
-    <div className="p-8 bg-gray-50 min-h-full">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="p-2 sm:p-4 md:p-8 bg-gray-50 min-h-full overflow-x-hidden">
+      <div className="max-w-full md:max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
@@ -245,91 +268,25 @@ export function TradeHistory() {
 
         {/* Trade Statistics */}
         {!loading && !error && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-blue-100 rounded">
-                    <Activity className="h-4 w-4 text-blue-600" />
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
+            {statCards.map((card) => (
+              <Card key={card.label} className="p-3 sm:p-4 bg-white border-1 border border-gray-300 rounded-lg  shadow-sm hover:shadow-md transition-shadow">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1 rounded ${card.iconBg}`}>{card.icon}</div>
+                    <span className="text-sm font-medium text-gray-600">{card.label}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-600">Total Trades</span>
+                  <p className={`text-2xl font-bold ${card.valueClass}`}>{card.value}</p>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalTrades}</p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-purple-100 rounded">
-                    <DollarSign className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Total Volume</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalVolume)}</p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className={`p-1 rounded ${stats.totalPnL >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                    {stats.totalPnL >= 0 ? (
-                      <TrendingUp className={`h-4 w-4 ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                    ) : (
-                      <TrendingDown className={`h-4 w-4 ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Total P&L</span>
-                </div>
-                <p className={`text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(stats.totalPnL)}
-                </p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-green-100 rounded">
-                    <Target className="h-4 w-4 text-green-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Win Rate</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{stats.winRate.toFixed(1)}%</p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-orange-100 rounded">
-                    <BookOpen className="h-4 w-4 text-orange-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Avg Trade</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.avgTradeSize)}</p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-indigo-100 rounded">
-                    <Zap className="h-4 w-4 text-indigo-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Total Fees</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalFees)}</p>
-              </div>
-            </Card>
+              </Card>
+            ))}
           </div>
         )}
 
         {/* Navigation Tabs */}
         {!loading && !error && (
-          <Card className="p-1 bg-white border-0 shadow-sm">
-            <div className="flex rounded-lg bg-gray-100 p-1">
+          <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm flex-wrap">
+            <div className="flex rounded-lg bg-gray-100 p-1 flex-wrap">
               {[
                 { id: 'all', label: 'All Trades', icon: Activity },
                 { id: 'completed', label: 'Completed', icon: CheckCircle },
@@ -374,7 +331,7 @@ export function TradeHistory() {
             {(selectedTab === 'all' || selectedTab === 'completed' || selectedTab === 'pending') && (
               <div className="space-y-6">
                 {/* Filters and Search */}
-                <Card className="p-6 bg-white border-0 shadow-sm">
+                <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg  shadow-sm">
                   <div className="flex flex-col lg:flex-row gap-4">
                     {/* Search */}
                     <div className="flex-1">
@@ -449,7 +406,7 @@ export function TradeHistory() {
 
                 {/* Trades List */}
                 {!hasData ? (
-                  <Card className="p-12 bg-white border-0 shadow-sm">
+                  <Card className="p-8 sm:p-12 bg-white border-0 shadow-sm">
                     <div className="text-center">
                       <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">No trades found</h3>
@@ -473,7 +430,7 @@ export function TradeHistory() {
                   </Card>
                 ) : (
                   <Card className="bg-white rounded-lg border-1 border border-gray-200 shadow-sm">
-                    <div className="p-6">
+                    <div className="p-3 sm:p-6">
                         <div className="flex items-center justify-between mb-6">
                         <h3 className="text-xl font-semibold text-gray-900">
                           {selectedTab === 'all' ? 'All Trades' : 
@@ -486,11 +443,11 @@ export function TradeHistory() {
                       <div className="border-b border-gray-200 my-2" />
                       
                       {viewMode === 'list' ? (
-                        <div className="space-y-4">
+                        <div className="space-y-4 w-full overflow-x-auto">
                           {filteredTrades.map((trade) => (
                             <div 
                               key={trade.id} 
-                              className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow ${
+                              className={`border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow w-full break-words ${
                                 realtimeUpdates.type === 'trade' && 
                                 realtimeUpdates.tradeId === trade.id &&
                                 new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
@@ -498,9 +455,9 @@ export function TradeHistory() {
                                   : ''
                               }`}
                             >
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-start justify-between gap-4 w-full">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2 gap-y-1 mb-2 text-xs sm:text-sm">
                                     <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
                                       {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
                                     </Badge>
@@ -604,9 +561,9 @@ export function TradeHistory() {
                           ))}
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 w-full overflow-x-auto">
                           {filteredTrades.map((trade) => (
-                            <Card key={trade.id} className="p-5 bg-white border-2 border border-gray-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full">
+                            <Card key={trade.id} className="p-2 sm:p-4 md:p-5 bg-white border-2 border border-gray-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full w-full break-words">
                               {/* Header */}
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex gap-1 flex-wrap">
@@ -706,8 +663,8 @@ export function TradeHistory() {
             )}
 
             {selectedTab === 'analytics' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="p-6 bg-white border-0 shadow-sm">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+                <Card className="p-3 sm:p-6 bg-white border-0 shadow-sm">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Trading Performance</h3>
                   
                   <div className="space-y-4">
@@ -738,7 +695,7 @@ export function TradeHistory() {
                   </div>
                 </Card>
 
-                <Card className="p-6 bg-white border-0 shadow-sm">
+                <Card className="p-3 sm:p-6 bg-white border-0 shadow-sm">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Summary</h3>
                   
                   <div className="space-y-4">
