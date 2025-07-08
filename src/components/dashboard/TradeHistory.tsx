@@ -5,19 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, 
-  Minus, 
   TrendingUp, 
   TrendingDown,
-  Calendar,
   Clock,
   Search,
-  Filter,
   Download,
   RefreshCw,
   ArrowUpDown,
-  Eye,
-  BarChart3,
   PieChart,
   Activity,
   DollarSign,
@@ -26,26 +20,24 @@ import {
   XCircle,
   AlertCircle,
   History,
-  Users,
-  Volume2,
   Zap,
   BookOpen,
   Radio
 } from "lucide-react";
 import { useRealtimeTradeHistory } from '@/hooks/useRealtimeTradeHistory';
 import { exportTradeHistoryToCSV } from '@/lib/csvExport';
+import { SelectDropdown } from "@/components/ui/select-dropdown";
 
 export function TradeHistory() {
   const [selectedTab, setSelectedTab] = useState<'all' | 'completed' | 'pending' | 'analytics'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'created_at' | 'total' | 'pnl' | 'price'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [filterType, setFilterType] = useState<'all' | 'buy' | 'sell'>('all');
   const [filterSide, setFilterSide] = useState<'all' | 'YES' | 'NO'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'filled' | 'open' | 'cancelled'>('all');
   const [dateRange, setDateRange] = useState<'all' | '1d' | '7d' | '30d' | '90d'>('all');
   const [mounted, setMounted] = useState(false);
-  const [selectedTrades, setSelectedTrades] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   // Use real-time trade history data
   const { 
@@ -90,12 +82,6 @@ export function TradeHistory() {
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-    return num.toString();
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': 
@@ -132,17 +118,103 @@ export function TradeHistory() {
     }
   };
 
-  const toggleTradeSelection = (tradeId: string) => {
-    setSelectedTrades(prev => 
-      prev.includes(tradeId) 
-        ? prev.filter(id => id !== tradeId)
-        : [...prev, tradeId]
-    );
-  };
+  const statusOptions = [
+    { value: "all", label: "All Status" },
+    { value: "filled", label: "Completed" },
+    { value: "open", label: "Pending" },
+    { value: "cancelled", label: "Cancelled" },
+  ];
+
+  const sideOptions = [
+    { value: "all", label: "All Sides" },
+    { value: "YES", label: "YES" },
+    { value: "NO", label: "NO" },
+  ];
+
+  const dateRangeOptions = [
+    { value: "all", label: "All Time" },
+    { value: "1d", label: "Last 24 hours" },
+    { value: "7d", label: "Last 7 days" },
+    { value: "30d", label: "Last 30 days" },
+    { value: "90d", label: "Last 90 days" },
+  ];
+
+  const sortByOptions = [
+    { value: "created_at", label: "Date" },
+    { value: "total", label: "Volume" },
+    { value: "pnl", label: "P&L" },
+    { value: "price", label: "Price" },
+  ];
+
+  const statCards = [
+    {
+      label: "Total Trades",
+      value: stats.totalTrades,
+      icon: <Activity className="h-4 w-4 text-blue-600" />,
+      iconBg: "bg-blue-100",
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Total Volume",
+      value: formatCurrency(stats.totalVolume),
+      icon: <DollarSign className="h-4 w-4 text-purple-600" />,
+      iconBg: "bg-purple-100",
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Total P&L",
+      value: formatCurrency(stats.totalPnL),
+      icon: stats.totalPnL >= 0
+        ? <TrendingUp className="h-4 w-4 text-green-600" />
+        : <TrendingDown className="h-4 w-4 text-red-600" />,
+      iconBg: stats.totalPnL >= 0 ? "bg-green-100" : "bg-red-100",
+      valueClass: stats.totalPnL >= 0 ? "text-green-600" : "text-red-600",
+    },
+    {
+      label: "Win Rate",
+      value: `${stats.winRate.toFixed(1)}%`,
+      icon: <Target className="h-4 w-4 text-green-600" />,
+      iconBg: "bg-green-100",
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Avg Trade",
+      value: formatCurrency(stats.avgTradeSize),
+      icon: <BookOpen className="h-4 w-4 text-orange-600" />,
+      iconBg: "bg-orange-100",
+      valueClass: "text-gray-900",
+    },
+    {
+      label: "Total Fees",
+      value: formatCurrency(stats.totalFees),
+      icon: <Zap className="h-4 w-4 text-indigo-600" />,
+      iconBg: "bg-indigo-100",
+      valueClass: "text-gray-900",
+    },
+  ];
+
+  // Arrays for mapping Trading Performance and Financial Summary stats
+  const tradingPerformanceStats = [
+    { label: "Total Trades", value: stats.totalTrades, valueClass: "font-bold text-gray-900" },
+    { label: "Completed", value: stats.completedTrades, valueClass: "font-bold text-green-600" },
+    { label: "Pending", value: stats.pendingTrades, valueClass: "font-bold text-yellow-600" },
+    { label: "Cancelled", value: stats.cancelledTrades, valueClass: "font-bold text-gray-600" },
+    { label: "Win Rate", value: `${stats.winRate.toFixed(1)}%`, valueClass: "font-bold text-gray-900" },
+    { label: "Avg Execution Time", value: `${stats.avgExecutionTime.toFixed(2)}s`, valueClass: "font-bold text-gray-900" },
+  ];
+
+  const financialSummaryStats = [
+    { label: "Total Volume", value: formatCurrency(stats.totalVolume), valueClass: "font-bold text-gray-900" },
+    { label: "Total Fees", value: formatCurrency(stats.totalFees), valueClass: "font-bold text-gray-900" },
+    { label: "Total P&L", value: formatCurrency(stats.totalPnL), valueClass: `font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}` },
+    { label: "Average Trade Size", value: formatCurrency(stats.avgTradeSize), valueClass: "font-bold text-gray-900" },
+    { label: "Best Trade", value: formatCurrency(stats.bestTrade), valueClass: "font-bold text-green-600" },
+    { label: "Worst Trade", value: formatCurrency(stats.worstTrade), valueClass: "font-bold text-red-600" },
+  ];
 
   return (
-    <div className="p-8 bg-gray-50 min-h-full">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="p-2 sm:p-4 md:p-8 bg-gray-50 min-h-full overflow-x-hidden">
+      <div className="max-w-full md:max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
@@ -215,91 +287,25 @@ export function TradeHistory() {
 
         {/* Trade Statistics */}
         {!loading && !error && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-blue-100 rounded">
-                    <Activity className="h-4 w-4 text-blue-600" />
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
+            {statCards.map((card) => (
+              <Card key={card.label} className="p-3 sm:p-4 bg-white border-1 border border-gray-300 rounded-lg  shadow-sm hover:shadow-md transition-shadow">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1 rounded ${card.iconBg}`}>{card.icon}</div>
+                    <span className="text-sm font-medium text-gray-600">{card.label}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-600">Total Trades</span>
+                  <p className={`text-2xl font-bold ${card.valueClass}`}>{card.value}</p>
                 </div>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalTrades}</p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-purple-100 rounded">
-                    <DollarSign className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Total Volume</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalVolume)}</p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className={`p-1 rounded ${stats.totalPnL >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                    {stats.totalPnL >= 0 ? (
-                      <TrendingUp className={`h-4 w-4 ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                    ) : (
-                      <TrendingDown className={`h-4 w-4 ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`} />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Total P&L</span>
-                </div>
-                <p className={`text-2xl font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(stats.totalPnL)}
-                </p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-green-100 rounded">
-                    <Target className="h-4 w-4 text-green-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Win Rate</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{stats.winRate.toFixed(1)}%</p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-orange-100 rounded">
-                    <BookOpen className="h-4 w-4 text-orange-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Avg Trade</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.avgTradeSize)}</p>
-              </div>
-            </Card>
-
-            <Card className="p-4 bg-white border-0 shadow-sm hover:shadow-md transition-shadow">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="p-1 bg-indigo-100 rounded">
-                    <Zap className="h-4 w-4 text-indigo-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Total Fees</span>
-                </div>
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.totalFees)}</p>
-              </div>
-            </Card>
+              </Card>
+            ))}
           </div>
         )}
 
         {/* Navigation Tabs */}
         {!loading && !error && (
-          <Card className="p-1 bg-white border-0 shadow-sm">
-            <div className="flex rounded-lg bg-gray-100 p-1">
+          <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm flex-wrap">
+            <div className="flex border-1 border border-gray-300 rounded-lg bg-white p-1 flex-wrap">
               {[
                 { id: 'all', label: 'All Trades', icon: Activity },
                 { id: 'completed', label: 'Completed', icon: CheckCircle },
@@ -311,7 +317,7 @@ export function TradeHistory() {
                   onClick={() => setSelectedTab(id as any)}
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors flex-1 justify-center ${
                     selectedTab === id
-                      ? 'bg-white text-gray-900 shadow-sm'
+                      ? 'bg-white border border-gray-100 text-gray-900 shadow-lg'
                       : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
@@ -344,7 +350,7 @@ export function TradeHistory() {
             {(selectedTab === 'all' || selectedTab === 'completed' || selectedTab === 'pending') && (
               <div className="space-y-6">
                 {/* Filters and Search */}
-                <Card className="p-6 bg-white border-0 shadow-sm">
+                <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg  shadow-sm">
                   <div className="flex flex-col lg:flex-row gap-4">
                     {/* Search */}
                     <div className="flex-1">
@@ -361,54 +367,34 @@ export function TradeHistory() {
                     </div>
 
                     {/* Filter Controls */}
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-3 items-center">
                       {/* Status Filter */}
-                      <select 
-                        value={filterStatus}
-                        onChange={(e) => setFilterStatus(e.target.value as any)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="all">All Status</option>
-                        <option value="filled">Completed</option>
-                        <option value="open">Pending</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+                      <SelectDropdown
+                        options={statusOptions}
+                        selected={filterStatus}
+                        onSelect={val => setFilterStatus(val as any)}
+                      />
 
                       {/* Side Filter */}
-                      <select 
-                        value={filterSide}
-                        onChange={(e) => setFilterSide(e.target.value as any)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="all">All Sides</option>
-                        <option value="YES">YES</option>
-                        <option value="NO">NO</option>
-                      </select>
+                      <SelectDropdown
+                        options={sideOptions}
+                        selected={filterSide}
+                        onSelect={val => setFilterSide(val as any)}
+                      />
 
                       {/* Date Range Filter */}
-                      <select 
-                        value={dateRange}
-                        onChange={(e) => setDateRange(e.target.value as any)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="all">All Time</option>
-                        <option value="1d">Last 24 hours</option>
-                        <option value="7d">Last 7 days</option>
-                        <option value="30d">Last 30 days</option>
-                        <option value="90d">Last 90 days</option>
-                      </select>
+                      <SelectDropdown
+                        options={dateRangeOptions}
+                        selected={dateRange}
+                        onSelect={val => setDateRange(val as any)}
+                      />
 
                       {/* Sort Controls */}
-                      <select 
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as any)}
-                        className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      >
-                        <option value="created_at">Date</option>
-                        <option value="total">Volume</option>
-                        <option value="pnl">P&L</option>
-                        <option value="price">Price</option>
-                      </select>
+                      <SelectDropdown
+                        options={sortByOptions}
+                        selected={sortBy}
+                        onSelect={val => setSortBy(val as any)}
+                      />
 
                       <button
                         onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
@@ -416,13 +402,30 @@ export function TradeHistory() {
                       >
                         <ArrowUpDown className="h-4 w-4" />
                       </button>
+                      {/* View Mode Toggle (like Markets) */}
+                      <div className="flex rounded-lg bg-gray-100 p-1 ml-2">
+                        <button
+                          onClick={() => setViewMode('list')}
+                          className={`p-1.5 rounded transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
+                          title="List View"
+                        >
+                          <BookOpen className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setViewMode('grid')}
+                          className={`p-1.5 rounded transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'}`}
+                          title="Grid View"
+                        >
+                          <Target className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </Card>
 
                 {/* Trades List */}
                 {!hasData ? (
-                  <Card className="p-12 bg-white border-0 shadow-sm">
+                  <Card className="p-8 sm:p-12 bg-white border-0 shadow-sm">
                     <div className="text-center">
                       <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">No trades found</h3>
@@ -445,10 +448,10 @@ export function TradeHistory() {
                     </div>
                   </Card>
                 ) : (
-                  <Card className="bg-white border-0 shadow-sm">
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-semibold text-gray-900">
+                  <Card className="bg-white rounded-lg border-1 border border-gray-200 shadow-sm">
+                    <div className="p-3 sm:p-6">
+                        <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-semibold text-gray-900">
                           {selectedTab === 'all' ? 'All Trades' : 
                            selectedTab === 'completed' ? 'Completed Trades' : 'Pending Trades'}
                         </h3>
@@ -456,22 +459,133 @@ export function TradeHistory() {
                           {filteredTrades.length} {filteredTrades.length === 1 ? 'trade' : 'trades'}
                         </div>
                       </div>
+                      <div className="border-b border-gray-200 my-2" />
                       
-                      <div className="space-y-4">
-                        {filteredTrades.map((trade) => (
-                          <div 
-                            key={trade.id} 
-                            className={`border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow ${
-                              realtimeUpdates.type === 'trade' && 
-                              realtimeUpdates.tradeId === trade.id &&
-                              new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
-                                ? 'animate-highlight bg-green-50' 
-                                : ''
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
+                      {viewMode === 'list' ? (
+                        <div className="space-y-4 w-full overflow-x-auto">
+                          {filteredTrades.map((trade) => (
+                            <div 
+                              key={trade.id} 
+                              className={`border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow w-full break-words ${
+                                realtimeUpdates.type === 'trade' && 
+                                realtimeUpdates.tradeId === trade.id &&
+                                new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
+                                  ? 'animate-highlight bg-green-50' 
+                                  : ''
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-4 w-full">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2 gap-y-1 mb-2 text-xs sm:text-sm">
+                                    <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
+                                      {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
+                                    </Badge>
+                                    <Badge className={getStatusColor(trade.status)} variant="outline">
+                                      <div className="flex items-center gap-1">
+                                        {getStatusIcon(trade.status)}
+                                        {trade.status.toUpperCase()}
+                                      </div>
+                                    </Badge>
+                                    <Badge variant={trade.side === 'YES' ? 'default' : 'outline'} className={
+                                      trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                                    }>
+                                      {trade.side.toUpperCase()}
+                                    </Badge>
+                                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
+                                      {trade.orderType.toUpperCase()}
+                                    </Badge>
+                                    {trade.marketStatus === 'resolved' && (
+                                      <Badge variant="outline" className="bg-emerald-100 text-emerald-800">
+                                        RESOLVED
+                                      </Badge>
+                                    )}
+                                    {trade.marketStatus === 'active' && (
+                                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                                        ACTIVE
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  
+                                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                    {trade.marketTitle}
+                                  </h3>
+                                  
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                    <div>
+                                      <span className="text-gray-500">Quantity:</span>
+                                      <p className="font-medium">{trade.quantity}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Price:</span>
+                                      <p className="font-medium">₹{trade.price.toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Total:</span>
+                                      <p className="font-medium">{formatCurrency(trade.total)}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-500">Date:</span>
+                                      <p className="font-medium">{new Date(trade.timestamp).toLocaleDateString()}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {new Date(trade.timestamp).toLocaleTimeString('en-US', { 
+                                          hour: '2-digit', 
+                                          minute: '2-digit', 
+                                          hour12: true 
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-right space-y-2">
+                                  <div>
+                                    <p className="text-sm text-gray-500">Investment</p>
+                                    <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.total || 0)}</p>
+                                  </div>
+                                  
+                                  <div>
+                                    <p className="text-sm text-gray-500">P&L</p>
+                                    <div className="flex items-center gap-1">
+                                      {trade.marketStatus === 'resolved' ? (
+                                        <span className={`font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                          {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
+                                          <span className="text-xs ml-1">
+                                            ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
+                                          </span>
+                                        </span>
+                                      ) : trade.status === 'filled' ? (
+                                        <span className="font-medium text-blue-600">
+                                          Pending
+                                          <span className="text-xs ml-1 text-gray-500">
+                                            (Active Market)
+                                          </span>
+                                        </span>
+                                      ) : (
+                                        <span className="font-medium text-gray-500">
+                                          -
+                                          <span className="text-xs ml-1">
+                                            (Not Filled)
+                                          </span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="text-xs text-gray-500">
+                                    <p>Fees: {formatCurrency(trade.fees)}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 w-full overflow-x-auto">
+                          {filteredTrades.map((trade) => (
+                            <Card key={trade.id} className="p-2 sm:p-4 md:p-5 bg-white border-2 border border-gray-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full w-full break-words">
+                              {/* Header */}
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex gap-1 flex-wrap">
                                   <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
                                     {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
                                   </Badge>
@@ -486,114 +600,81 @@ export function TradeHistory() {
                                   }>
                                     {trade.side.toUpperCase()}
                                   </Badge>
-                                  <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                                    {trade.orderType.toUpperCase()}
-                                  </Badge>
-                                  {trade.marketStatus === 'resolved' && (
-                                    <Badge variant="outline" className="bg-emerald-100 text-emerald-800">
-                                      RESOLVED
-                                    </Badge>
-                                  )}
-                                  {trade.marketStatus === 'active' && (
-                                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                                      ACTIVE
-                                    </Badge>
-                                  )}
                                 </div>
-                                
-                                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                  {trade.marketTitle}
-                                </h3>
-                                
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                  <div>
-                                    <span className="text-gray-500">Quantity:</span>
-                                    <p className="font-medium">{trade.quantity}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Price:</span>
-                                    <p className="font-medium">₹{trade.price.toFixed(2)}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Total:</span>
-                                    <p className="font-medium">{formatCurrency(trade.total)}</p>
-                                  </div>
-                                  <div>
-                                    <span className="text-gray-500">Date:</span>
-                                    <p className="font-medium">{new Date(trade.timestamp).toLocaleDateString()}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {new Date(trade.timestamp).toLocaleTimeString('en-US', { 
-                                        hour: '2-digit', 
-                                        minute: '2-digit', 
-                                        hour12: true 
-                                      })}
-                                    </p>
-                                  </div>
+                                <div className="text-xs text-gray-500 text-right min-w-[80px]">
+                                  {new Date(trade.timestamp).toLocaleDateString()}<br />
+                                  {new Date(trade.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
                                 </div>
                               </div>
 
-                              <div className="text-right space-y-2">
-                                <div>
-                                  <p className="text-sm text-gray-500">Investment</p>
-                                  <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.total || 0)}</p>
+                              {/* Title */}
+                              <h3 className="text-md font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                {trade.marketTitle}
+                              </h3>
+
+                              {/* Divider */}
+                              <div className="border-b border-gray-100 my-2" />
+
+                              {/* Stats Grid */}
+                              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-gray-700 mb-2">
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500">Quantity</span>
+                                  <span className="font-medium">{trade.quantity}</span>
                                 </div>
-                                
-                                <div>
-                                  <p className="text-sm text-gray-500">P&L</p>
-                                  <div className="flex items-center gap-1">
-                                    {trade.marketStatus === 'resolved' ? (
-                                      <span className={`font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
-                                        <span className="text-xs ml-1">
-                                          ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
-                                        </span>
-                                      </span>
-                                    ) : trade.status === 'filled' ? (
-                                      <span className="font-medium text-blue-600">
-                                        Pending
-                                        <span className="text-xs ml-1 text-gray-500">
-                                          (Active Market)
-                                        </span>
-                                      </span>
-                                    ) : (
-                                      <span className="font-medium text-gray-500">
-                                        -
-                                        <span className="text-xs ml-1">
-                                          (Not Filled)
-                                        </span>
-                                      </span>
-                                    )}
-                                  </div>
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500">Price</span>
+                                  <span className="font-medium">₹{trade.price.toFixed(2)}</span>
                                 </div>
-                                
-                                <div className="text-xs text-gray-500">
-                                  <p>Fees: {formatCurrency(trade.fees)}</p>
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500">Total</span>
+                                  <span className="font-medium">{formatCurrency(trade.total)}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-gray-500">Fees</span>
+                                  <span className="font-medium">{formatCurrency(trade.fees)}</span>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        ))}
-                        
-                        {/* Load More Button */}
-                        {canLoadMore && (
-                          <div className="text-center pt-6">
-                            <Button 
-                              variant="outline" 
-                              onClick={loadMore}
-                              disabled={loading}
-                            >
-                              {loading ? (
-                                <>
-                                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                                  Loading...
-                                </>
-                              ) : (
-                                'Load More Trades'
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+
+                              {/* Divider */}
+                              <div className="border-b border-gray-100 my-2" />
+
+                              {/* Bottom Section: Investment & P&L */}
+                              <div className="flex items-end justify-between mt-auto pt-2">
+                                <div>
+                                  <span className="block text-xs text-gray-500">Investment</span>
+                                  <span className="text-base font-bold text-gray-900">{formatCurrency(trade.total || 0)}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="block text-xs text-gray-500">P&L</span>
+                                  <span className={`text-base font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>{trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
+                                    <span className="ml-1 text-xs font-normal">({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)</span>
+                                  </span>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Load More Button */}
+                      {canLoadMore && (
+                        <div className="text-center pt-6">
+                          <Button 
+                            variant="outline" 
+                            onClick={loadMore}
+                            disabled={loading}
+                          >
+                            {loading ? (
+                              <>
+                                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                                Loading...
+                              </>
+                            ) : (
+                              'Load More Trades'
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </Card>
                 )}
@@ -601,68 +682,30 @@ export function TradeHistory() {
             )}
 
             {selectedTab === 'analytics' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="p-6 bg-white border-0 shadow-sm">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6">
+                <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lgshadow-sm">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Trading Performance</h3>
                   
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Total Trades</span>
-                      <span className="font-bold text-gray-900">{stats.totalTrades}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Completed</span>
-                      <span className="font-bold text-green-600">{stats.completedTrades}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Pending</span>
-                      <span className="font-bold text-yellow-600">{stats.pendingTrades}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Cancelled</span>
-                      <span className="font-bold text-gray-600">{stats.cancelledTrades}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Win Rate</span>
-                      <span className="font-bold text-gray-900">{stats.winRate.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Avg Execution Time</span>
-                      <span className="font-bold text-gray-900">{stats.avgExecutionTime.toFixed(2)}s</span>
-                    </div>
+                    {tradingPerformanceStats.map(stat => (
+                      <div key={stat.label} className="flex items-center justify-between p-3 bg-gray-50 border-1 border border-gray-300 rounded-lg">
+                        <span className="text-gray-600">{stat.label}</span>
+                        <span className={stat.valueClass}>{stat.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </Card>
 
-                <Card className="p-6 bg-white border-0 shadow-sm">
+                <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Summary</h3>
                   
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Total Volume</span>
-                      <span className="font-bold text-gray-900">{formatCurrency(stats.totalVolume)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Total Fees</span>
-                      <span className="font-bold text-gray-900">{formatCurrency(stats.totalFees)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Total P&L</span>
-                      <span className={`font-bold ${stats.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(stats.totalPnL)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Average Trade Size</span>
-                      <span className="font-bold text-gray-900">{formatCurrency(stats.avgTradeSize)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Best Trade</span>
-                      <span className="font-bold text-green-600">{formatCurrency(stats.bestTrade)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-600">Worst Trade</span>
-                      <span className="font-bold text-red-600">{formatCurrency(stats.worstTrade)}</span>
-                    </div>
+                  <div className="space-y-4 ">
+                    {financialSummaryStats.map(stat => (
+                      <div key={stat.label} className="flex items-center justify-between p-3 bg-gray-50 border-1 border border-gray-300 rounded-lg">
+                        <span className="text-gray-600">{stat.label}</span>
+                        <span className={stat.valueClass}>{stat.value}</span>
+                      </div>
+                    ))}
                   </div>
                 </Card>
               </div>

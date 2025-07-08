@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useLeaderboard, LeaderboardEntry, RecentTrade } from '@/hooks/useLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
+import { SelectDropdown } from '../ui/select-dropdown';
 
 interface FollowedTrader {
   id: string;
@@ -103,6 +104,20 @@ export function Leaderboard() {
   const [showTimeRangeDropdown, setShowTimeRangeDropdown] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showRowsDropdown, setShowRowsDropdown] = useState(false);
+
+  const categoryOptions = [
+    { value: "overall", label: "Overall Performance", icon: Trophy },
+    { value: "streak", label: "Win Streak Leaders", icon: Zap },
+    { value: "consistency", label: "Most Consistent", icon: Target },
+    { value: "volume", label: "Volume Leaders", icon: TrendingUp },
+  ];
+
+  const timeRangeOptions = [
+    { value: 'all', label: 'All Time', icon: Clock },
+    { value: '30d', label: 'Last 30 Days', icon: Clock },
+    { value: '7d', label: 'Last 7 Days', icon: Clock },
+    { value: '1d', label: 'Last 24 Hours', icon: Clock },
+  ];
   
   const { user } = useAuth();
   
@@ -405,7 +420,7 @@ export function Leaderboard() {
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
               {/* Search */}
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
@@ -419,103 +434,20 @@ export function Leaderboard() {
               </div>
 
               {/* Time Range Filter */}
-              <div className="relative">
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setShowTimeRangeDropdown(!showTimeRangeDropdown);
-                    setShowCategoryDropdown(false);
-                  }}
-                  className={`border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2.5 px-4 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md ${
-                    showTimeRangeDropdown ? 'bg-gray-50 border-gray-300' : ''
-                  }`}
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  {selectedTimeRange === 'all' ? 'All Time' : 
-                   selectedTimeRange === '30d' ? 'Last 30 Days' :
-                   selectedTimeRange === '7d' ? 'Last 7 Days' : 'Last 24 Hours'}
-                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showTimeRangeDropdown ? 'transform rotate-180' : ''}`} />
-                </Button>
-
-                {showTimeRangeDropdown && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                    <div className="py-1">
-                      {[
-                        { value: 'all', label: 'All Time' },
-                        { value: '30d', label: 'Last 30 Days' },
-                        { value: '7d', label: 'Last 7 Days' },
-                        { value: '1d', label: 'Last 24 Hours' }
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            setSelectedTimeRange(option.value as any);
-                            setShowTimeRangeDropdown(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 ${
-                            selectedTimeRange === option.value 
-                              ? 'bg-gray-50 text-black font-medium' 
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <SelectDropdown
+                options={timeRangeOptions}
+                selected={selectedTimeRange}
+                onSelect={val => setSelectedTimeRange(val as any)}
+                buttonIcon={Clock}
+              />
               
               {/* Category Filter */}
-              <div className="relative">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setShowCategoryDropdown(!showCategoryDropdown);
-                    setShowTimeRangeDropdown(false);
-                  }}
-                  className={`border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 py-2.5 px-4 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md ${
-                    showCategoryDropdown ? 'bg-gray-50 border-gray-300' : ''
-                  }`}
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  {selectedCategory === 'overall' ? 'Overall Performance' :
-                   selectedCategory === 'streak' ? 'Win Streak Leaders' :
-                   selectedCategory === 'consistency' ? 'Most Consistent' : 'Volume Leaders'}
-                  <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${showCategoryDropdown ? 'transform rotate-180' : ''}`} />
-                </Button>
-
-                {showCategoryDropdown && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                    <div className="py-1">
-                      {[
-                        { value: 'overall', label: 'Overall Performance', icon: Trophy },
-                        { value: 'streak', label: 'Win Streak Leaders', icon: Zap },
-                        { value: 'consistency', label: 'Most Consistent', icon: Target },
-                        { value: 'volume', label: 'Volume Leaders', icon: TrendingUp }
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            setSelectedCategory(option.value as any);
-                            setShowCategoryDropdown(false);
-                          }}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 flex items-center ${
-                            selectedCategory === option.value 
-                              ? 'bg-gray-50 text-black font-medium' 
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          <option.icon className="h-4 w-4 mr-2" />
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+               <SelectDropdown
+                    options={categoryOptions}
+                    selected={selectedCategory}
+                    onSelect={val => setSelectedCategory(val as any)}
+                    buttonIcon={Filter}
+                />
 
               {/* Refresh Button */}
               <Button

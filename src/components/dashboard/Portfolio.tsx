@@ -7,32 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 import { useDailyChanges } from '@/hooks/useDailyChanges';
 import { 
-  TrendingUp, 
-  TrendingDown,
-  DollarSign,
   Target,
   BarChart3,
   PieChart,
-  Calendar,
-  Clock,
-  Users,
-  Volume2,
-  Eye,
   AlertCircle,
   RefreshCw,
-  Download,
-  Filter,
-  ArrowUpDown,
-  Star,
-  Zap,
-  Activity,
-  ChevronDown,
-  ChevronUp,
-  Plus,
-  Minus,
-  Settings,
-  BookOpen,
-  Award,
   Radio
 } from "lucide-react";
 import { PortfolioCharts } from './PortfolioCharts';
