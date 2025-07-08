@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 import { ClientRedirectManager } from '@/lib/redirect-manager';
 import { 
@@ -18,13 +18,42 @@ import {
   IconDatabase,
   IconDeviceDesktop,
   IconFlag,
-  IconFileText
+  IconFileText,
+  IconX
 } from '@tabler/icons-react';
 
-export function AnimatedSidebar() {
+interface AnimatedSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+
+  // Sync internal open state with parent's isOpen prop
+  useEffect(() => {
+    if (isOpen !== undefined) {
+      setOpen(isOpen);
+    }
+  }, [isOpen]);
+
+  // Handle closing sidebar
+  const handleClose = () => {
+    setOpen(false);
+    onClose?.();
+  };
+
+  // Handle navigation
+  const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    router.push(href);
+    if (window.innerWidth < 1024) {
+      handleClose();
+    }
+  };
 
   // Check if user has admin role
   const isAdmin = user?.user_metadata?.role === 'admin';
@@ -56,6 +85,9 @@ export function AnimatedSidebar() {
       icon: (
         <item.icon className="h-5 w-5 shrink-0 text-neutral-500 group-hover:text-neutral-900 dark:text-neutral-400 dark:group-hover:text-white transition-colors" />
       ),
+      onClick: (e?: React.MouseEvent<HTMLAnchorElement>) => {
+        if (e) handleNavigation(e, item.href);
+      }
     }));
   };
 
@@ -67,20 +99,26 @@ export function AnimatedSidebar() {
     label: 'Settings',
     href: '/Settings',
     icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-500 group-hover:text-neutral-900 dark:text-neutral-400 dark:group-hover:text-white transition-colors" />,
+    onClick: (e?: React.MouseEvent<HTMLAnchorElement>) => {
+      if (e) handleNavigation(e, '/Settings');
+    }
   };
 
   return (
     <Sidebar open={open} setOpen={setOpen}>
-      <SidebarBody className="justify-between gap-10">
+      <SidebarBody>
         <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
           {/* Logo */}
           <SidebarLink
             link={{
               label: open ? 'YesNoMaybe' : '',
-              href: '#',
+              href: '/',
               icon: (
                 <div className="h-6 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
               ),
+              onClick: (e?: React.MouseEvent<HTMLAnchorElement>) => {
+                if (e) handleNavigation(e, '/dashboard');
+              }
             }}
             variant="brand"
             className="mb-2"
@@ -102,7 +140,11 @@ export function AnimatedSidebar() {
                   />
                 )}
                 {adminLinks.map((link, idx) => (
-                  <SidebarLink key={idx} link={link} />
+                  <SidebarLink 
+                    key={idx} 
+                    link={link}
+                    className={pathname === link.href ? 'bg-neutral-100 dark:bg-neutral-800/50' : ''}
+                  />
                 ))}
               </>
             ) : (
@@ -119,7 +161,11 @@ export function AnimatedSidebar() {
                   />
                 )}
                 {regularLinks.map((link, idx) => (
-                  <SidebarLink key={idx} link={link} />
+                  <SidebarLink 
+                    key={idx} 
+                    link={link}
+                    className={pathname === link.href ? 'bg-neutral-100 dark:bg-neutral-800/50' : ''}
+                  />
                 ))}
               </>
             )}
@@ -130,7 +176,10 @@ export function AnimatedSidebar() {
                 <div className="border-t border-neutral-200 dark:border-neutral-800"></div>
               </div>
             )}
-            <SidebarLink link={settingsLink} />
+            <SidebarLink 
+              link={settingsLink}
+              className={pathname === '/Settings' ? 'bg-neutral-100 dark:bg-neutral-800/50' : ''}
+            />
           </div>
         </div>
       </SidebarBody>

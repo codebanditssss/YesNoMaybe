@@ -8,7 +8,7 @@ interface Links {
   label: string;
   href: string;
   icon: React.JSX.Element | React.ReactNode;
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 interface SidebarContextProps {
@@ -86,22 +86,20 @@ export const DesktopSidebar = ({
 }: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen, animate } = useSidebar();
   return (
-    <>
-      <motion.div
-        className={cn(
-          "h-full px-4 py-6 hidden md:flex md:flex-col bg-white dark:bg-neutral-900 w-[300px] shrink-0 border-r dark:border-neutral-800",
-          className
-        )}
-        animate={{
-          width: animate ? (open ? "300px" : "72px") : "300px",
-        }}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-        {...props}
-      >
-        {children}
-      </motion.div>
-    </>
+    <motion.div
+      className={cn(
+        "h-full px-4 py-6 hidden lg:flex lg:flex-col bg-white dark:bg-neutral-900 w-[300px] shrink-0 border-r dark:border-neutral-800",
+        className
+      )}
+      animate={{
+        width: animate ? (open ? "300px" : "72px") : "300px",
+      }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      {...props}
+    >
+      {children}
+    </motion.div>
   );
 };
 
@@ -113,50 +111,35 @@ export const MobileSidebar = ({
   const { open, setOpen } = useSidebar();
   return (
     <>
-      <div
-        className={cn(
-          "h-14 px-4 flex flex-row md:hidden items-center justify-between bg-white dark:bg-neutral-900 w-full border-b dark:border-neutral-800",
-          className
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+            className={cn(
+              "fixed inset-0 z-50 flex h-full w-full flex-col bg-white lg:hidden dark:bg-neutral-900",
+              className
+            )}
+            {...props}
+          >
+            <div className="flex h-16 items-center justify-between px-4 border-b dark:border-neutral-800">
+              <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Menu</div>
+              <button
+                onClick={() => setOpen(false)}
+                className="rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-neutral-100 dark:ring-offset-neutral-950 dark:focus:ring-neutral-800 dark:data-[state=open]:bg-neutral-800"
+              >
+                <IconX className="h-6 w-6" />
+                <span className="sr-only">Close</span>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto py-4 px-4">
+              {children}
+            </div>
+          </motion.div>
         )}
-        {...props}
-      >
-        <div className="flex justify-end z-20 w-full">
-          <IconMenu2
-            className="h-6 w-6 text-neutral-800 dark:text-neutral-200 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-400 transition-colors"
-            onClick={() => setOpen(!open)}
-          />
-        </div>
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              initial={{ x: "-100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "-100%", opacity: 0 }}
-              transition={{
-                duration: 0.3,
-                ease: "easeInOut",
-              }}
-              className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 z-[100] flex flex-col justify-between",
-                className
-              )}
-            >
-              <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between p-4 border-b dark:border-neutral-800">
-                  <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Menu</div>
-                  <IconX 
-                    className="h-6 w-6 text-neutral-800 dark:text-neutral-200 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-400 transition-colors"
-                    onClick={() => setOpen(!open)}
-                  />
-                </div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  {children}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      </AnimatePresence>
     </>
   );
 };
@@ -167,16 +150,15 @@ export const SidebarLink = ({
   variant = "default",
   ...props
 }: {
-  link: Links & { onClick?: () => void };
+  link: Links & { onClick?: (e?: React.MouseEvent<HTMLAnchorElement>) => void };
   className?: string;
   variant?: "default" | "brand" | "muted" | "danger";
 }) => {
   const { open, animate } = useSidebar();
   
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (link.onClick) {
-      e.preventDefault();
-      link.onClick();
+      link.onClick(e);
     }
   };
 
