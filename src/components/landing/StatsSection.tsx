@@ -66,7 +66,7 @@ function AnimatedStat({ value, label, delay = 0 }: { value: string, label: strin
     >
       {/* Ink stamp effect background */}
       <motion.div
-        className="absolute inset-0 bg-white/5 rounded-lg backdrop-blur-sm"
+        className="absolute inset-0 bg-black/5 rounded-lg backdrop-blur-sm"
         initial={{ scale: 0, rotate: -5 }}
         animate={isInView ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -5 }}
         transition={{ duration: 0.4, delay: delay / 1000 + 0.2, type: "spring" }}
@@ -74,7 +74,7 @@ function AnimatedStat({ value, label, delay = 0 }: { value: string, label: strin
       
       {/* Geometric accent */}
       <motion.div
-        className="absolute -top-2 -right-2 w-4 h-4 bg-white transform rotate-45"
+        className="absolute -top-2 -right-2 w-4 h-4 bg-black transform rotate-45"
         initial={{ opacity: 0, scale: 0 }}
         animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0 }}
         transition={{ duration: 0.3, delay: delay / 1000 + 0.5 }}
@@ -83,10 +83,10 @@ function AnimatedStat({ value, label, delay = 0 }: { value: string, label: strin
       <div className="relative p-6 text-center space-y-3">
         {/* Animated number */}
         <motion.div 
-          className="text-4xl md:text-5xl font-light text-white font-mono"
+          className="text-4xl md:text-5xl font-light text-black font-mono"
           style={{ fontFeatureSettings: '"tnum"' }} // Tabular numbers for consistent width
         >
-          <span className="text-gray-400">{prefix}</span>
+          <span className="text-gray-600">{prefix}</span>
           <motion.span
             key={count}
             initial={{ y: 20, opacity: 0 }}
@@ -95,12 +95,12 @@ function AnimatedStat({ value, label, delay = 0 }: { value: string, label: strin
           >
             {count.toLocaleString()}
           </motion.span>
-          <span className="text-gray-400">{suffix}</span>
+          <span className="text-gray-600">{suffix}</span>
         </motion.div>
         
         {/* Label with typewriter effect */}
         <motion.div 
-          className="text-sm font-medium text-gray-400 uppercase tracking-wider"
+          className="text-sm font-medium text-gray-600 uppercase tracking-wider"
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 0.4, delay: delay / 1000 + 0.8 }}
@@ -110,7 +110,7 @@ function AnimatedStat({ value, label, delay = 0 }: { value: string, label: strin
         
         {/* Underline effect */}
         <motion.div
-          className="h-px bg-gradient-to-r from-transparent via-white to-transparent"
+          className="h-px bg-gradient-to-r from-transparent via-black to-transparent"
           initial={{ scaleX: 0 }}
           animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
           transition={{ duration: 0.6, delay: delay / 1000 + 1 }}
@@ -119,7 +119,7 @@ function AnimatedStat({ value, label, delay = 0 }: { value: string, label: strin
       
       {/* Hover effect */}
       <motion.div
-        className="absolute inset-0 border border-white/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className="absolute inset-0 border border-black/20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         whileHover={{ scale: 1.02 }}
       />
     </motion.div>
@@ -128,7 +128,7 @@ function AnimatedStat({ value, label, delay = 0 }: { value: string, label: strin
 
 export function StatsSection() {
   const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true, threshold: 0.1 });
+  const isInView = useInView(sectionRef, { once: true });
   
   const stats = [
     {
@@ -150,16 +150,16 @@ export function StatsSection() {
   ];
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 bg-black relative overflow-hidden">
+    <section ref={sectionRef} className="py-24 px-6 bg-white relative overflow-hidden">
       {/* Background geometric patterns */}
-      <div className="absolute inset-0 opacity-10">
+      <div className="absolute inset-0 opacity-5">
         <motion.div
-          className="absolute top-20 left-20 w-32 h-32 border border-white rotate-45"
+          className="absolute top-20 left-20 w-32 h-32 border border-black rotate-45"
           animate={isInView ? { rotate: [45, 405] } : {}}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         />
         <motion.div
-          className="absolute bottom-20 right-20 w-24 h-24 border border-white"
+          className="absolute bottom-20 right-20 w-24 h-24 border border-black"
           animate={isInView ? { rotate: [0, 360] } : {}}
           transition={{ duration: 15, repeat: Infinity, ease: "linear", delay: 5 }}
         />
@@ -174,14 +174,14 @@ export function StatsSection() {
           transition={{ duration: 0.6 }}
         >
           <motion.h2 
-            className="text-3xl md:text-4xl font-light text-white mb-4"
+            className="text-3xl md:text-4xl font-light text-black mb-4"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
             Real Numbers,{' '}
             <motion.span 
-              className="text-gray-400"
+              className="text-gray-600"
               initial={{ opacity: 0 }}
               animate={isInView ? { opacity: 1 } : { opacity: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
@@ -190,7 +190,7 @@ export function StatsSection() {
             </motion.span>
           </motion.h2>
           <motion.p 
-            className="text-gray-500 text-lg"
+            className="text-gray-600 text-lg"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -198,26 +198,18 @@ export function StatsSection() {
             Live metrics from our growing community
           </motion.p>
         </motion.div>
-        
+
         {/* Stats grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
             <AnimatedStat
-              key={index}
+              key={stat.label}
               value={stat.value}
               label={stat.label}
               delay={index * 200}
             />
           ))}
         </div>
-        
-        {/* Bottom accent line */}
-        <motion.div
-          className="mt-16 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"
-          initial={{ scaleX: 0 }}
-          animate={isInView ? { scaleX: 1 } : { scaleX: 0 }}
-          transition={{ duration: 1.2, delay: 1.5 }}
-        />
       </div>
     </section>
   );

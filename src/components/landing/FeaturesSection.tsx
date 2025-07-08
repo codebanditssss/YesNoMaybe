@@ -51,29 +51,29 @@ function OrigamiCard({ feature, index }: { feature: any, index: number }) {
     >
       {/* Shadow base */}
       <motion.div
-        className="absolute inset-0 bg-black rounded-lg"
-        initial={{ y: 0, opacity: 0.3 }}
+        className="absolute inset-0 bg-black/10 rounded-lg"
+        initial={{ y: 0, opacity: 0.1 }}
         animate={{
           y: isHovered ? 8 : 4,
-          opacity: isHovered ? 0.6 : 0.3,
+          opacity: isHovered ? 0.2 : 0.1,
           scale: isHovered ? 1.02 : 1
         }}
         transition={{ duration: 0.3 }}
       />
 
       {/* Main card with fold effect */}
-      <Card className="relative bg-white border-none overflow-hidden transform-gpu">
+      <Card className="relative bg-white border border-black/10 overflow-hidden transform-gpu">
         {/* Fold line effect */}
         <motion.div
-          className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-gray-100 to-transparent opacity-0"
+          className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-black/5 to-transparent opacity-0"
           animate={{
-            opacity: isHovered ? 0.3 : 0,
+            opacity: isHovered ? 0.1 : 0,
             scaleX: isHovered ? 1 : 0.8,
           }}
           transition={{ duration: 0.4 }}
           style={{
             background: isHovered 
-              ? 'linear-gradient(45deg, transparent 0%, rgba(0,0,0,0.05) 20%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.05) 80%, transparent 100%)'
+              ? 'linear-gradient(45deg, transparent 0%, rgba(0,0,0,0.02) 20%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.02) 80%, transparent 100%)'
               : 'transparent'
           }}
         />
@@ -82,7 +82,7 @@ function OrigamiCard({ feature, index }: { feature: any, index: number }) {
         <motion.div
           className="absolute top-0 right-0 w-0 h-0"
           style={{
-            borderLeft: isHovered ? '20px solid #f3f4f6' : '0px solid transparent',
+            borderLeft: isHovered ? '20px solid #fafafa' : '0px solid transparent',
             borderBottom: isHovered ? '20px solid transparent' : '0px solid transparent',
           }}
           transition={{ duration: 0.3 }}
@@ -107,7 +107,7 @@ function OrigamiCard({ feature, index }: { feature: any, index: number }) {
           >
             {/* Icon shadow/depth */}
             <motion.div
-              className="absolute inset-0 bg-black rounded-sm opacity-20"
+              className="absolute inset-0 bg-black rounded-sm opacity-10"
               animate={{
                 x: isHovered ? 2 : 0,
                 y: isHovered ? 2 : 0,
@@ -122,13 +122,13 @@ function OrigamiCard({ feature, index }: { feature: any, index: number }) {
 
             {/* Geometric accent lines */}
             <motion.div
-              className="absolute -bottom-1 -right-1 w-4 h-1 bg-gray-300"
+              className="absolute -bottom-1 -right-1 w-4 h-1 bg-black/20"
               initial={{ scaleX: 0 }}
               animate={{ scaleX: isInView ? 1 : 0 }}
               transition={{ duration: 0.6, delay: index * 0.2 + 0.5 }}
             />
             <motion.div
-              className="absolute -bottom-1 -right-1 w-1 h-4 bg-gray-300"
+              className="absolute -bottom-1 -right-1 w-1 h-4 bg-black/20"
               initial={{ scaleY: 0 }}
               animate={{ scaleY: isInView ? 1 : 0 }}
               transition={{ duration: 0.6, delay: index * 0.2 + 0.7 }}
@@ -198,29 +198,17 @@ function OrigamiCard({ feature, index }: { feature: any, index: number }) {
             </motion.div>
 
             <motion.span
-              className="text-sm text-gray-600 uppercase tracking-wide font-medium"
+              className="text-sm font-medium text-gray-600 uppercase tracking-wide"
               animate={{
-                opacity: isHovered ? 1 : 0.8,
-                x: isHovered ? 4 : 0,
+                x: isHovered ? 5 : 0,
+                opacity: isHovered ? 1 : 0.7,
               }}
               transition={{ duration: 0.3 }}
             >
-              Explore
+              EXPLORE
             </motion.span>
           </motion.div>
         </motion.div>
-
-        {/* Paper grain texture overlay */}
-        <div 
-          className="absolute inset-0 opacity-[0.02] pointer-events-none"
-          style={{
-            backgroundImage: `
-              radial-gradient(circle at 1px 1px, rgba(0,0,0,0.8) 1px, transparent 0),
-              radial-gradient(circle at 2px 3px, rgba(0,0,0,0.3) 0.5px, transparent 0)
-            `,
-            backgroundSize: '4px 4px, 8px 8px'
-          }}
-        />
       </Card>
     </motion.div>
   );
@@ -228,78 +216,69 @@ function OrigamiCard({ feature, index }: { feature: any, index: number }) {
 
 export function FeaturesSection() {
   const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true, threshold: 0.1 });
+  const isInView = useInView(sectionRef, { once: true });
 
   const features = [
     {
-      iconComponent: TradingChartIcon,
-      title: "Real-time Analytics",
-      description: "Advanced market analytics with institutional-grade insights. Track sentiment, volume, and price movements with precision timing."
+      title: "Real-Time Trading",
+      description: "Experience lightning-fast execution with our advanced trading engine. Place trades and see results instantly.",
+      iconComponent: TradingChartIcon
     },
     {
-      iconComponent: LightningBoltIcon,
-      title: "Instant Execution", 
-      description: "Lightning-fast order execution with minimal slippage. Your predictions are processed in milliseconds, not minutes."
+      title: "Secure Platform",
+      description: "Your funds and data are protected by bank-grade security. Trade with complete peace of mind.",
+      iconComponent: ShieldCheckIcon
     },
     {
-      iconComponent: ShieldCheckIcon,
-      title: "Bank-level Security",
-      description: "Military-grade encryption protects your funds. Multi-factor authentication and cold storage keep your investments secure."
+      title: "Smart Analytics",
+      description: "Make informed decisions with our comprehensive market analysis and trading insights.",
+      iconComponent: LightningBoltIcon
     }
   ];
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 bg-white/5 relative overflow-hidden">
-      {/* Background paper texture */}
-      <div 
-        className="absolute inset-0 opacity-30"
-        style={{
+    <section ref={sectionRef} className="py-24 px-6 bg-white relative overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
           backgroundImage: `
-            linear-gradient(45deg, transparent 46%, rgba(0,0,0,0.03) 49%, rgba(0,0,0,0.03) 51%, transparent 54%),
-            linear-gradient(-45deg, transparent 46%, rgba(0,0,0,0.03) 49%, rgba(0,0,0,0.03) 51%, transparent 54%)
+            linear-gradient(90deg, transparent 49%, black 50%, black 51%, transparent 52%),
+            linear-gradient(0deg, transparent 49%, black 50%, black 51%, transparent 52%)
           `,
-          backgroundSize: '20px 20px'
-        }}
-      />
+          backgroundSize: '50px 50px'
+        }} />
+      </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
         {/* Section header */}
         <motion.div 
-          className="text-center mb-20"
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.8 }}
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6 }}
         >
           <motion.h2 
-            className="text-4xl md:text-5xl font-light text-white mb-6"
+            className="text-3xl md:text-4xl font-light text-black mb-4"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
-            Engineered for{' '}
-            <motion.span 
-              className="text-gray-400"
-              initial={{ opacity: 0 }}
-              animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 1, delay: 0.6 }}
-            >
-              Precision
-            </motion.span>
+            Why Choose Us
           </motion.h2>
           <motion.p 
-            className="text-lg text-gray-400 max-w-2xl mx-auto leading-relaxed"
+            className="text-gray-600 text-lg"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Professional prediction markets demand professional tools. Our platform delivers institutional-grade features in an elegant interface.
+            Experience the future of prediction markets
           </motion.p>
         </motion.div>
-        
+
         {/* Features grid */}
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <OrigamiCard key={index} feature={feature} index={index} />
+            <OrigamiCard key={feature.title} feature={feature} index={index} />
           ))}
         </div>
       </div>

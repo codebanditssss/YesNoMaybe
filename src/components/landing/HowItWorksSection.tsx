@@ -98,14 +98,14 @@ function PuppetTheater() {
   return (
     <div ref={ref} className="relative">
       {/* Theater stage */}
-      <div className="relative h-96 bg-gradient-to-b from-gray-100 to-gray-300 rounded-lg overflow-hidden border-4 border-black">
+      <div className="relative h-96 bg-white rounded-lg overflow-hidden border-2 border-black">
         {/* Spotlight effect */}
         <motion.div
-          className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/20"
+          className="absolute inset-0 bg-gradient-radial from-transparent via-transparent to-black/10"
           animate={{
             background: isInView 
-              ? `radial-gradient(circle at ${50 + currentStep * 20}% 60%, transparent 20%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.3) 70%)`
-              : 'radial-gradient(circle at 50% 60%, transparent 20%, rgba(0,0,0,0.3) 70%)'
+              ? `radial-gradient(circle at ${50 + currentStep * 20}% 60%, transparent 20%, rgba(0,0,0,0.05) 40%, rgba(0,0,0,0.1) 70%)`
+              : 'radial-gradient(circle at 50% 60%, transparent 20%, rgba(0,0,0,0.1) 70%)'
           }}
           transition={{ duration: 1 }}
         />
@@ -364,129 +364,117 @@ function PuppetTheater() {
         <div className="absolute top-0 right-0 w-8 h-full bg-gradient-to-l from-red-800 to-red-600"></div>
       </div>
 
-      {/* Theater controls */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <motion.button
-            onClick={handlePlay}
-            className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {autoPlay ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-            <span className="text-sm">{autoPlay ? 'Pause' : 'Play'}</span>
-          </motion.button>
-          
-          <motion.button
-            onClick={handleNext}
-            className="p-2 border border-white/30 rounded hover:bg-white/10 transition-colors text-white"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <SkipForward className="w-4 h-4" />
-          </motion.button>
-          
-          <motion.button
-            onClick={handleRestart}
-            className="p-2 border border-white/30 rounded hover:bg-white/10 transition-colors text-white"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <RotateCcw className="w-4 h-4" />
-          </motion.button>
+      {/* Progress indicators */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2">
+        {steps.map((_, index) => (
+          <motion.div
+            key={index}
+            className={`w-2 h-2 rounded-full ${
+              index === currentStep ? 'bg-black' : 'bg-gray-400'
+            }`}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: index * 0.1 }}
+          />
+        ))}
         </div>
+
+      {/* Controls */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-4">
+        <motion.button
+          className="p-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={handlePlay}
+        >
+          {autoPlay ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+        </motion.button>
         
-        {/* Progress indicator */}
-        <div className="flex space-x-2">
-          {steps.map((_, index) => (
-            <motion.div
-              key={index}
-              className={`w-3 h-3 rounded-full border-2 border-white ${
-                index === currentStep ? 'bg-white' : 'bg-transparent'
-              }`}
-              animate={{
-                scale: index === currentStep ? 1.2 : 1
-              }}
-              transition={{ duration: 0.3 }}
-            />
-          ))}
-        </div>
+        <motion.button
+          className="p-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={handleNext}
+        >
+          <SkipForward className="w-4 h-4" />
+        </motion.button>
+        
+        <motion.button
+          className="p-2 rounded-full bg-black text-white hover:bg-gray-800 transition-colors"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={handleRestart}
+        >
+          <RotateCcw className="w-4 h-4" />
+        </motion.button>
       </div>
 
-      {/* Step description */}
-      <motion.div 
-        className="mt-6 text-center"
+      {/* Step title */}
+      <motion.div
+        className="absolute top-8 left-1/2 transform -translate-x-1/2 text-center"
         key={currentStep}
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        exit={{ opacity: 0, y: 20 }}
       >
-        <h3 className="text-xl font-medium text-white mb-2">
+        <h3 className="text-2xl font-medium text-black mb-2">
           {steps[currentStep].title}
         </h3>
-        <p className="text-gray-300">
+        <p className="text-gray-600">
           {steps[currentStep].description}
         </p>
       </motion.div>
-    </div>
+              </div>
   );
 }
 
 export function HowItWorksSection() {
   const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true, threshold: 0.1 });
+  const isInView = useInView(sectionRef, { once: true });
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 bg-black relative overflow-hidden">
-      {/* Theater background pattern */}
-      <div 
-        className="absolute inset-0 opacity-10"
-        style={{
+    <section ref={sectionRef} className="py-24 px-6 bg-white relative overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
           backgroundImage: `
-            radial-gradient(circle at 25% 25%, white 2px, transparent 2px),
-            radial-gradient(circle at 75% 75%, white 1px, transparent 1px)
+            linear-gradient(90deg, transparent 49%, black 50%, black 51%, transparent 52%),
+            linear-gradient(0deg, transparent 49%, black 50%, black 51%, transparent 52%)
           `,
-          backgroundSize: '30px 30px, 20px 20px'
-        }}
-      />
+          backgroundSize: '50px 50px'
+        }} />
+            </div>
 
-      <div className="max-w-4xl mx-auto relative z-10">
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Section header */}
         <motion.div 
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.8 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6 }}
         >
           <motion.h2 
-            className="text-4xl md:text-5xl font-light text-white mb-6"
+            className="text-3xl md:text-4xl font-light text-black mb-4"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
-            Shadow Puppet{' '}
-            <motion.span 
-              className="text-gray-400"
-              initial={{ opacity: 0 }}
-              animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 1, delay: 0.6 }}
-            >
-              Trading Theater
-            </motion.span>
+            How It Works
           </motion.h2>
           <motion.p 
-            className="text-lg text-gray-400 max-w-2xl mx-auto"
+            className="text-gray-600 text-lg"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Watch your trading journey unfold in our interactive puppet show. 
-            Four simple acts to transform predictions into profits.
+            Start trading in four simple steps
           </motion.p>
         </motion.div>
 
         {/* Interactive puppet theater */}
-        <PuppetTheater />
+        <div className="max-w-3xl mx-auto">
+          <PuppetTheater />
+        </div>
       </div>
     </section>
   );

@@ -11,7 +11,7 @@ interface LandingPageProps {
 
 export function LandingPage({ onOpenAuth }: LandingPageProps) {
   return (
-    <div className="bg-black min-h-screen">
+    <div className="bg-white min-h-screen">
       <HeroSection onOpenAuth={onOpenAuth} />
       <StatsSection />
       <FeaturesSection />

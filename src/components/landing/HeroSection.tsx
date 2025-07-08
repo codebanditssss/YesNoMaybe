@@ -59,13 +59,13 @@ function MarketPreview() {
 
   return (
     <motion.div 
-      className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-6 max-w-md mx-auto"
+      className="max-w-md mx-auto"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 1.5 }}
     >
       <div className="space-y-4">
-        <div className="flex items-center justify-between text-xs text-gray-400 uppercase tracking-wide">
+        <div className="flex items-center justify-between text-xs text-gray-600 uppercase tracking-wide">
           <span>Live Market</span>
           <span>Volume: {currentMarket.volume}</span>
         </div>
@@ -73,7 +73,7 @@ function MarketPreview() {
         <AnimatePresence mode="wait">
           <motion.h3 
             key={selectedMarket}
-            className="text-white font-medium text-sm leading-tight"
+            className="text-black font-medium text-sm leading-tight"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -88,39 +88,39 @@ function MarketPreview() {
             className={`p-3 rounded border transition-all ${
               userPrediction === 'yes' 
                 ? 'bg-green-500 text-white border-green-500' 
-                : 'bg-green-500/20 text-green-400 border-green-500/30 hover:border-green-500/60 hover:bg-green-500/30'
+                : 'bg-green-500/20 text-green-600 border-green-500/30 hover:border-green-500/60 hover:bg-green-500/30'
             }`}
             onClick={() => handlePrediction('yes')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="text-xs text-green-300 mb-1">YES</div>
-            <div className="font-bold text-white">{currentMarket.yesPrice}¢</div>
+            <div className="text-xs text-green-700 mb-1">YES</div>
+            <div className="font-bold text-black">{currentMarket.yesPrice}¢</div>
           </motion.button>
           
           <motion.button
             className={`p-3 rounded border transition-all ${
               userPrediction === 'no' 
                 ? 'bg-red-500 text-white border-red-500' 
-                : 'bg-red-500/20 text-red-400 border-red-500/30 hover:border-red-500/60 hover:bg-red-500/30'
+                : 'bg-red-500/20 text-red-600 border-red-500/30 hover:border-red-500/60 hover:bg-red-500/30'
             }`}
             onClick={() => handlePrediction('no')}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="text-xs text-red-300 mb-1">NO</div>
-            <div className="font-bold text-white">{currentMarket.noPrice}¢</div>
+            <div className="text-xs text-red-700 mb-1">NO</div>
+            <div className="font-bold text-black">{currentMarket.noPrice}¢</div>
           </motion.button>
         </div>
 
         {userPrediction && (
           <motion.div 
-            className="bg-white/10 rounded p-3 text-center"
+            className="text-center mt-4"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <div className="text-xs text-gray-400 mb-1">Potential Profit</div>
-            <div className={`font-bold text-lg ${profitPreview > 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <div className="text-xs text-gray-600 mb-1">Potential Profit</div>
+            <div className={`font-bold text-lg ${profitPreview > 0 ? 'text-green-600' : 'text-red-600'}`}>
               {profitPreview > 0 ? '+' : ''}₹{profitPreview}
             </div>
             <div className="text-xs text-gray-500 mt-1">On ₹1,000 investment</div>
@@ -149,8 +149,8 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
           className="absolute inset-0 opacity-20"
           style={{
             backgroundImage: `
-              linear-gradient(90deg, transparent 49%, white 50%, white 51%, transparent 52%),
-              linear-gradient(0deg, transparent 49%, white 50%, white 51%, transparent 52%)
+              linear-gradient(90deg, transparent 49%, black 50%, black 51%, transparent 52%),
+              linear-gradient(0deg, transparent 49%, black 50%, black 51%, transparent 52%)
             `,
             backgroundSize: '50px 50px'
           }}
@@ -166,7 +166,7 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
         
         {/* Ink Splash Effect */}
         <motion.div
-          className="absolute top-1/4 left-1/4 w-64 h-64 bg-white rounded-full opacity-5"
+          className="absolute top-1/4 left-1/4 w-64 h-64 bg-black rounded-full opacity-5"
           animate={{
             scale: [0, 1.2, 0.8, 1],
             opacity: [0, 0.1, 0.05, 0.1]
@@ -178,7 +178,7 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
           }}
         />
         <motion.div
-          className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-white rounded-full opacity-5"
+          className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-black rounded-full opacity-5"
           animate={{
             scale: [0.8, 1.3, 0.9, 1.1],
             opacity: [0.05, 0.15, 0.03, 0.1]
@@ -195,13 +195,13 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
       <div className="relative z-10 max-w-6xl mx-auto text-center space-y-12">
         {/* Dynamic Badge */}
         <motion.div 
-          className="inline-flex items-center px-6 py-3 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm"
+          className="inline-flex items-center px-6 py-3 rounded-full border border-black/20 bg-black/5 backdrop-blur-sm"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Zap className="w-4 h-4 mr-2 text-white" />
-          <span className="text-sm font-medium text-white">
+          <Zap className="w-4 h-4 mr-2 text-black" />
+          <span className="text-sm font-medium text-black">
             {user ? "Welcome back to your trading dashboard" : "India's First Real-Money Prediction Market"}
           </span>
         </motion.div>
@@ -209,7 +209,7 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
         {/* Main Heading with Typewriter Effect */}
         <div className="space-y-6">
           <motion.h1 
-            className="text-6xl md:text-8xl font-light tracking-tight text-white leading-[0.9]"
+            className="text-6xl md:text-8xl font-light tracking-tight text-black leading-[0.9]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
@@ -223,10 +223,10 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
           >
-            <h2 className="text-2xl md:text-4xl font-light text-gray-300 min-h-[3rem] flex items-center">
+            <h2 className="text-2xl md:text-4xl font-light text-gray-700 min-h-[3rem] flex items-center">
               {typewriterText}
               <motion.span
-                className="ml-1 w-1 h-8 bg-white"
+                className="ml-1 w-1 h-8 bg-black"
                 animate={{ opacity: [0, 1, 0] }}
                 transition={{ duration: 1, repeat: Infinity }}
               />
@@ -248,27 +248,17 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
             {[
               { value: "₹1.2L+", label: "Weekly Volume" },
               { value: "247", label: "Active Traders" },
-              { value: "12", label: "Live Markets" }
+              { value: "98%", label: "Resolution Rate" }
             ].map((stat, index) => (
-              <motion.div 
-                key={index}
-                className="text-center space-y-2"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 2.5 + index * 0.2, type: "spring" }}
-              >
-                <div className="text-2xl md:text-3xl font-light text-white">
-                  {stat.value}
-                </div>
-                <div className="text-sm text-gray-400 uppercase tracking-wide">
-                  {stat.label}
-                </div>
-              </motion.div>
+              <div key={index} className="text-center">
+                <div className="text-2xl font-bold text-black">{stat.value}</div>
+                <div className="text-sm text-gray-600">{stat.label}</div>
+              </div>
             ))}
           </motion.div>
         )}
 
-        {/* Call to Actions */}
+        {/* CTA Buttons */}
         <motion.div 
           className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8"
           initial={{ opacity: 0, y: 20 }}
@@ -280,13 +270,13 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
           ) : user ? (
             <>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button size="lg" className="bg-white text-black hover:bg-gray-100 px-8 py-6 text-lg font-medium">
+                <Button size="lg" className="bg-black text-white hover:bg-gray-900 px-8 py-6 text-lg font-medium">
                   <TrendingUp className="mr-2 h-5 w-5" />
                   Explore Markets
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-black px-8 py-6 text-lg font-medium">
+                <Button variant="outline" size="lg" className="border-black text-black hover:bg-black hover:text-white px-8 py-6 text-lg font-medium">
                   <BarChart3 className="mr-2 h-5 w-5" />
                   View Portfolio
                 </Button>
@@ -297,18 +287,17 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button 
                   size="lg" 
-                  className="bg-white text-black hover:bg-gray-100 px-8 py-6 text-lg font-medium"
+                  className="bg-black text-white hover:bg-gray-900 px-8 py-6 text-lg font-medium"
                   onClick={() => onOpenAuth?.('signup')}
                 >
                   Start Trading Free
-                  <TrendingUp className="ml-2 h-5 w-5" />
                 </Button>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="bg-white text-black hover:bg-gray-200 px-8 py-6 text-lg font-medium"
+                  className="border-black text-black hover:bg-black hover:text-white px-8 py-6 text-lg font-medium"
                   onClick={() => onOpenAuth?.('signin')}
                 >
                   See Live Markets
@@ -316,18 +305,6 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
               </motion.div>
             </>
           )}
-        </motion.div>
-
-        {/* Trust Indicators */}
-        <motion.div 
-          className="pt-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 3.5 }}
-        >
-          <p className="text-sm text-gray-400 uppercase tracking-wide">
-            Secure • Transparent • Real Money • Instant Payouts
-          </p>
         </motion.div>
       </div>
     </section>

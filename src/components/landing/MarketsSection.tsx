@@ -18,14 +18,14 @@ function TickerTape() {
   ];
 
   return (
-    <div className="relative h-8 bg-black text-white overflow-hidden font-mono text-sm">
+    <div className="relative h-8 bg-white text-black overflow-hidden font-mono text-sm border-y border-black">
       <motion.div
         className="absolute whitespace-nowrap flex items-center h-full"
         animate={{ x: [0, -2000] }}
         transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
       >
         {[...tickers, ...tickers, ...tickers].map((ticker, index) => (
-          <span key={index} className="mx-8 text-green-400">
+          <span key={index} className="mx-8 text-green-600">
             {ticker}
           </span>
         ))}
@@ -40,7 +40,7 @@ function NewspaperMarketCard({ market, index }: { market: any, index: number }) 
   const [currentPrice, setCurrentPrice] = useState(market.yesPrice);
   const [priceDirection, setPriceDirection] = useState<'up' | 'down' | 'neutral'>('neutral');
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, threshold: 0.1 });
+  const isInView = useInView(ref, { once: true });
 
   // Simulate price fluctuations
   useEffect(() => {
@@ -70,12 +70,12 @@ function NewspaperMarketCard({ market, index }: { market: any, index: number }) 
         animate={{
           x: isHovered ? 4 : 2,
           y: isHovered ? 4 : 2,
-          opacity: isHovered ? 0.3 : 0.15
+          opacity: isHovered ? 0.1 : 0.05
         }}
         transition={{ duration: 0.3 }}
       />
 
-      <Card className="relative bg-white border border-gray-300 overflow-hidden transform-gpu">
+      <Card className="relative bg-white border border-black/20 overflow-hidden transform-gpu">
         {/* Newspaper headline bar */}
         <div className="bg-black text-white px-4 py-2 flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -121,7 +121,7 @@ function NewspaperMarketCard({ market, index }: { market: any, index: number }) 
           <div className="flex items-center justify-between">
             <Badge 
               variant="secondary" 
-              className="bg-gray-100 text-black text-xs font-mono border border-gray-300"
+              className="bg-black text-white text-xs font-mono"
             >
               {market.category.toUpperCase()}
             </Badge>
@@ -144,7 +144,7 @@ function NewspaperMarketCard({ market, index }: { market: any, index: number }) 
           </motion.h3>
 
           {/* Price display with terminal styling */}
-          <div className="bg-gray-900 rounded p-4 font-mono">
+          <div className="bg-black rounded p-4 font-mono">
             <div className="grid grid-cols-2 gap-4">
               <motion.div 
                 className="text-center"
@@ -202,43 +202,17 @@ function NewspaperMarketCard({ market, index }: { market: any, index: number }) 
                 </motion.div>
               </motion.div>
             </div>
-
-            {/* Volume indicator */}
-            <motion.div 
-              className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-center text-gray-400 text-xs"
-              animate={{
-                opacity: isHovered ? 1 : 0.7
-              }}
-            >
-              <Volume2 className="w-3 h-3 mr-1" />
-              <span>24h Volume: {market.volume}</span>
-            </motion.div>
           </div>
 
-          {/* Trading action */}
-          <motion.div
-            className="flex items-center justify-between pt-2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: isInView ? 1 : 0 }}
-            transition={{ delay: index * 0.2 + 0.5 }}
+          {/* Volume indicator */}
+          <motion.div 
+            className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-center text-gray-400 text-xs"
+            animate={{
+              opacity: isHovered ? 1 : 0.7
+            }}
           >
-            <span className="text-sm text-gray-600">Quick Trade:</span>
-            <div className="flex space-x-2">
-              <motion.button
-                className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded border border-green-300 hover:bg-green-200 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                BUY YES
-              </motion.button>
-              <motion.button
-                className="px-3 py-1 bg-red-100 text-red-800 text-xs rounded border border-red-300 hover:bg-red-200 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                BUY NO
-              </motion.button>
-            </div>
+            <Volume2 className="w-3 h-3 mr-1" />
+            <span>24h Volume: {market.volume}</span>
           </motion.div>
         </motion.div>
 
@@ -258,117 +232,79 @@ function NewspaperMarketCard({ market, index }: { market: any, index: number }) 
 
 export function MarketsSection() {
   const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true, threshold: 0.1 });
+  const isInView = useInView(sectionRef, { once: true });
 
   const markets = [
     {
-      title: "Will Bitcoin hit $100K by Dec 2024?",
+      title: "Will India win the T20 World Cup 2024?",
+      category: "Sports",
+      yesPrice: 65,
+      volume: "₹2.4L"
+    },
+    {
+      title: "Will Bitcoin cross $100K by end of 2024?",
       category: "Crypto",
-      volume: "₹2.3L",
-      yesPrice: 67,
-      noPrice: 33
+      yesPrice: 78,
+      volume: "₹3.8L"
     },
     {
-      title: "AI solves climate change by 2030?",
-      category: "Technology", 
-      volume: "₹1.8L",
-      yesPrice: 23,
-      noPrice: 77
-    },
-    {
-      title: "Remote work majority by 2025?",
-      category: "Business",
-      volume: "₹4.1L",
-      yesPrice: 81,
-      noPrice: 19
+      title: "Will AI replace 30% of jobs by 2025?",
+      category: "Tech",
+      yesPrice: 45,
+      volume: "₹1.9L"
     }
   ];
 
   return (
-    <section ref={sectionRef} className="py-24 px-6 bg-black relative overflow-hidden">
-      {/* Newspaper texture background */}
-      <div 
-        className="absolute inset-0 opacity-5"
-        style={{
+    <section ref={sectionRef} className="py-24 px-6 bg-white relative overflow-hidden">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0" style={{
           backgroundImage: `
-            repeating-linear-gradient(
-              45deg,
-              transparent,
-              transparent 10px,
-              rgba(255,255,255,0.1) 10px,
-              rgba(255,255,255,0.1) 11px
-            ),
-            repeating-linear-gradient(
-              -45deg,
-              transparent,
-              transparent 10px,
-              rgba(255,255,255,0.1) 10px,
-              rgba(255,255,255,0.1) 11px
-            )
-          `
-        }}
-      />
+            linear-gradient(90deg, transparent 49%, black 50%, black 51%, transparent 52%),
+            linear-gradient(0deg, transparent 49%, black 50%, black 51%, transparent 52%)
+          `,
+          backgroundSize: '50px 50px'
+        }} />
+      </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
-        {/* Ticker tape */}
-        <TickerTape />
-        
         {/* Section header */}
         <motion.div 
-          className="text-center my-16"
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.8 }}
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6 }}
         >
           <motion.h2 
-            className="text-4xl md:text-5xl font-light text-white mb-6"
-            style={{ fontFamily: 'Georgia, serif' }}
+            className="text-3xl md:text-4xl font-light text-black mb-4"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
-            Market{' '}
-            <motion.span 
-              className="text-gray-400"
-              initial={{ opacity: 0 }}
-              animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-              transition={{ duration: 1, delay: 0.6 }}
-            >
-              Headlines
-            </motion.span>
+            Live Markets
           </motion.h2>
           <motion.p 
-            className="text-gray-400 text-lg font-mono"
+            className="text-gray-600 text-lg"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            LIVE MARKETS • REAL MONEY • INSTANT EXECUTION
+            Trade on real-world events with real-time market data
           </motion.p>
         </motion.div>
-        
-        {/* Markets grid */}
-        <div className="grid md:grid-cols-3 gap-8">
+
+        {/* Ticker tape */}
+        <div className="mb-12">
+          <TickerTape />
+        </div>
+
+        {/* Market cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {markets.map((market, index) => (
             <NewspaperMarketCard key={index} market={market} index={index} />
           ))}
         </div>
-
-        {/* Bottom trading floor aesthetic */}
-        <motion.div 
-          className="mt-16 p-6 bg-gray-900 rounded border border-gray-700"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ delay: 1 }}
-        >
-          <div className="text-center text-gray-400 font-mono text-sm">
-            <div className="flex items-center justify-center space-x-8">
-              <span>📈 TOTAL VOLUME: ₹12.4L TODAY</span>
-              <span>👥 ACTIVE TRADERS: 247</span>
-              <span>⚡ AVG EXECUTION: 0.3s</span>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

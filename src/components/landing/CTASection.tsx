@@ -128,7 +128,7 @@ export function CTASection({ onOpenAuth }: CTASectionProps) {
   const [inkExplosions, setInkExplosions] = useState<Array<{id: number, position: {x: number, y: number}}>>([]);
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const sectionRef = useRef(null);
-  const isInView = useInView(sectionRef, { once: true, threshold: 0.1 });
+  const isInView = useInView(sectionRef, { once: true });
 
   const handleButtonClick = (e: React.MouseEvent, buttonType: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -153,12 +153,12 @@ export function CTASection({ onOpenAuth }: CTASectionProps) {
   };
 
   return (
-    <section ref={sectionRef} className="py-24 px-4 bg-black relative overflow-hidden">
+    <section ref={sectionRef} className="py-24 px-4 bg-white relative overflow-hidden">
       {/* Dramatic background effects */}
       <div className="absolute inset-0">
         {/* Animated ink stains */}
         <motion.div
-          className="absolute top-20 left-10 w-64 h-64 bg-white/5 rounded-full blur-3xl"
+          className="absolute top-20 left-10 w-64 h-64 bg-black/5 rounded-full blur-3xl"
           animate={{
             scale: [1, 1.2, 0.8, 1],
             opacity: [0.1, 0.2, 0.05, 0.1]
@@ -170,7 +170,7 @@ export function CTASection({ onOpenAuth }: CTASectionProps) {
           }}
         />
         <motion.div
-          className="absolute bottom-20 right-10 w-48 h-48 bg-white/5 rounded-full blur-3xl"
+          className="absolute bottom-20 right-10 w-48 h-48 bg-black/5 rounded-full blur-3xl"
           animate={{
             scale: [0.8, 1.3, 1, 0.9],
             opacity: [0.05, 0.15, 0.1, 0.05]
@@ -188,8 +188,8 @@ export function CTASection({ onOpenAuth }: CTASectionProps) {
           className="absolute inset-0 opacity-10"
           style={{
             backgroundImage: `
-              linear-gradient(45deg, transparent 48%, white 50%, white 52%, transparent 54%),
-              linear-gradient(-45deg, transparent 48%, white 50%, white 52%, transparent 54%)
+              linear-gradient(45deg, transparent 48%, black 50%, black 52%, transparent 54%),
+              linear-gradient(-45deg, transparent 48%, black 50%, black 52%, transparent 54%)
             `,
             backgroundSize: '60px 60px'
           }}
@@ -204,277 +204,127 @@ export function CTASection({ onOpenAuth }: CTASectionProps) {
         />
       </div>
 
-      {/* Floating testimonials */}
-      <FloatingTestimonial delay={2} />
-      <FloatingTestimonial delay={8} />
-
-      {/* Ink explosions */}
-      {inkExplosions.map(explosion => (
-        <InkExplosion
-          key={explosion.id}
-          trigger={true}
-          position={explosion.position}
-        />
-      ))}
-
-      <div className="max-w-6xl mx-auto text-center relative z-10">
-        {/* Main headline */}
-        <motion.div
-          className="mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-          transition={{ duration: 0.8 }}
+      <div className="max-w-6xl mx-auto relative z-10">
+        {/* Section header */}
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6 }}
         >
           <motion.h2 
-            className="text-5xl md:text-7xl font-light text-white mb-6 leading-tight"
+            className="text-3xl md:text-4xl font-light text-black mb-4"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 1, delay: 0.2 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
-            {user ? (
-              <>
-                Welcome Back,{' '}
-                <motion.span 
-                  className="text-gray-400"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                  transition={{ duration: 1, delay: 0.6 }}
-                >
-                  Trader
-                </motion.span>
-              </>
-            ) : (
-              <>
-                Ready to{' '}
-                <motion.span 
-                  className="text-gray-400"
-                  initial={{ opacity: 0 }}
-                  animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-                  transition={{ duration: 1, delay: 0.6 }}
-                >
-                  Profit?
-                </motion.span>
-              </>
-            )}
+            Start Trading Today
           </motion.h2>
-          
           <motion.p 
-            className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed"
+            className="text-gray-600 text-lg"
             initial={{ opacity: 0 }}
             animate={isInView ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-          {user 
-              ? "Continue building your portfolio with new markets, advanced analytics, and real-time insights. Your next big win is waiting."
-              : "Join India's fastest-growing prediction market. Start with ₹100, learn the system, and scale to serious profits."
-            }
+            Join thousands of traders making smarter predictions
           </motion.p>
         </motion.div>
 
-        {/* Social proof section */}
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ delay: 0.8 }}
-        >
-          <div className="text-center">
-            <motion.div 
-              className="text-3xl md:text-4xl font-light text-white mb-2"
-              animate={{
-                scale: [1, 1.05, 1]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              ₹1.2L+
-            </motion.div>
-            <div className="text-gray-400 text-sm uppercase tracking-wide">Weekly Volume</div>
-          </div>
-          
-          <div className="text-center">
-            <motion.div 
-              className="text-3xl md:text-4xl font-light text-white mb-2"
-              animate={{
-                scale: [1, 1.05, 1]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.7
-              }}
-            >
-              89%
-            </motion.div>
-            <div className="text-gray-400 text-sm uppercase tracking-wide">Accuracy Rate</div>
-          </div>
-          
-          <div className="text-center">
-            <motion.div 
-              className="text-3xl md:text-4xl font-light text-white mb-2"
-              animate={{
-                scale: [1, 1.05, 1]
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 1.4
-              }}
-            >
-              247
-            </motion.div>
-            <div className="text-gray-400 text-sm uppercase tracking-wide">Active Traders</div>
-          </div>
-        </motion.div>
-        
-        {/* Call to action buttons */}
-        <motion.div 
-          className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ delay: 1.2 }}
-        >
-          {loading ? (
-            <div className="text-gray-400">Loading...</div>
-          ) : user ? (
+        {/* CTA buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+          {!user && !loading && (
             <>
               <motion.div
-                onHoverStart={() => setHoveredButton('explore')}
-                onHoverEnd={() => setHoveredButton(null)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-              >
-                <Button 
-                  size="lg" 
-                  className="bg-white text-black hover:bg-gray-100 px-12 py-8 text-xl font-medium relative overflow-hidden group"
-                  onClick={(e) => handleButtonClick(e, 'explore')}
-                >
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200 to-transparent"
-                    initial={{ x: '-100%' }}
-                    animate={hoveredButton === 'explore' ? { x: '100%' } : { x: '-100%' }}
-                    transition={{ duration: 0.6 }}
-                  />
-                  <TrendingUp className="mr-3 h-6 w-6" />
-                Explore Markets
-                  <ArrowRight className="ml-3 h-6 w-6" />
-              </Button>
-              </motion.div>
-              
-              <motion.div
-                onHoverStart={() => setHoveredButton('portfolio')}
-                onHoverEnd={() => setHoveredButton(null)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="border-white text-white hover:bg-white hover:text-black px-12 py-8 text-xl font-medium relative overflow-hidden group"
-                  onClick={(e) => handleButtonClick(e, 'portfolio')}
-                >
-                  <motion.div
-                    className="absolute inset-0 bg-white"
-                    initial={{ scale: 0 }}
-                    animate={hoveredButton === 'portfolio' ? { scale: 1 } : { scale: 0 }}
-                    transition={{ duration: 0.3 }}
-                    style={{ originX: 0.5, originY: 0.5 }}
-                  />
-                  <BarChart3 className="mr-3 h-6 w-6 relative z-10" />
-                  <span className="relative z-10">View Portfolio</span>
-              </Button>
-              </motion.div>
-            </>
-          ) : (
-            <>
-              <motion.div
                 onHoverStart={() => setHoveredButton('signup')}
                 onHoverEnd={() => setHoveredButton(null)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 <Button 
                   size="lg" 
-                  className="bg-white text-black hover:bg-gray-100 px-12 py-8 text-xl font-medium relative overflow-hidden group"
+                  className="bg-black text-white hover:bg-gray-800 px-8 py-6 text-lg font-medium"
                   onClick={(e) => handleButtonClick(e, 'signup')}
                 >
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-200 to-transparent"
-                    initial={{ x: '-100%' }}
-                    animate={hoveredButton === 'signup' ? { x: '100%' } : { x: '-100%' }}
-                    transition={{ duration: 0.6 }}
-                  />
-                  <Crown className="mr-3 h-6 w-6" />
-                  <span className="relative z-10">Start Trading Free</span>
-                  <ArrowRight className="ml-3 h-6 w-6" />
-              </Button>
+                  Start Trading Now
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
               </motion.div>
-              
+
               <motion.div
-                onHoverStart={() => setHoveredButton('signin')}
-                onHoverEnd={() => setHoveredButton(null)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onHoverStart={() => setHoveredButton('signin')}
+                onHoverEnd={() => setHoveredButton(null)}
               >
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="border-white bg-white text-black hover:bg-gray-100 px-12 py-8 text-xl font-medium relative overflow-hidden"
+                  className="bg-white text-black hover:bg-gray-100 px-8 py-6 text-lg font-medium border-2 border-black"
                   onClick={(e) => handleButtonClick(e, 'signin')}
                 >
-                  <motion.div
-                    className="absolute inset-0 bg-gray-100"
-                    initial={{ scale: 0 }}
-                    animate={hoveredButton === 'signin' ? { scale: 1 } : { scale: 0 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                  <Users className="mr-3 h-6 w-6 relative z-10" />
-                  <span className="relative z-10">See Live Markets</span>
-              </Button>
+                  See Live Markets
+                </Button>
               </motion.div>
             </>
           )}
-        </motion.div>
-
-        {/* Urgency and trust section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          <UrgencyCounter />
-          
-          <motion.div 
-            className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-            transition={{ delay: 1.5 }}
-          >
-            <div className="flex items-center space-x-2 mb-4">
-              <Zap className="w-5 h-5 text-yellow-400" />
-              <span className="text-white font-medium">Security Promise</span>
-            </div>
-            <div className="text-gray-300 text-sm space-y-2">
-              <div>🔒 Bank-level encryption</div>
-              <div>⚡ Instant payouts</div>
-              <div>🛡️ KYC verified platform</div>
-              <div>💰 ₹100 minimum to start</div>
-            </div>
-          </motion.div>
         </div>
 
-        {/* Final trust line */}
+        {/* Features grid */}
         <motion.div 
-          className="mt-12 pt-8 border-t border-white/20"
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : { opacity: 0 }}
-          transition={{ delay: 2 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16"
+          initial={{ opacity: 0, y: 20 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
         >
-          <p className="text-gray-400 text-sm uppercase tracking-wide">
-            Trusted by traders • Regulated • Transparent • Secure
-          </p>
+          <div className="text-center">
+            <div className="w-12 h-12 bg-black text-white rounded-lg flex items-center justify-center mx-auto mb-4">
+              <TrendingUp className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-medium text-black mb-2">Real Money Trading</h3>
+            <p className="text-gray-600">Trade with real money and earn real profits from your predictions</p>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-12 h-12 bg-black text-white rounded-lg flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-medium text-black mb-2">Advanced Analytics</h3>
+            <p className="text-gray-600">Get detailed insights and analytics to make informed decisions</p>
+          </div>
+          
+          <div className="text-center">
+            <div className="w-12 h-12 bg-black text-white rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Zap className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-medium text-black mb-2">Instant Execution</h3>
+            <p className="text-gray-600">Execute trades instantly with our high-performance platform</p>
+          </div>
         </motion.div>
+
+        {/* Floating elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Ink explosions */}
+          {inkExplosions.map(explosion => (
+            <InkExplosion 
+              key={explosion.id} 
+              trigger={true} 
+              position={explosion.position} 
+            />
+          ))}
+          
+          {/* Floating testimonials */}
+          <div className="absolute top-1/4 left-0">
+            <FloatingTestimonial delay={0} />
+          </div>
+          <div className="absolute bottom-1/3 right-0">
+            <FloatingTestimonial delay={5} />
+          </div>
+          
+          {/* Live counter */}
+          <div className="absolute top-1/3 right-0">
+            <UrgencyCounter />
+          </div>
+        </div>
       </div>
     </section>
   );

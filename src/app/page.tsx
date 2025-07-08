@@ -61,7 +61,7 @@ export default function Home() {
 
   // Show Landing Page for guests
   return (
-    <main className="min-h-screen bg-black relative">
+    <main className="min-h-screen bg-white relative">
       {/* Navbar */}
       <ResizableNavbar onOpenAuth={openAuthModal} />
       
