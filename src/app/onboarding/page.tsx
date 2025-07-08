@@ -167,12 +167,15 @@ useEffect(() => {
         throw error;
       }
 
-      // Create user balance record if it doesn't exist
+      // Create user balance record if it doesn't exist based on wallet mode
+      const isProduction = process.env.NEXT_PUBLIC_WALLET_MODE === 'production';
+      const initialAmount = isProduction ? 0 : 10000; // Default to ₹10,000 for development
+      
       const balanceInsert = {
         user_id: user.id,
-        available_balance: 10,
+        available_balance: initialAmount,
         locked_balance: 0,
-        total_deposited: 0,
+        total_deposited: initialAmount,
         total_withdrawn: 0,
         total_trades: 0,
         total_volume: 0,

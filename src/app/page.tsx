@@ -50,10 +50,10 @@ export default function Home() {
   // Show loading state
   if (loading) {
     return (
-      <main className="min-h-screen bg-white flex items-center justify-center">
+      <main className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading...</p>
         </div>
       </main>
     );
@@ -61,7 +61,7 @@ export default function Home() {
 
   // Show Landing Page for guests
   return (
-    <main className="min-h-screen bg-white relative">
+    <main className="min-h-screen bg-black relative">
       {/* Navbar */}
       <ResizableNavbar onOpenAuth={openAuthModal} />
       

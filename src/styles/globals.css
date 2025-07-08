@@ -72,28 +72,28 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(229, 229, 229, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 2rem;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   width: 90%;
   max-width: 1100px;
 }
 
 .navbar-compact {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(229, 229, 229, 0.8);
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   width: 85%;
   max-width: 1000px;
   border-radius: 1.5rem;
 }
 
 .navbar-expanded {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(229, 229, 229, 1);
-  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.7);
   width: 95%;
   max-width: 1200px;
   border-radius: 2.5rem;
@@ -127,7 +127,7 @@
 }
 
 .nav-link {
-  color: #525252;
+  color: #d1d5db;
   text-decoration: none;
   font-weight: 500;
   transition: all 0.3s ease;
@@ -142,12 +142,12 @@
   left: 0;
   width: 0;
   height: 2px;
-  background: #000;
+  background: #fff;
   transition: width 0.3s ease;
 }
 
 .nav-link:hover {
-  color: #000;
+  color: #fff;
   transform: translateY(-1px);
 }
 
@@ -158,7 +158,7 @@
 .navbar-logo {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #000;
+  color: #fff;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -177,7 +177,7 @@
 .logo-indicator {
   width: 8px;
   height: 8px;
-  background: #000;
+  background: #fff;
   border-radius: 50%;
   transition: all 0.3s ease;
   animation: pulse 2s infinite;
@@ -217,8 +217,8 @@
 }
 
 .navbar-button.primary {
-  background: #000;
-  color: white;
+  background: #fff;
+  color: #000;
 }
 
 .navbar-button.primary::before {
@@ -228,7 +228,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
   transition: left 0.5s;
 }
 
@@ -237,7 +237,7 @@
 }
 
 .navbar-button.primary:hover {
-  background: #1a1a1a;
+  background: #f0f0f0;
   transform: translateY(-1px);
 }
 
@@ -247,13 +247,13 @@
 
 .navbar-button.secondary {
   background: transparent;
-  color: #000;
-  border: 1px solid #e5e5e5;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .navbar-button.secondary:hover {
-  background: #f5f5f5;
-  border-color: #d4d4d4;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-1px);
 }
 
@@ -283,10 +283,11 @@
   padding: 0.5rem;
   border-radius: 0.5rem;
   transition: background-color 0.3s ease;
+  color: white;
 }
 
 .mobile-nav-toggle:hover {
-  background: #f5f5f5;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .menu-icon {
@@ -302,8 +303,8 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #e5e5e5;
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
   margin-top: 0.5rem;
   padding: 1rem;
@@ -311,7 +312,7 @@
   transform: translateY(-10px);
   transition: all 0.3s ease;
   pointer-events: none;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
 }
 
 .mobile-nav-menu.open {
@@ -323,10 +324,10 @@
 .mobile-nav-menu a {
   display: block;
   padding: 0.75rem 0;
-  color: #525252;
+  color: #d1d5db;
   text-decoration: none;
   font-weight: 500;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mobile-nav-menu a:last-child {
@@ -334,8 +335,8 @@
 }
 
 .mobile-nav-menu a:hover {
-  color: #000;
-  background: #f9f9f9;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
   padding-left: 0.5rem;
 }
 
@@ -383,7 +384,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 0.5rem;
 }
 

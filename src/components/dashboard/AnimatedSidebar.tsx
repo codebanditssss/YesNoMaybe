@@ -19,7 +19,8 @@ import {
   IconDeviceDesktop,
   IconFlag,
   IconFileText,
-  IconX
+  IconX,
+  IconWallet
 } from '@tabler/icons-react';
 
 interface AnimatedSidebarProps {
@@ -62,6 +63,7 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
     { name: 'Dashboard', href: '/dashboard', icon: IconHome },
     { name: 'Markets', href: '/Markets', icon: IconChartBar },
     { name: 'Portfolio', href: '/Portfolio', icon: IconTarget },
+    { name: 'Wallet', href: '/Wallet', icon: IconWallet },
     { name: 'Market Depth', href: '/MarketDepth', icon: IconActivity },
     { name: 'Trade History', href: '/TradeHistory', icon: IconClock },
     { name: 'Leaderboard', href: '/Leaderboard', icon: IconUsers },

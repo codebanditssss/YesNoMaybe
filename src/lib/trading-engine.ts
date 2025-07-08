@@ -441,14 +441,17 @@ export class TradingEngine {
 
       if (balanceError) {
         if (balanceError.code === 'PGRST116') {
-          // Create default balance for new user
+          // Create default balance for new user based on wallet mode
+          const isProduction = process.env.WALLET_MODE === 'production';
+          const initialAmount = isProduction ? 0 : parseInt(process.env.INITIAL_WALLET_AMOUNT || '10000');
+          
           const { data: newBalance, error: createError } = await this.supabase
             .from('user_balances')
             .insert({
               user_id: userId,
-              available_balance: 10000,
+              available_balance: initialAmount,
               locked_balance: 0,
-              total_deposited: 10000,
+              total_deposited: initialAmount,
               total_profit_loss: 0,
               total_trades: 0,
               winning_trades: 0,

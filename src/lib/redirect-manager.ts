@@ -307,7 +307,7 @@ export class ClientRedirectManager {
  * Route guards for specific paths
  */
 export const RouteGuards = {
-  protectedPaths: ['/dashboard', '/Markets', '/Portfolio', '/MarketDepth', '/TradeHistory', '/Leaderboard', '/Settings'],
+  protectedPaths: ['/dashboard', '/Markets', '/Portfolio', '/Wallet', '/MarketDepth', '/TradeHistory', '/Leaderboard', '/Settings'],
   publicPaths: ['/', '/auth'],
   onboardingPath: '/onboarding',
   

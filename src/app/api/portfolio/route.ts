@@ -106,15 +106,18 @@ async function portfolioHandler(request: NextRequest, user: AuthenticatedUser) {
       .eq('user_id', user.id)
       .single()
 
-    // If no balance exists, create one with default values
+    // If no balance exists, create one with default values based on wallet mode
     if (!userBalance && balanceError?.code === 'PGRST116') {
+      const isProduction = process.env.WALLET_MODE === 'production';
+      const initialAmount = isProduction ? 0 : parseInt(process.env.INITIAL_WALLET_AMOUNT || '10000');
+      
       const { data: newBalance, error: createError } = await serviceRoleClient
         .from('user_balances')
         .insert({
           user_id: user.id,
-          available_balance: 10000, // ₹10,000 initial balance
+          available_balance: initialAmount,
           locked_balance: 0,
-          total_deposited: 10000,
+          total_deposited: initialAmount,
           total_withdrawn: 0,
           total_trades: 0,
           winning_trades: 0,
