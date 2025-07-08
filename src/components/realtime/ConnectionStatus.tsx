@@ -86,7 +86,11 @@ export function ConnectionStatusCompact() {
   const { isConnected, connectionState } = useRealtime();
 
   if (isConnected) {
-    return <div className="w-2 h-2 bg-green-500 rounded-full" title="Real-time connected" />;
+    return (
+      <div className="w-2 h-2 bg-green-500 rounded-full flex items-center justify-center relative" title="Real-time connected">
+        <div className="w-1 h-1 bg-white rounded-full absolute"/>
+      </div>
+    );
   }
   
   if (connectionState === 'connecting') {

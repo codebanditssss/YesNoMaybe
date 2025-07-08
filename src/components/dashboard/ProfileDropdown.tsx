@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { ConnectionStatusCompact } from '../realtime/ConnectionStatus';
 
 export default function ProfileDropdown({
   user,
@@ -35,8 +36,13 @@ export default function ProfileDropdown({
               {user?.email?.charAt(0).toUpperCase() || 'K'}
             </span>
           </div>
-          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-            <div className="w-1 h-1 bg-white rounded-full"></div>
+          {/* <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+            <div className="w-1 h-1 bg-white rounded-full"> 
+             
+              </div>
+          </div> */}
+          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center" >
+          <ConnectionStatusCompact/> 
           </div>
         </div>
         <div className="hidden md:block text-left">

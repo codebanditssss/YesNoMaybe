@@ -48,6 +48,13 @@ export function Settings() {
     website: '',
   });
 
+  // Password change state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [changing, setChanging] = useState(false);
+
   const [preferences, setPreferences] = useState<AppPreferences>({
     theme: 'system',
   });
@@ -57,6 +64,7 @@ export function Settings() {
   const settingsSections = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
+    { id: 'password', label: 'Change Password', icon: Edit3 },
   ];
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -134,6 +142,38 @@ export function Settings() {
     setIsEditing(false);
   };
 
+  const handleChangePassword = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+    if (!newPassword || !confirmPassword) {
+      setPasswordError('Please fill in both fields.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters.');
+      return;
+    }
+    setChanging(true);
+    try {
+
+      const { supabase } = await import('@/lib/supabase');
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        setPasswordError(error.message);
+      } else {
+        setPasswordSuccess('Password changed successfully!');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (err) {
+      setPasswordError('Failed to change password.');
+    }
+    setChanging(false);
+  };
 
 
   const updatePreference = (key: keyof AppPreferences, value: any) => {
@@ -415,12 +455,59 @@ export function Settings() {
     </div>
   );
 
+  const renderPasswordSection = () => (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Edit3 className="h-5 w-5" />
+            Change Password
+          </CardTitle>
+          <CardDescription>
+            Update your account password
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {passwordError && <div className="text-xs text-red-600 mb-2">{passwordError}</div>}
+          {passwordSuccess && <div className="text-xs text-green-600 mb-2">{passwordSuccess}</div>}
+          <div className="mb-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1">New Password</label>
+            <input
+              type="password"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              disabled={changing}
+            />
+          </div>
+          <div className="mb-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Confirm Password</label>
+            <input
+              type="password"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              disabled={changing}
+            />
+          </div>
+          <Button
+            className="w-full bg-black text-white py-2 rounded-md disabled:opacity-50"
+            disabled={changing}
+            onClick={handleChangePassword}
+          >
+            {changing ? 'Changing...' : 'Change Password'}
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
 
   const renderSection = () => {
     switch (activeSection) {
       case 'profile': return renderProfileSection();
       case 'preferences': return renderPreferencesSection();
+      case 'password': return renderPasswordSection();
       default: return renderProfileSection();
     }
   };

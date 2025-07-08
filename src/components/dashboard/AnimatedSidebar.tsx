@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
-import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
 import { ClientRedirectManager } from '@/lib/redirect-manager';
 import { 
   IconHome,
@@ -50,19 +48,6 @@ export function AnimatedSidebar() {
     { name: 'Reports', href: '/admin/reports', icon: IconFileText },
   ];
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      ClientRedirectManager.redirect(
-        router, 
-        '/', 
-        'User signed out successfully'
-      );
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
   // Convert navigation items to sidebar links format
   const convertToSidebarLinks = (navItems: any[]) => {
     return navItems.map((item) => ({
@@ -82,47 +67,6 @@ export function AnimatedSidebar() {
     label: 'Settings',
     href: '/Settings',
     icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-500 group-hover:text-neutral-900 dark:text-neutral-400 dark:group-hover:text-white transition-colors" />,
-  };
-
-  const logoutLink = {
-    label: 'Sign Out',
-    href: '#',
-    icon: <IconLogout className="h-5 w-5 shrink-0 text-red-500 group-hover:text-red-600 dark:text-red-400 dark:group-hover:text-red-300 transition-colors" />,
-    onClick: handleSignOut,
-  };
-
-  // Get display name for profile
-  const getDisplayName = () => {
-    const fullName = user?.user_metadata?.full_name;
-    const email = user?.email;
-    
-    if (fullName) return fullName;
-    if (email) {
-      // Get username part of email (before @)
-      const username = email.split('@')[0];
-      // Capitalize first letter and replace dots/underscores with spaces
-      return username
-        .split(/[._]/)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-    }
-    return 'User';
-  };
-
-  // Get avatar text
-  const getAvatarText = () => {
-    const fullName = user?.user_metadata?.full_name;
-    if (fullName) {
-      // Get initials from full name
-      return fullName
-        .split(' ')
-        .map(n => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    // Get first letter of email username
-    return user?.email?.[0].toUpperCase() || 'U';
   };
 
   return (
@@ -188,28 +132,6 @@ export function AnimatedSidebar() {
             )}
             <SidebarLink link={settingsLink} />
           </div>
-        </div>
-
-        {/* Footer with user info and logout */}
-        <div className="flex flex-col gap-1">
-          {user && (
-            <SidebarLink
-              link={{
-                label: getDisplayName(),
-                href: '/Settings',
-                icon: (
-                  <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center shadow-sm">
-                    <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
-                      {getAvatarText()}
-                    </span>
-                  </div>
-                ),
-              }}
-              variant="brand"
-              className="hover:bg-neutral-100 dark:hover:bg-neutral-800/50"
-            />
-          )}
-          <SidebarLink link={logoutLink} variant="danger" />
         </div>
       </SidebarBody>
     </Sidebar>

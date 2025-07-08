@@ -340,7 +340,7 @@ export function PortfolioAnalytics({ data }: PortfolioAnalyticsProps) {
                     cy="50%"
                     outerRadius={120}
                     innerRadius={40}
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
                   >
                     {categoryData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -622,7 +622,7 @@ export function PortfolioAnalytics({ data }: PortfolioAnalyticsProps) {
             </div>
             <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={categoryData.sort((a: any, b: any) => b.value - a.value)}>
+                <AreaChart data={[...categoryData].sort((a: any, b: any) => b.value - a.value)}>
                   <defs>
                     <linearGradient id="concentrationGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>

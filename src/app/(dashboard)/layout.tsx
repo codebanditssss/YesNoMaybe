@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu className="h-5 w-5 text-gray-500" />
             </button>
             <div className="flex-1 flex items-center justify-end space-x-4">
-              <ConnectionStatusCompact />
+              {/* <ConnectionStatusCompact /> */}
               <ProfileDropdown user={user} />
             </div>
           </div>

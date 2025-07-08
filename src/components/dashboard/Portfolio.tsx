@@ -477,7 +477,7 @@ export function Portfolio() {
                 </div>
               </div>
 
-              <div className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-xl shadow-gray-100/50 overflow-hidden">
+              <div className="bg-white/70 backdrop-blur-sm border-1 border border-gray-300 rounded-lg shadow-xl shadow-gray-100/50 overflow-hidden">
                 <PortfolioCharts 
                   timeframe={timeframe}
                   data={{
