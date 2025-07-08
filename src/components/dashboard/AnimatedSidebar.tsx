@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
 import { ClientRedirectManager } from '@/lib/redirect-manager';
 import { 
@@ -25,6 +26,7 @@ export function AnimatedSidebar() {
   const { user, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   // Check if user has admin role
   const isAdmin = user?.user_metadata?.role === 'admin';
@@ -77,13 +79,14 @@ export function AnimatedSidebar() {
           <SidebarLink
             link={{
               label: open ? 'YesNoMaybe' : '',
-              href: '#',
+              href: '/dashboard',
               icon: (
                 <div className="h-6 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
               ),
             }}
             variant="brand"
             className="mb-2"
+            active={pathname === '#'}
           />
           
           <div className="mt-6 flex flex-col gap-1">
@@ -102,7 +105,7 @@ export function AnimatedSidebar() {
                   />
                 )}
                 {adminLinks.map((link, idx) => (
-                  <SidebarLink key={idx} link={link} />
+                  <SidebarLink key={idx} link={link} active={pathname === link.href} />
                 ))}
               </>
             ) : (
@@ -119,7 +122,7 @@ export function AnimatedSidebar() {
                   />
                 )}
                 {regularLinks.map((link, idx) => (
-                  <SidebarLink key={idx} link={link} />
+                  <SidebarLink key={idx} link={link} active={pathname === link.href} />
                 ))}
               </>
             )}
@@ -130,7 +133,7 @@ export function AnimatedSidebar() {
                 <div className="border-t border-neutral-200 dark:border-neutral-800"></div>
               </div>
             )}
-            <SidebarLink link={settingsLink} />
+            <SidebarLink link={settingsLink} active={pathname === settingsLink.href} />
           </div>
         </div>
       </SidebarBody>
