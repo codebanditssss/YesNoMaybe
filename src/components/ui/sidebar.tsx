@@ -148,11 +148,13 @@ export const SidebarLink = ({
   link,
   className,
   variant = "default",
+  active = false,
   ...props
 }: {
   link: Links & { onClick?: (e?: React.MouseEvent<HTMLAnchorElement>) => void };
   className?: string;
   variant?: "default" | "brand" | "muted" | "danger";
+  active?: boolean;
 }) => {
   const { open, animate } = useSidebar();
   
@@ -175,6 +177,7 @@ export const SidebarLink = ({
       className={cn(
         "flex items-center justify-start gap-3 group/sidebar py-2 px-3 rounded-lg transition-all duration-200",
         variants[variant],
+        active && "bg-gray-100 font-bold text-neutral-900 dark:bg-neutral-800",
         className
       )}
       onClick={handleClick}

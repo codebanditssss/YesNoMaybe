@@ -112,7 +112,7 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
           <SidebarLink
             link={{
               label: open ? 'YesNoMaybe' : '',
-              href: '/',
+              href: '/dashboard',
               icon: (
                 <div className="h-6 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
               ),
@@ -122,6 +122,7 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
             }}
             variant="brand"
             className="mb-2"
+            active={pathname === '/dashboard'}
           />
           
           <div className="mt-6 flex flex-col gap-1">
@@ -143,7 +144,7 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
                   <SidebarLink 
                     key={idx} 
                     link={link}
-                    className={pathname === link.href ? 'bg-neutral-100 dark:bg-neutral-800/50' : ''}
+                    active={pathname === link.href}
                   />
                 ))}
               </>
@@ -164,7 +165,7 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
                   <SidebarLink 
                     key={idx} 
                     link={link}
-                    className={pathname === link.href ? 'bg-neutral-100 dark:bg-neutral-800/50' : ''}
+                    active={pathname === link.href}
                   />
                 ))}
               </>
@@ -178,7 +179,7 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
             )}
             <SidebarLink 
               link={settingsLink}
-              className={pathname === '/Settings' ? 'bg-neutral-100 dark:bg-neutral-800/50' : ''}
+              active={pathname === settingsLink.href}
             />
           </div>
         </div>
