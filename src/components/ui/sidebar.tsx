@@ -1,7 +1,7 @@
 "use client";
 import { cn } from "@/lib/utils";
 import React, { useState, createContext, useContext } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion } from "framer-motion";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 
 interface Links {
@@ -89,11 +89,11 @@ export const DesktopSidebar = ({
     <>
       <motion.div
         className={cn(
-          "h-full px-4 py-4 hidden  md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] shrink-0",
+          "h-full px-4 py-6 hidden md:flex md:flex-col bg-white dark:bg-neutral-900 w-[300px] shrink-0 border-r dark:border-neutral-800",
           className
         )}
         animate={{
-          width: animate ? (open ? "300px" : "60px") : "300px",
+          width: animate ? (open ? "300px" : "72px") : "300px",
         }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
@@ -115,13 +115,14 @@ export const MobileSidebar = ({
     <>
       <div
         className={cn(
-          "h-10 px-4 py-4 flex flex-row md:hidden  items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full"
+          "h-14 px-4 flex flex-row md:hidden items-center justify-between bg-white dark:bg-neutral-900 w-full border-b dark:border-neutral-800",
+          className
         )}
         {...props}
       >
         <div className="flex justify-end z-20 w-full">
           <IconMenu2
-            className="text-neutral-800 dark:text-neutral-200"
+            className="h-6 w-6 text-neutral-800 dark:text-neutral-200 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-400 transition-colors"
             onClick={() => setOpen(!open)}
           />
         </div>
@@ -136,17 +137,22 @@ export const MobileSidebar = ({
                 ease: "easeInOut",
               }}
               className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between",
+                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 z-[100] flex flex-col justify-between",
                 className
               )}
             >
-              <div
-                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200"
-                onClick={() => setOpen(!open)}
-              >
-                <IconX />
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between p-4 border-b dark:border-neutral-800">
+                  <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Menu</div>
+                  <IconX 
+                    className="h-6 w-6 text-neutral-800 dark:text-neutral-200 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-400 transition-colors"
+                    onClick={() => setOpen(!open)}
+                  />
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  {children}
+                </div>
               </div>
-              {children}
             </motion.div>
           )}
         </AnimatePresence>
@@ -158,10 +164,12 @@ export const MobileSidebar = ({
 export const SidebarLink = ({
   link,
   className,
+  variant = "default",
   ...props
 }: {
   link: Links & { onClick?: () => void };
   className?: string;
+  variant?: "default" | "brand" | "muted" | "danger";
 }) => {
   const { open, animate } = useSidebar();
   
@@ -172,11 +180,19 @@ export const SidebarLink = ({
     }
   };
 
+  const variants = {
+    default: "text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800/50",
+    brand: "text-neutral-900 dark:text-white font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800/50",
+    muted: "text-neutral-400 dark:text-neutral-500 text-xs font-medium tracking-wider hover:bg-transparent dark:hover:bg-transparent",
+    danger: "text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20"
+  };
+
   return (
     <a
       href={link.href}
       className={cn(
-        "flex items-center justify-start gap-2  group/sidebar py-2",
+        "flex items-center justify-start gap-3 group/sidebar py-2 px-3 rounded-lg transition-all duration-200",
+        variants[variant],
         className
       )}
       onClick={handleClick}
@@ -189,7 +205,7 @@ export const SidebarLink = ({
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        className="whitespace-pre inline-block !p-0 !m-0"
       >
         {link.label}
       </motion.span>

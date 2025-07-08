@@ -4,24 +4,24 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Sidebar, SidebarBody, SidebarLink } from '@/components/ui/sidebar';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ClientRedirectManager } from '@/lib/redirect-manager';
 import { 
-  Home,
-  BarChart3,
-  Users,
-  Settings,
-  LogOut,
-  Target,
-  Activity,
-  Clock,
-  Shield,
-  Database,
-  Monitor,
-  Flag,
-  FileText
-} from 'lucide-react';
+  IconHome,
+  IconChartBar,
+  IconUsers,
+  IconSettings,
+  IconLogout,
+  IconTarget,
+  IconActivity,
+  IconClock,
+  IconShield,
+  IconDatabase,
+  IconDeviceDesktop,
+  IconFlag,
+  IconFileText
+} from '@tabler/icons-react';
 
 export function AnimatedSidebar() {
   const { user, signOut } = useAuth();
@@ -32,22 +32,22 @@ export function AnimatedSidebar() {
   const isAdmin = user?.user_metadata?.role === 'admin';
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Markets', href: '/Markets', icon: BarChart3 },
-    { name: 'Portfolio', href: '/Portfolio', icon: Target },
-    { name: 'Market Depth', href: '/MarketDepth', icon: Activity },
-    { name: 'Trade History', href: '/TradeHistory', icon: Clock },
-    { name: 'Leaderboard', href: '/Leaderboard', icon: Users },
+    { name: 'Dashboard', href: '/dashboard', icon: IconHome },
+    { name: 'Markets', href: '/Markets', icon: IconChartBar },
+    { name: 'Portfolio', href: '/Portfolio', icon: IconTarget },
+    { name: 'Market Depth', href: '/MarketDepth', icon: IconActivity },
+    { name: 'Trade History', href: '/TradeHistory', icon: IconClock },
+    { name: 'Leaderboard', href: '/Leaderboard', icon: IconUsers },
   ];
 
   const adminNavigation = [
-    { name: 'Admin Dashboard', href: '/admin', icon: Shield },
-    { name: 'User Management', href: '/admin/users', icon: Users },
-    { name: 'Market Management', href: '/admin/markets', icon: BarChart3 },
-    { name: 'System Monitor', href: '/admin/system', icon: Monitor },
-    { name: 'Analytics', href: '/admin/analytics', icon: Database },
-    { name: 'Moderation', href: '/admin/moderation', icon: Flag },
-    { name: 'Reports', href: '/admin/reports', icon: FileText },
+    { name: 'Admin Dashboard', href: '/admin', icon: IconShield },
+    { name: 'User Management', href: '/admin/users', icon: IconUsers },
+    { name: 'Market Management', href: '/admin/markets', icon: IconChartBar },
+    { name: 'System Monitor', href: '/admin/system', icon: IconDeviceDesktop },
+    { name: 'Analytics', href: '/admin/analytics', icon: IconDatabase },
+    { name: 'Moderation', href: '/admin/moderation', icon: IconFlag },
+    { name: 'Reports', href: '/admin/reports', icon: IconFileText },
   ];
 
   const handleSignOut = async () => {
@@ -69,7 +69,7 @@ export function AnimatedSidebar() {
       label: item.name,
       href: item.href,
       icon: (
-        <item.icon className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />
+        <item.icon className="h-5 w-5 shrink-0 text-neutral-500 group-hover:text-neutral-900 dark:text-neutral-400 dark:group-hover:text-white transition-colors" />
       ),
     }));
   };
@@ -81,32 +81,81 @@ export function AnimatedSidebar() {
   const settingsLink = {
     label: 'Settings',
     href: '/Settings',
-    icon: <Settings className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+    icon: <IconSettings className="h-5 w-5 shrink-0 text-neutral-500 group-hover:text-neutral-900 dark:text-neutral-400 dark:group-hover:text-white transition-colors" />,
   };
 
   const logoutLink = {
     label: 'Sign Out',
     href: '#',
-    icon: <LogOut className="h-5 w-5 shrink-0 text-neutral-700 dark:text-neutral-200" />,
+    icon: <IconLogout className="h-5 w-5 shrink-0 text-red-500 group-hover:text-red-600 dark:text-red-400 dark:group-hover:text-red-300 transition-colors" />,
     onClick: handleSignOut,
+  };
+
+  // Get display name for profile
+  const getDisplayName = () => {
+    const fullName = user?.user_metadata?.full_name;
+    const email = user?.email;
+    
+    if (fullName) return fullName;
+    if (email) {
+      // Get username part of email (before @)
+      const username = email.split('@')[0];
+      // Capitalize first letter and replace dots/underscores with spaces
+      return username
+        .split(/[._]/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    return 'User';
+  };
+
+  // Get avatar text
+  const getAvatarText = () => {
+    const fullName = user?.user_metadata?.full_name;
+    if (fullName) {
+      // Get initials from full name
+      return fullName
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    // Get first letter of email username
+    return user?.email?.[0].toUpperCase() || 'U';
   };
 
   return (
     <Sidebar open={open} setOpen={setOpen}>
       <SidebarBody className="justify-between gap-10">
         <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
-          {open ? <Logo /> : <LogoIcon />}
+          {/* Logo */}
+          <SidebarLink
+            link={{
+              label: open ? 'YesNoMaybe' : '',
+              href: '#',
+              icon: (
+                <div className="h-6 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
+              ),
+            }}
+            variant="brand"
+            className="mb-2"
+          />
           
-          <div className="mt-8 flex flex-col gap-2">
+          <div className="mt-6 flex flex-col gap-1">
             {/* Show admin navigation for admin users */}
             {isAdmin ? (
               <>
                 {open && (
-                  <div className="mb-4">
-                    <p className="text-xs font-bold text-red-600 uppercase tracking-wider">
-                      Admin Panel
-                    </p>
-                  </div>
+                  <SidebarLink
+                    link={{
+                      label: 'ADMIN PANEL',
+                      href: '#',
+                      icon: <div className="w-5" />,
+                    }}
+                    variant="muted"
+                    className="mb-1"
+                  />
                 )}
                 {adminLinks.map((link, idx) => (
                   <SidebarLink key={idx} link={link} />
@@ -115,11 +164,15 @@ export function AnimatedSidebar() {
             ) : (
               <>
                 {open && (
-                  <div className="mb-4">
-                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                      Main Menu
-                    </p>
-                  </div>
+                  <SidebarLink
+                    link={{
+                      label: 'NAVIGATION',
+                      href: '#',
+                      icon: <div className="w-5" />,
+                    }}
+                    variant="muted"
+                    className="mb-1"
+                  />
                 )}
                 {regularLinks.map((link, idx) => (
                   <SidebarLink key={idx} link={link} />
@@ -130,7 +183,7 @@ export function AnimatedSidebar() {
             {/* Settings */}
             {open && (
               <div className="my-4">
-                <div className="border-t border-neutral-200 dark:border-neutral-700"></div>
+                <div className="border-t border-neutral-200 dark:border-neutral-800"></div>
               </div>
             )}
             <SidebarLink link={settingsLink} />
@@ -138,55 +191,27 @@ export function AnimatedSidebar() {
         </div>
 
         {/* Footer with user info and logout */}
-        <div>
+        <div className="flex flex-col gap-1">
           {user && (
             <SidebarLink
               link={{
-                label: user.user_metadata?.full_name || user.email || 'User',
-                href: '#',
+                label: getDisplayName(),
+                href: '/Settings',
                 icon: (
-                  <div className="h-7 w-7 shrink-0 rounded-full bg-neutral-300 dark:bg-neutral-600 flex items-center justify-center">
-                    <span className="text-xs font-medium text-neutral-700 dark:text-neutral-200">
-                      {user.user_metadata?.full_name?.[0] || user.email?.[0] || 'U'}
+                  <div className="h-7 w-7 shrink-0 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-900 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center shadow-sm">
+                    <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">
+                      {getAvatarText()}
                     </span>
                   </div>
                 ),
               }}
+              variant="brand"
+              className="hover:bg-neutral-100 dark:hover:bg-neutral-800/50"
             />
           )}
-          <SidebarLink link={logoutLink} />
+          <SidebarLink link={logoutLink} variant="danger" />
         </div>
       </SidebarBody>
     </Sidebar>
   );
-}
-
-// Logo components
-export const Logo = () => {
-  return (
-    <a
-      href="#"
-      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black dark:text-white"
-    >
-      <div className="h-5 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="font-medium whitespace-pre text-black dark:text-white"
-      >
-        YesNoMaybe
-      </motion.span>
-    </a>
-  );
-};
-
-export const LogoIcon = () => {
-  return (
-    <a
-      href="#"
-      className="relative z-20 flex items-center space-x-2 py-1 text-sm font-normal text-black dark:text-white"
-    >
-      <div className="h-5 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
-    </a>
-  );
-}; 
+} 
