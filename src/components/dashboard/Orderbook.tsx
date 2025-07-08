@@ -315,7 +315,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                 </div>
 
                 {/* Header */}
-                <div className="grid grid-cols-4 gap-2 text-xs text-gray-500 font-medium mb-2 pb-2 border-b border-gray-100">
+                <div className="grid grid-cols-4 gap-2 text-xs text-gray-500 font-medium mb-2 pb-2 border-b border-gray-500">
                   <div>Price</div>
                   <div className="text-right">Qty</div>
                   <div className="text-right">Total</div>
@@ -369,7 +369,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               </div>
 
               {/* NO Orders */}
-              <div className="p-4 border-l border-gray-100">
+              <div className="p-4 border-l border-gray-300">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-semibold text-gray-600">NO Orders</h4>
                   <Badge className="bg-gray-100 text-gray-800 text-xs">
@@ -378,7 +378,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                 </div>
 
                 {/* Header */}
-                <div className="grid grid-cols-4 gap-2 text-xs text-gray-500 font-medium mb-2 pb-2 border-b border-gray-100">
+                <div className="grid grid-cols-4 gap-2 text-xs text-gray-500 font-medium mb-2 pb-2 border-b border-gray-500">
                   <div>Price</div>
                   <div className="text-right">Qty</div>
                   <div className="text-right">Total</div>
@@ -444,7 +444,7 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
               </div>
 
               {/* Header */}
-              <div className="grid grid-cols-5 gap-2 text-xs text-gray-500 font-medium mb-2 pb-2 border-b border-gray-100">
+              <div className="grid grid-cols-5 gap-2 text-xs text-gray-500 font-medium mb-2 pb-2 border-b border-gray-500">
                 <div>Price</div>
                 <div className="text-right">Qty</div>
                 <div className="text-right">Total</div>
@@ -493,7 +493,10 @@ export function Orderbook({ selectedMarket, onMarketSelect }: OrderbookProps) {
                             {level.orders.length}
                         </div>
                         <div className="text-right text-gray-400 text-xs">
-                            {level.orders.map(order => order.username).join(', ')}
+                            {level.orders.length > 2
+                              ? `${level.orders.slice(0, 2).map(order => order.username).join(', ')}...`
+                              : level.orders.map(order => order.username).join(', ')
+                            }
                           </div>
                         </div>
                       </div>
