@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Search, 
   Filter,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   TrendingUp,
   TrendingDown,
   Minus,
@@ -18,7 +15,10 @@ import {
   Clock,
   Zap,
   Target,
-  Trophy
+  Trophy,
+  Radio,
+  RefreshCw,
+  BarChart
 } from "lucide-react";
 import { useLeaderboard, LeaderboardEntry, RecentTrade } from '@/hooks/useLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -94,16 +94,11 @@ export function Leaderboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTimeRange, setSelectedTimeRange] = useState<'all' | '1d' | '7d' | '30d'>('all');
   const [selectedCategory, setSelectedCategory] = useState<'overall' | 'streak' | 'consistency' | 'volume'>('overall');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(50); // Increased for virtual scrolling
   const [hoveredTrader, setHoveredTrader] = useState<string | null>(null);
   const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
   const [selectedTrader, setSelectedTrader] = useState<string | null>(null);
   const [showTraderPanel, setShowTraderPanel] = useState(false);
   const [followedTraders, setFollowedTraders] = useState<FollowedTrader[]>([]);
-  const [showTimeRangeDropdown, setShowTimeRangeDropdown] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [showRowsDropdown, setShowRowsDropdown] = useState(false);
 
   const categoryOptions = [
     { value: "overall", label: "Overall Performance", icon: Trophy },
@@ -118,8 +113,6 @@ export function Leaderboard() {
     { value: '7d', label: 'Last 7 Days', icon: Clock },
     { value: '1d', label: 'Last 24 Hours', icon: Clock },
   ];
-  
-  const { user } = useAuth();
   
   const { 
     leaderboard, 
@@ -252,9 +245,9 @@ export function Leaderboard() {
     });
   };
 
-  const isFollowed = (traderId: string) => {
-    return followedTraders.find(f => f.id === traderId)?.isFollowed || false;
-  };
+  // const isFollowed = (traderId: string) => {
+  //   return followedTraders.find(f => f.id === traderId)?.isFollowed || false;
+  // };
 
   const handleTraderClick = (traderId: string) => {
     setSelectedTrader(traderId);
@@ -278,12 +271,12 @@ export function Leaderboard() {
         key={trader.id}
         style={{ height: ITEM_HEIGHT }}
         className="flex items-center border-b border-gray-100 hover:bg-gray-50 cursor-pointer px-8"
-        onMouseEnter={(e) => {
-          setHoveredTrader(trader.id);
-          const rect = e.currentTarget.getBoundingClientRect();
-          setHoverPosition({ x: rect.right + 10, y: rect.top });
-        }}
-        onMouseLeave={() => setHoveredTrader(null)}
+        // onMouseEnter={(e) => {
+        //   setHoveredTrader(trader.id);
+        //   const rect = e.currentTarget.getBoundingClientRect();
+        //   setHoverPosition({ x: rect.right + 10, y: rect.top });
+        // }}
+        // onMouseLeave={() => setHoveredTrader(null)}
         onClick={() => handleTraderClick(trader.id)}
       >
         {/* Rank */}
@@ -377,7 +370,7 @@ export function Leaderboard() {
         </div>
 
         {/* Action Column */}
-        <div className="w-24 flex items-center justify-center">
+        {/* <div className="w-24 flex items-center justify-center">
           <Button
             size="sm"
             variant={isFollowed(trader.id) ? "default" : "outline"}
@@ -393,127 +386,161 @@ export function Leaderboard() {
           >
             {isFollowed(trader.id) ? 'Following' : 'Follow'}
           </Button>
-        </div>
+        </div> */}
       </div>
     );
   }, []);
 
-  const totalPages = Math.ceil((processedData.length || 0) / rowsPerPage);
+
+  const statsCards = [
+    {
+      label: 'Active Traders',
+      icon: <UserPlus className="h-6 w-6 text-gray-400" />, 
+      value: stats?.totalUsers || 0,
+      valueClass: 'text-3xl font-extrabold text-gray-900',
+    },
+    {
+      label: 'Top P&L',
+      icon: <TrendingUp className="h-6 w-6 text-gray-400" />,
+      value: processedData.length > 0 ? formatCurrency(Math.max(...processedData.map(t => t.totalPnL))) : '—',
+      valueClass: 'text-3xl font-extrabold text-gray-900',
+    },
+    {
+      label: 'Avg Win Rate',
+      icon: <Trophy className="h-6 w-6 text-gray-400" />,
+      value: processedData.length > 0 ? `${(
+        processedData.reduce((sum, t) => sum + t.winRate, 0) / processedData.length
+      ).toFixed(1)}%` : '—',
+      valueClass: 'text-3xl font-extrabold text-gray-900',
+    },
+    {
+      label: 'Total Trades',
+      icon: <BarChart className="h-6 w-6 text-gray-400" />,
+      value: processedData.length > 0 ? processedData.reduce((sum, t) => sum + t.totalTrades, 0) : 0,
+      valueClass: 'text-3xl font-extrabold text-gray-900',
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-white">
-        {/* Header */}
-      <div className="border-b border-gray-100 bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-14 gap-8">
           <div>
-              <h1 className="text-4xl font-bold text-black tracking-tight">Leaderboard</h1>
-              <p className="text-gray-500 mt-2 text-lg">Performance rankings and trader analytics</p>
-              <div className="flex items-center gap-6 mt-4">
-                <div className="flex items-center gap-2 text-sm">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-gray-600">Live rankings</span>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {stats?.totalUsers || 0} active traders
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
-              {/* Search */}
-              <div className="relative group">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-focus-within:text-black transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Search traders..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-64 pl-12 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-black focus:border-black bg-white shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
-                />
-              </div>
-
-              {/* Time Range Filter */}
-              <SelectDropdown
-                options={timeRangeOptions}
-                selected={selectedTimeRange}
-                onSelect={val => setSelectedTimeRange(val as any)}
-                buttonIcon={Clock}
-              />
-              
-              {/* Category Filter */}
-               <SelectDropdown
-                    options={categoryOptions}
-                    selected={selectedCategory}
-                    onSelect={val => setSelectedCategory(val as any)}
-                    buttonIcon={Filter}
-                />
-
-              {/* Refresh Button */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={refresh}
-                className="border-gray-300 hover:bg-gray-50"
-              >
-                Refresh Data
-              </Button>
-            </div>
+            <h1 className="text-5xl font-extralight text-black tracking-tight mb-2">Leaderboard</h1>
+            <p className="text-gray-500 text-lg font-light">Performance rankings and trader analytics</p>
           </div>
+          <div className="flex items-center gap-8 flex-wrap">
+            <div className="flex items-center gap-3 bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100">
+              <Radio className={`h-5 w-5 ${hasData ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+              <span className="text-base text-gray-700 font-medium">
+                {hasData ? 'Live rankings' : 'Waiting for data...'}
+              </span>
+            </div>
+            <Button
+              onClick={refresh}
+              size="sm"
+              variant="outline"
+              className="hover:border-gray-200 shadow bg-white/70 backdrop-blur-md rounded-full px-6 py-3 min-w-[183px] min-h-[50px] flex items-center justify-center"
+            >
+              <RefreshCw className="h-5 w-5 mr-2" />
+              Refresh
+            </Button>
           </div>
         </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
-            <span className="ml-3 text-gray-600">Loading leaderboard...</span>
-          </div>
-        ) : error ? (
-          <Card className="p-6 bg-red-50 border-red-200">
-            <div className="text-center">
-                <h3 className="text-sm font-medium text-red-800">Error loading leaderboard</h3>
-                <p className="text-sm text-red-600 mt-1">{error}</p>
-              <Button variant="outline" size="sm" onClick={refresh} className="mt-3">
-                Try again
-              </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+          {statsCards.map((card, i) => (
+            <Card key={i} className="p-7 flex items-center gap-5 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 shadow-md">
+              <div className="flex-shrink-0">{card.icon}</div>
+              <div>
+                <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1">{card.label}</div>
+                <div className={card.valueClass}>{card.value}</div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex flex-col items-center gap-6 mb-10 flex-wrap">
+          <div className="flex items-center gap-4 bg-white/80 backdrop-blur-lg rounded-full border border-gray-100 shadow px-6 py-3 justify-center flex-wrap">
+            <div className="relative group w-72 flex-wrap">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" />
+              <input
+                type="text"
+                placeholder="Search traders..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-full text-base focus:ring-2 focus:ring-black focus:border-black bg-white/90 shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
+              />
             </div>
-          </Card>
-        ) : (
-          <>
-            <Card className="border border-gray-200 overflow-hidden">
-              <div className="bg-gray-50 border-b border-gray-200 px-8 py-4">
-                <div className="flex items-center">
-                  <div className="w-24 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Rank</div>
-                  <div className="flex-1 text-xs font-semibold text-gray-600 uppercase tracking-wide">Trader</div>
-                  <div className="w-32 text-xs font-semibold text-gray-600 uppercase tracking-wide pl-2">P&L</div>
-                  <div className="w-24 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Score</div>
-                  <div className="w-32 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Badges</div>
-                  <div className="w-24 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Sharpe</div>
-                  <div className="w-24 text-xs font-semibold text-gray-600 uppercase tracking-wide text-center">Action</div>
+            <SelectDropdown
+              options={timeRangeOptions}
+              selected={selectedTimeRange}
+              onSelect={val => setSelectedTimeRange(val as any)}
+              buttonIcon={Clock}
+            />
+            <SelectDropdown
+              options={categoryOptions}
+              selected={selectedCategory}
+              onSelect={val => setSelectedCategory(val as any)}
+              buttonIcon={Filter}
+            />
+          </div>
+        </div>
+
+        <div className="mb-20">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-black"></div>
+              <span className="ml-4 text-gray-700 text-lg">Loading leaderboard...</span>
+            </div>
+          ) : error ? (
+            <Card className="p-8 bg-red-50 border-red-200 rounded-2xl">
+              <div className="text-center">
+                <h3 className="text-lg font-medium text-red-800">Error loading leaderboard</h3>
+                <p className="text-base text-red-600 mt-2">{error}</p>
+                <Button variant="outline" size="sm" onClick={refresh} className="mt-4">
+                  Try again
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <Card className="border border-gray-100 overflow-hidden bg-white/95 rounded-2xl shadow-xl">
+              <div className="overflow-x-auto">
+                <div className="bg-gray-50 border-b border-gray-100 px-10 py-6 min-w-[600px]">
+                  <div className="flex items-center">
+                    <div className="w-24 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Rank</div>
+                    <div className="flex-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Trader</div>
+                    <div className="w-32 text-xs font-semibold text-gray-500 uppercase tracking-wide pl-2">P&L</div>
+                    <div className="w-24 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Score</div>
+                    <div className="w-32 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Badges</div>
+                    <div className="w-24 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Sharpe</div>
+                    {/* <div className="w-24 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Action</div> */}
+                  </div>
+                </div>
+                <div className="min-w-[600px]">
+                  <VirtualScroll
+                    items={processedData}
+                    renderItem={renderLeaderboardRow}
+                    itemHeight={ITEM_HEIGHT}
+                    containerHeight={CONTAINER_HEIGHT}
+                    bufferSize={BUFFER_SIZE}
+                  />
                 </div>
               </div>
-
-              {/* Virtual Scrolled Content */}
-              <VirtualScroll
-                items={processedData}
-                renderItem={renderLeaderboardRow}
-                itemHeight={ITEM_HEIGHT}
-                containerHeight={CONTAINER_HEIGHT}
-                bufferSize={BUFFER_SIZE}
-              />
             </Card>
+          )}
+        </div>
+      </div>
 
-            {/* Professional Hover Card */}
-            {hoveredTrader && typeof window !== 'undefined' && (
-              <div 
-                className="fixed w-80 bg-white border border-gray-300 shadow-lg z-50 p-4 pointer-events-none"
-                style={{
-                  left: Math.min(hoverPosition.x, window.innerWidth - 1050),
-                  top: Math.min(hoverPosition.y, window.innerHeight - 200),
-                }}
-              >
+      {hoveredTrader && typeof window !== 'undefined' && (
+        <div 
+          className="fixed w-[28rem] bg-white/95 border border-gray-100 shadow-2xl rounded-2xl z-50 p-8 pointer-events-none backdrop-blur-lg"
+          style={{
+            left: Math.min(hoverPosition.x, window.innerWidth - 500),
+            top: Math.min(hoverPosition.y, window.innerHeight - 350),
+          }}
+        >
                 {(() => {
                   const trader = processedData.find(t => t.id === hoveredTrader);
                   if (!trader) return null;
@@ -582,13 +609,10 @@ export function Leaderboard() {
                 })()}
               </div>
             )}
-          </>
-        )}
-      </div>
 
       {/* Right Slide-out Panel */}
       <div 
-        className={`fixed inset-y-0 right-0 w-96 bg-white border-l border-gray-200 shadow-xl z-50 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 right-0 w-[28rem] bg-white/95 border-l border-gray-100 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out rounded-l-2xl ${
           showTraderPanel ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -752,7 +776,7 @@ export function Leaderboard() {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              {/* <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
                 <Button
                   variant={isFollowed(trader.id) ? "default" : "outline"}
                   onClick={() => handleFollow(trader.id)}
@@ -764,7 +788,7 @@ export function Leaderboard() {
                 >
                   {isFollowed(trader.id) ? 'Following' : 'Follow Trader'}
                 </Button>
-              </div>
+              </div> */}
             </div>
           );
         })()}
