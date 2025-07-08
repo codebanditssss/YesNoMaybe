@@ -1,5 +1,5 @@
-import { OrderbookPage } from '@/components/dashboard/OrderbookPage';
+import { Orderbook } from '@/components/dashboard/Orderbook';
 
 export default function OrderbookPageRoute() {
-  return <OrderbookPage />;
+  return <Orderbook />;
 } 
