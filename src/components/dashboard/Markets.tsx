@@ -460,10 +460,10 @@ export function Markets() {
 
         {/* Markets List */}
         <Card className="border border-gray-100 overflow-hidden bg-white/95 rounded-2xl shadow-xl overflow-x-auto">
-          {/* <div className="p-3 sm:p-6">
-            <div className="flex items-center justify-between mb-6"> */}
-          <div className="bg-gray-50 border-b border-gray-100 p-3 sm:p-6">
+          <div className="p-3 sm:p-6">
             <div className="flex items-center justify-between mb-6">
+          {/* <div className="bg-gray-50 border-b border-gray-100 p-3 sm:p-6">
+            <div className="flex items-center justify-between mb-6"> */}
               <div className='flex items-center gap-4 justify-start w-full sm:w-auto mt-2 sm:mt-0 flex-wrap'>
               <h3 className="text-xl font-semibold text-gray-900 flex-wrap">
                 {selectedCategory === 'all' ? 'All Markets' : `${categories.find(c => c.id === selectedCategory)?.name} Markets`}
