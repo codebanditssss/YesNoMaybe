@@ -504,9 +504,11 @@ export function TradeHistory() {
                           </div>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 w-full overflow-x-auto">
-                          {filteredTrades.map((trade) => (
-                            <Card key={trade.id} className="p-2 sm:p-4 md:p-5 bg-white border-2 border border-gray-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full w-full break-words">
+                        <div className="overflow-x-auto">
+                          <div className="min-w-[900px] max-h-[520px] overflow-y-auto">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 w-full">
+                              {filteredTrades.map((trade) => (
+                                <Card key={trade.id} className="p-2 sm:p-4 md:p-5 bg-white border-2 border border-gray-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full w-full break-words">
                               {/* Header */}
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex gap-1 flex-wrap">
@@ -578,7 +580,9 @@ export function TradeHistory() {
                             </Card>
                           ))}
                         </div>
-                      )}
+                      </div>
+                    </div>
+                  )}
 
                       {/* Load More Button */}
                       {canLoadMore && (
