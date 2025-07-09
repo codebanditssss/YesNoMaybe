@@ -269,113 +269,127 @@ export function Settings() {
               </div>
 
               {/* Profile Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Full Name</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.full_name}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, full_name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.full_name || '--'}</p>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {/* Full Name */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <User className="h-4 w-4" /> Full Name
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.full_name}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, full_name: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.full_name || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email Address
-                  </label>
-                  <p className="text-gray-900">{profile?.email || "--"}</p>
+                {/* Email */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Mail className="h-4 w-4" /> Email Address
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">{profile?.email || "--"}</div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Username</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.username}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, username: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.username || '--'}</p>
-                  )}
+                {/* Username */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <User className="h-4 w-4" /> Username
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.username}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, username: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.username || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Bio</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.bio}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, bio: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.bio || '--'}</p>
-                  )}
+                {/* Bio */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Edit3 className="h-4 w-4" /> Bio
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.bio}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, bio: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.bio || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Location
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.location}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, location: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.location || '--'}</p>
-                  )}
+                {/* Location */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Globe className="h-4 w-4" /> Location
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.location}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, location: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.location || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Website
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.website}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, website: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.website || '--'}</p>
-                  )}
+                {/* Website */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Globe className="h-4 w-4" /> Website
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.website}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, website: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.website || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Twitter className="h-4 w-4" />
-                    Twitter Handle
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.twitter_handle}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, twitter_handle: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.twitter_handle || '--'}</p>
-                  )}
+                {/* Twitter Handle */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Twitter className="h-4 w-4" /> Twitter Handle
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.twitter_handle}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, twitter_handle: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.twitter_handle || '--'
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -513,28 +527,28 @@ export function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4">
+      <div className="max-w-6xl mx-auto px-2 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-2">Manage your account preferences and security settings</p>
+          <h1 className="text-4xl font-light text-black tracking-tight">Settings</h1>
+          <p className="text-gray-500 mt-2 font-light">Manage your account preferences and security settings</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Settings Navigation */}
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-100/50 shadow-lg">
               <CardContent className="p-0">
                 <nav className="space-y-1">
                   {settingsSections.map(({ id, label, icon: Icon }) => (
                     <button
                       key={id}
                       onClick={() => setActiveSection(id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                        activeSection === id 
-                          ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' 
-                          : 'text-gray-700'
-                      }`}
+                      className={`w-full flex items-center gap-3 px-5 py-4 text-left transition-all duration-200 rounded-xl font-medium text-base focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:z-10
+                        ${activeSection === id 
+                          ? 'bg-black text-white shadow-lg' 
+                          : 'text-gray-700'}
+                      `}
                     >
                       <Icon className="h-5 w-5" />
                       {label}
@@ -547,7 +561,9 @@ export function Settings() {
 
           {/* Settings Content */}
           <div className="lg:col-span-3">
-            {renderSection()}
+            <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-100/50 shadow-lg p-8">
+              {renderSection()}
+            </div>
           </div>
         </div>
       </div>
