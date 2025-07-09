@@ -21,6 +21,18 @@ import {
 
 import type { Market } from "@/hooks/useMarkets";
 
+interface OrderLevel {
+  price: number;
+  quantity: number;
+  total: number;
+  orders: Array<{
+    id: string;
+    isNew?: boolean;
+    isUpdated?: boolean;
+    timestamp: string;
+  }>;
+}
+
 interface OrderbookProps {
   selectedMarket?: Market;
   onMarketSelect?: (market: Market) => void;
@@ -124,10 +136,99 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
     refresh();
   };
 
-  // Get visible orders based on current index
-  const getVisibleOrders = (orders: any[], startIndex: number) => {
-    if (orders.length <= 5) return orders;
-    return orders.slice(startIndex, startIndex + 5);
+  // Calculate depth percentage
+  const calculateDepthPercentage = (total: number) => {
+    const maxTotal = Math.max(
+      ...(yesBids || []).map((level: OrderLevel) => level.total),
+      ...(noAsks || []).map((level: OrderLevel) => level.total)
+    );
+    return maxTotal > 0 ? (total / maxTotal) * 100 : 0;
+  };
+
+  // Get visible orders based on current index and filter
+  const getVisibleOrders = (orders: OrderLevel[]) => {
+    if (!orders?.length) return [];
+    
+    let filteredOrders = orders;
+
+    // Apply price filter
+    switch (priceFilter) {
+      case 'best':
+        // Only show orders at the best price level
+        const bestPrice = orders[0]?.price;
+        filteredOrders = orders.filter(order => order.price === bestPrice);
+        break;
+      case 'recent':
+        // Sort by timestamp and take most recent
+        filteredOrders = [...orders].sort((a, b) => {
+          const latestA = Math.max(...a.orders.map(o => new Date(o.timestamp).getTime()));
+          const latestB = Math.max(...b.orders.map(o => new Date(o.timestamp).getTime()));
+          return latestB - latestA;
+        }).slice(0, 5);
+        break;
+      default: // 'all'
+        // Show paginated view for all orders
+        filteredOrders = orders.slice(0, 5);
+        break;
+    }
+
+    return filteredOrders;
+  };
+
+  // Render order rows with filtering
+  const renderOrderRows = (type: 'yes' | 'no') => {
+    const orders = type === 'yes' ? displayData.yesBids : displayData.noAsks;
+    
+    if (!orders?.length) {
+      return (
+        <tr>
+          <td colSpan={4} className="text-center py-4 text-gray-500">
+            No {type.toUpperCase()} orders
+          </td>
+        </tr>
+      );
+    }
+
+    const visibleOrders = getVisibleOrders(orders);
+
+    return visibleOrders.map((level: OrderLevel, index: number) => {
+      const depthPercentage = calculateDepthPercentage(level.total);
+      const isNewOrder = level.orders.some(o => o.isNew);
+      const isUpdated = level.orders.some(o => o.isUpdated);
+      
+      return (
+        <tr 
+          key={`${level.price}-${index}`}
+          className={`relative ${
+            isNewOrder ? 'animate-highlight-green' :
+            isUpdated ? 'animate-highlight-yellow' : ''
+          }`}
+        >
+          <td className="py-2 pl-4">
+            <div className="flex items-center gap-2">
+              <span className={`font-medium ${type === 'yes' ? 'text-blue-600' : 'text-gray-900'}`}>
+                ₹{formatPrice(level.price)}
+              </span>
+              {level.orders.length > 1 && (
+                <Badge variant="outline" className="text-xs">
+                  {level.orders.length}
+                </Badge>
+              )}
+            </div>
+          </td>
+          <td className="py-2 text-right">{formatNumber(level.quantity)}</td>
+          <td className="py-2 text-right text-gray-500">{formatNumber(level.total)}</td>
+          <td className="py-2 pr-4">
+            <div className="w-full bg-gray-100 rounded-full h-1.5">
+              <div
+                className={`h-full rounded-full ${type === 'yes' ? 'bg-blue-600' : 'bg-gray-600'}`}
+                style={{ width: `${depthPercentage}%` }}
+              />
+            </div>
+          </td>
+        </tr>
+      );
+    });
   };
 
   // Market stats cards array for DRY rendering
@@ -330,12 +431,12 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
                   </div>
                 ) : (
                   <div className="transition-all duration-500 ease-in-out">
-                    {getVisibleOrders(yesBids, yesBidsStartIndex).map((level, index) => (
+                    {getVisibleOrders(yesBids).map((level, index) => (
                       <div key={`yes-${level.price}`} className="relative group">
                         {/* Depth Bar */}
                         <div 
                           className="absolute left-0 top-0 h-full bg-blue-50 opacity-60 transition-all duration-300"
-                          style={{ width: `${getDepthPercentage(level.quantity)}%` }}
+                          style={{ width: `${calculateDepthPercentage(level.quantity)}%` }}
                         />
                         
                         {/* Order Row */}
@@ -390,12 +491,12 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
                   </div>
                 ) : (
                   <div className="transition-all duration-500 ease-in-out">
-                    {getVisibleOrders(noAsks, noAsksStartIndex).map((level, index) => (
+                    {getVisibleOrders(noAsks).map((level, index) => (
                       <div key={`no-${level.price}`} className="relative group">
                         {/* Depth Bar */}
                         <div 
                           className="absolute left-0 top-0 h-full bg-gray-100 opacity-60 transition-all duration-300"
-                          style={{ width: `${getDepthPercentage(level.quantity)}%` }}
+                          style={{ width: `${calculateDepthPercentage(level.quantity)}%` }}
                         />
                         
                         {/* Order Row */}
@@ -455,8 +556,7 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
               ) : (
                 <div className="transition-all duration-500 ease-in-out">
                   {getVisibleOrders(
-                    viewMode === 'yes' ? yesBids : noAsks,
-                    viewMode === 'yes' ? yesBidsStartIndex : noAsksStartIndex
+                    viewMode === 'yes' ? yesBids : noAsks
                   ).map((level, index) => (
                     <div key={`${viewMode}-${level.price}`} className="relative group">
                       {/* Depth Bar */}
@@ -464,7 +564,7 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
                         className={`absolute left-0 top-0 h-full opacity-60 transition-all duration-300 ${
                           viewMode === 'yes' ? 'bg-blue-50' : 'bg-gray-100'
                         }`}
-                        style={{ width: `${getDepthPercentage(level.quantity)}%` }}
+                        style={{ width: `${calculateDepthPercentage(level.quantity)}%` }}
                       />
                       
                       {/* Order Row */}
