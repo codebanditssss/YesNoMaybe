@@ -51,12 +51,12 @@ export function TradeHistory() {
     canLoadMore,
     realtimeUpdates
   } = useRealtimeTradeHistory({ 
-    status: filterStatus === 'all' ? undefined : filterStatus,
-    side: filterSide === 'all' ? undefined : filterSide,
-    dateRange: dateRange === 'all' ? undefined : dateRange,
+    // status: filterStatus === 'all' ? undefined : filterStatus,
+    // side: filterSide === 'all' ? undefined : filterSide,
+    // dateRange: dateRange === 'all' ? undefined : dateRange,
     sortBy: sortBy === 'total' ? 'quantity' : sortBy === 'pnl' ? 'quantity' : sortBy,
     sortOrder,
-    search: searchTerm,
+    // search: searchTerm,
     autoRefresh: true,
     refreshInterval: 60000 // 1 minute
   });
@@ -213,46 +213,95 @@ export function TradeHistory() {
   ];
 
   return (
-    <div className="p-2 sm:p-4 md:p-8 bg-gray-50 min-h-full overflow-x-hidden">
-      <div className="max-w-full md:max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-14 gap-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Trade History</h1>
-            <p className="text-gray-600">Track all your trading activity and performance</p>
+            <h1 className="text-5xl font-extralight text-black tracking-tight mb-2">Trade History</h1>
+            <p className="text-gray-500 text-lg font-light">Track all your trading activity and performance</p>
           </div>
-          
-          <div className="flex items-center gap-4">
-            {/* Real-time status indicator */}
-            <div className="flex items-center gap-2">
-              <Radio className={`h-4 w-4 ${realtimeUpdates.type ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
-              <span className="text-sm text-gray-600">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100 flex-wrap">
+              <Radio className={`h-5 w-5 ${realtimeUpdates.type ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+              <span className="text-base text-gray-700 font-medium ml-2">
                 {realtimeUpdates.type 
                   ? `Last update: ${realtimeUpdates.type} (${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()})`
                   : 'Waiting for updates...'}
               </span>
             </div>
-
             <Button 
               variant="outline" 
               size="sm"
               onClick={refresh}
-              className="flex items-center gap-2"
+              className="hover:border-gray-200 shadow bg-white/70 backdrop-blur-md rounded-full px-6 py-3 min-w-[120px] min-h-[44px] flex items-center justify-center"
               disabled={loading}
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-5 w-5 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
-            
             <Button 
               variant="outline" 
               size="sm"
-              className="flex items-center gap-2"
+              className="hover:border-gray-200 shadow bg-white/70 backdrop-blur-md rounded-full px-6 py-3 min-w-[120px] min-h-[44px] flex items-center justify-center"
               onClick={() => exportTradeHistoryToCSV(trades)}
             >
-              <Download className="h-4 w-4" />
+              <Download className="h-5 w-5 mr-2" />
               Export CSV
             </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-14">
+          {statCards.map((card) => (
+            <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 shadow-md">
+              <div className="flex-shrink-0 mb-1">{card.icon}</div>
+              <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1 text-center">{card.label}</div>
+              <div className="text-3xl font-bold text-gray-900 text-center">{card.value}</div>
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-center mb-10 flex-wrap">
+          <div className="flex bg-white/80 backdrop-blur-lg rounded-full border border-gray-100 shadow-lg px-2 py-2 gap-2 flex-nowrap overflow-x-auto whitespace-nowrap max-w-full w-full sm:w-auto">
+            {[
+              { id: 'all', label: 'All Trades', icon: Activity },
+              { id: 'completed', label: 'Completed', icon: CheckCircle },
+              { id: 'pending', label: 'Pending', icon: Clock },
+              { id: 'analytics', label: 'Analytics', icon: PieChart }
+            ].map(({ id, label, icon: Icon }) => {
+              const isSelected = selectedTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setSelectedTab(id as any)}
+                  className={
+                    `relative flex items-center gap-3 px-8 py-3 text-lg font-medium rounded-full transition-all duration-300 min-w-[180px] min-h-[48px] justify-center ` +
+                    (isSelected
+                      ? 'bg-black text-white shadow-lg'
+                      : 'bg-transparent text-gray-500 hover:text-black')
+                  }
+                  style={{ boxShadow: isSelected ? '0 2px 16px 0 rgba(0,0,0,0.08)' : undefined }}
+                >
+                  <Icon className={`h-6 w-6 ${isSelected ? 'text-white' : 'text-gray-500'}`} />
+                  {label}
+                  {id === 'all' && (
+                    <Badge variant="secondary" className="ml-1 text-xs opacity-75 bg-gray-100 px-1.5 py-0.5 rounded">
+                    {stats.totalTrades}
+                  </Badge>
+                  )}
+                  {id === 'completed' && (
+                    <Badge variant="secondary" className="ml-1 text-xs opacity-75 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {stats.completedTrades}
+                    </Badge>
+                  )}
+                  {id === 'pending' && (
+                    <Badge variant="secondary" className="ml-1 text-xs opacity-75 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {stats.pendingTrades}
+                    </Badge>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -285,83 +334,24 @@ export function TradeHistory() {
           </Card>
         )}
 
-        {/* Trade Statistics */}
-        {!loading && !error && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
-            {statCards.map((card) => (
-              <Card key={card.label} className="p-3 sm:p-4 bg-white border-1 border border-gray-300 rounded-lg  shadow-sm hover:shadow-md transition-shadow">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1 rounded ${card.iconBg}`}>{card.icon}</div>
-                    <span className="text-sm font-medium text-gray-600">{card.label}</span>
-                  </div>
-                  <p className={`text-2xl font-bold ${card.valueClass}`}>{card.value}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Navigation Tabs */}
-        {!loading && !error && (
-          <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm flex-wrap">
-            <div className="flex border-1 border border-gray-300 rounded-lg bg-white p-1 flex-wrap">
-              {[
-                { id: 'all', label: 'All Trades', icon: Activity },
-                { id: 'completed', label: 'Completed', icon: CheckCircle },
-                { id: 'pending', label: 'Pending', icon: Clock },
-                { id: 'analytics', label: 'Analytics', icon: PieChart }
-              ].map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setSelectedTab(id as any)}
-                  className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors flex-1 justify-center ${
-                    selectedTab === id
-                      ? 'bg-white border border-gray-100 text-gray-900 shadow-lg'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                  {id === 'all' && (
-                    <Badge variant="secondary" className="ml-1 bg-green-100 text-green-800">
-                    {stats.totalTrades}
-                  </Badge>
-                  )}
-                  {id === 'completed' && (
-                    <Badge variant="secondary" className="ml-1 bg-green-100 text-green-800">
-                      {stats.completedTrades}
-                    </Badge>
-                  )}
-                  {id === 'pending' && (
-                    <Badge variant="secondary" className="ml-1 bg-yellow-100 text-yellow-800">
-                      {stats.pendingTrades}
-                    </Badge>
-                  )}
-                </button>
-              ))}
-            </div>
-          </Card>
-        )}
-
         {/* Tab Content */}
         {!loading && !error && (
           <>
             {(selectedTab === 'all' || selectedTab === 'completed' || selectedTab === 'pending') && (
               <div className="space-y-6">
                 {/* Filters and Search */}
-                <Card className="p-3 sm:p-6 bg-white border-1 border border-gray-300 rounded-lg  shadow-sm">
+                <Card className="p-3 sm:p-6 bg-white/80 backdrop-blur-lg rounded-md border border-gray-100 shadow">
                   <div className="flex flex-col lg:flex-row gap-4">
                     {/* Search */}
                     <div className="flex-1">
-                      <div className="relative">
+                      <div className="relative flex-wrap">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                           type="text"
                           placeholder="Search by market title..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -462,122 +452,56 @@ export function TradeHistory() {
                       <div className="border-b border-gray-200 my-2" />
                       
                       {viewMode === 'list' ? (
-                        <div className="space-y-4 w-full overflow-x-auto">
-                          {filteredTrades.map((trade) => (
-                            <div 
-                              key={trade.id} 
-                              className={`border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow w-full break-words ${
-                                realtimeUpdates.type === 'trade' && 
-                                realtimeUpdates.tradeId === trade.id &&
-                                new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
-                                  ? 'animate-highlight bg-green-50' 
-                                  : ''
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-4 w-full">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2 gap-y-1 mb-2 text-xs sm:text-sm">
-                                    <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
-                                      {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
-                                    </Badge>
-                                    <Badge className={getStatusColor(trade.status)} variant="outline">
-                                      <div className="flex items-center gap-1">
-                                        {getStatusIcon(trade.status)}
-                                        {trade.status.toUpperCase()}
-                                      </div>
-                                    </Badge>
-                                    <Badge variant={trade.side === 'YES' ? 'default' : 'outline'} className={
-                                      trade.side === 'YES' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
-                                    }>
-                                      {trade.side.toUpperCase()}
-                                    </Badge>
-                                    <Badge variant="outline" className="bg-purple-100 text-purple-800">
-                                      {trade.orderType.toUpperCase()}
-                                    </Badge>
-                                    {trade.marketStatus === 'resolved' && (
-                                      <Badge variant="outline" className="bg-emerald-100 text-emerald-800">
-                                        RESOLVED
-                                      </Badge>
-                                    )}
-                                    {trade.marketStatus === 'active' && (
-                                      <Badge variant="outline" className="bg-blue-100 text-blue-800">
-                                        ACTIVE
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  
-                                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                                    {trade.marketTitle}
-                                  </h3>
-                                  
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                    <div>
-                                      <span className="text-gray-500">Quantity:</span>
-                                      <p className="font-medium">{trade.quantity}</p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Price:</span>
-                                      <p className="font-medium">₹{trade.price.toFixed(2)}</p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Total:</span>
-                                      <p className="font-medium">{formatCurrency(trade.total)}</p>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-500">Date:</span>
-                                      <p className="font-medium">{new Date(trade.timestamp).toLocaleDateString()}</p>
-                                      <p className="text-xs text-gray-500">
-                                        {new Date(trade.timestamp).toLocaleTimeString('en-US', { 
-                                          hour: '2-digit', 
-                                          minute: '2-digit', 
-                                          hour12: true 
-                                        })}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="text-right space-y-2">
-                                  <div>
-                                    <p className="text-sm text-gray-500">Investment</p>
-                                    <p className="text-lg font-bold text-gray-900">{formatCurrency(trade.total || 0)}</p>
-                                  </div>
-                                  
-                                  <div>
-                                    <p className="text-sm text-gray-500">P&L</p>
-                                    <div className="flex items-center gap-1">
-                                      {trade.marketStatus === 'resolved' ? (
-                                        <span className={`font-bold ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                          {trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}
-                                          <span className="text-xs ml-1">
-                                            ({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)
-                                          </span>
-                                        </span>
-                                      ) : trade.status === 'filled' ? (
-                                        <span className="font-medium text-blue-600">
-                                          Pending
-                                          <span className="text-xs ml-1 text-gray-500">
-                                            (Active Market)
-                                          </span>
-                                        </span>
-                                      ) : (
-                                        <span className="font-medium text-gray-500">
-                                          -
-                                          <span className="text-xs ml-1">
-                                            (Not Filled)
-                                          </span>
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="text-xs text-gray-500">
-                                    <p>Fees: {formatCurrency(trade.fees)}</p>
-                                  </div>
-                                </div>
+                        <div className="overflow-x-auto">
+                          <div className="min-w-[900px] max-h-[420px] overflow-y-auto">
+                            <div className="bg-gray-50 border-b border-gray-100 px-8 py-4">
+                              <div className="flex items-center">
+                                <div className="flex-1 text-xs font-semibold text-gray-500 uppercase tracking-wide">Market</div>
+                                <div className="w-20 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Side</div>
+                                <div className="w-20 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Qty</div>
+                                <div className="w-24 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Price</div>
+                                <div className="w-28 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Total</div>
+                                <div className="w-32 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Date</div>
+                                <div className="w-24 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">Status</div>
+                                <div className="w-24 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center">P&L</div>
                               </div>
                             </div>
-                          ))}
+                            {filteredTrades.map((trade) => (
+                              <div
+                                key={trade.id}
+                                className={`flex items-center border-b border-gray-100 hover:bg-gray-50 px-8 py-4 ${
+                                  realtimeUpdates.type === 'trade' &&
+                                  realtimeUpdates.tradeId === trade.id &&
+                                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000
+                                    ? 'animate-highlight bg-green-50'
+                                    : ''
+                                }`}
+                                style={{ minHeight: 56 }}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900 truncate">{trade.marketTitle}</div>
+                                  <div className="text-xs text-gray-400 truncate">{(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}</div>
+                                </div>
+                                <div className={`w-20 text-xs font-semibold text-center rounded-full px-2 py-1 ${trade.side === 'YES' ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'}`}>{trade.side}</div>
+                                <div className="w-20 text-xs text-gray-700 text-center">{trade.quantity}</div>
+                                <div className="w-24 text-xs text-gray-700 text-center">₹{trade.price.toFixed(2)}</div>
+                                <div className="w-28 text-xs text-gray-700 text-center">{formatCurrency(trade.total)}</div>
+                                <div className="w-32 text-xs text-gray-700 text-center">
+                                  {new Date(trade.timestamp).toLocaleDateString()}<br />
+                                  <span className="text-xs text-gray-400">{new Date(trade.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</span>
+                                </div>
+                                <div className="w-24 text-xs text-center">
+                                  <Badge className={getStatusColor(trade.status)} variant="outline">
+                                    <div className="flex items-center gap-1">
+                                      {getStatusIcon(trade.status)}
+                                      {trade.status.toUpperCase()}
+                                    </div>
+                                  </Badge>
+                                </div>
+                                <div className={`w-24 text-xs font-semibold text-center ${trade.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>{trade.pnl >= 0 ? '+' : ''}{formatCurrency(trade.pnl)}<span className="ml-1 text-xs font-normal">({trade.pnlPercent >= 0 ? '+' : ''}{trade.pnlPercent.toFixed(1)}%)</span></div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 w-full overflow-x-auto">
