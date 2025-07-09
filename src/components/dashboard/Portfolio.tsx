@@ -6,17 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRealtimePortfolio } from '@/hooks/useRealtimePortfolio';
 import { useDailyChanges } from '@/hooks/useDailyChanges';
+import { useRealtime } from '@/contexts/RealtimeContext';
 import { 
   Target,
   BarChart3,
   PieChart,
   AlertCircle,
   RefreshCw,
-  Radio
+  Radio,
+  Clock,
+  Activity,
+  LucideIcon
 } from "lucide-react";
 import { PortfolioCharts } from './PortfolioCharts';
 import { PortfolioAnalytics } from './PortfolioAnalytics';
 import { PnLCalculator, TradePosition } from '@/lib/pnl-calculator';
+import { TradeHistoryEntry as TradeHistory } from '@/hooks/useTradeHistory';
 
 interface Position {
   id: string;
@@ -50,12 +55,25 @@ interface PortfolioStats {
   volume: number;
 }
 
+// Add sophisticated color palette at the top
+const POSITION_COLORS = {
+  primary: '#1a1a1a',    // Black
+  secondary: '#718096',  // Medium Gray
+  accent: '#4a5568',     // Dark Gray
+  success: '#047857',    // Muted Green
+  danger: '#991b1b',     // Muted Red
+  background: 'rgba(255, 255, 255, 0.8)',
+  border: 'rgba(229, 231, 235, 0.5)'
+};
+
 export function Portfolio() {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'positions' | 'analytics'>('overview');
   const [timeframe, setTimeframe] = useState<'1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL'>('ALL');
   const [sortBy, setSortBy] = useState<'pnl' | 'value' | 'alphabetical' | 'date'>('pnl');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'resolved'>('all');
   const [mounted, setMounted] = useState(false);
+
+  const { isConnected } = useRealtime();
 
   // Use real-time portfolio data
   const { 
@@ -68,9 +86,7 @@ export function Portfolio() {
     getPnLPercentage,
     realtimeUpdates
   } = useRealtimePortfolio({ 
-    includeHistory: true,
-    autoRefresh: true,
-    timeframe: timeframe
+    autoRefresh: true
   });
 
   // Initialize on client side only
@@ -160,6 +176,13 @@ export function Portfolio() {
   const formatPercent = (percent: number) => {
     const sign = percent >= 0 ? '+' : '';
     return `${sign}${percent.toFixed(2)}%`;
+  };
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    }).format(num || 0);
   };
 
   const getCategoryColor = (category: string) => {
@@ -306,6 +329,14 @@ export function Portfolio() {
     );
   }
 
+  type TabId = 'overview' | 'positions' | 'analytics';
+  
+  const tabs: Array<{ id: TabId; label: string; icon: LucideIcon }> = [
+    { id: 'overview', label: 'Overview', icon: Clock },
+    { id: 'positions', label: 'Positions', icon: BarChart3 },
+    { id: 'analytics', label: 'Advanced Analytics', icon: Activity }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -318,10 +349,27 @@ export function Portfolio() {
           
           {/* Real-time status indicator */}
           <div className="flex items-center gap-6">
-            <div className="text-right">
-              <div className="text-sm text-gray-400 font-light">Last updated</div>
-              <div className="text-sm text-black font-medium">
-                {mounted && realtimeUpdates.type ? realtimeUpdates.type + ' (' + new Date(realtimeUpdates.lastUpdate).toLocaleTimeString() + ')' : '--:--'}
+            {/* Real-time Status */}
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center space-x-2 text-gray-500">
+                <span className="font-light">Last updated</span>
+                <span className="font-medium">
+                  {realtimeUpdates.lastUpdate ? (
+                    new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 ? (
+                      <span className="text-emerald-600 animate-pulse">Real-time</span>
+                    ) : (
+                      new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()
+                    )
+                  ) : (
+                    '--:--'
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center space-x-1 text-emerald-600">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                {isConnected && (
+                  <span className="text-xs font-medium">Live</span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -329,7 +377,7 @@ export function Portfolio() {
               <span className="text-sm text-gray-600">
                 {realtimeUpdates.type 
                   ? `Last update: ${realtimeUpdates.type} (${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()})`
-                  : 'Waiting for updates...'}
+                  : ''}
               </span>
             </div>
             <Button
@@ -345,175 +393,150 @@ export function Portfolio() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center justify-center mb-12">
-          <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg shadow-gray-100/50 overflow-hidden">
-            {[
-              { key: 'overview', label: 'Overview', icon: PieChart },
-              { key: 'positions', label: 'Positions', icon: Target },
-              { key: 'analytics', label: 'Advanced Analytics', icon: BarChart3 }
-            ].map(({ key, label, icon: Icon }) => (
+        <div className="flex items-center justify-center w-full bg-white/50 backdrop-blur-sm rounded-lg p-1 shadow-sm">
+          <nav className="flex items-center justify-center space-x-2 w-full max-w-2xl">
+            {tabs.map(({ id, label, icon: Icon }) => (
               <button
-                key={key}
-                onClick={() => setSelectedTab(key as any)}
-                className={`px-6 py-3 text-sm font-light transition-all duration-300 relative flex items-center space-x-2 ${
-                  selectedTab === key 
+                key={id}
+                onClick={() => setSelectedTab(id)}
+                className={`
+                  flex items-center justify-center px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 min-w-[140px]
+                  ${selectedTab === id 
                     ? 'bg-black text-white shadow-lg' 
-                    : 'text-gray-500 hover:text-black hover:bg-white/80'
-                }`}
+                    : 'text-gray-600 hover:bg-gray-100'
+                  }
+                `}
               >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
-                {selectedTab === key && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-400 to-purple-400"></div>
-                )}
+                <Icon className="w-4 h-4 mr-2" />
+                {label}
               </button>
             ))}
-          </div>
+          </nav>
         </div>
 
-        {/* Tab Content */}
-        {selectedTab === 'overview' && (
-          <div className="space-y-16">
-            {/* Key Metrics - Clean Design */}
-            <div className="relative">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Portfolio Value */}
-                <div className={`relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50 ${
+        {/* Content Section with improved spacing */}
+        <div className="bg-white/50 backdrop-blur-sm rounded-xl p-8 shadow-sm border border-gray-100/50">
+          {/* Overview Tab */}
+          {selectedTab === 'overview' && (
+            <div className="space-y-8">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Total Value Card */}
+                <div className={`bg-white/80 rounded-lg p-6 shadow-sm border border-gray-100/50 ${
                   realtimeUpdates.type === 'balance' && 
-                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
-                    ? 'animate-highlight bg-green-50' 
+                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
+                    ? 'animate-highlight' 
                     : ''
                 }`}>
-                  <div className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">Total Value</div>
-                  <div className="text-3xl font-light text-black mb-2">{formatCurrency(stats.totalValue)}</div>
-                  <div className={`text-sm font-medium flex items-center gap-1 ${
-                    stats.totalPnl >= 0 
-                      ? 'text-emerald-700' 
-                      : 'text-red-600'
-                  }`}>
-                    {stats.totalPnl >= 0 ? '↗' : '↘'}
-                    {stats.totalPnl >= 0 ? '+' : ''}{formatPercent(stats.totalPnlPercent)}
+                  <h3 className="text-sm font-light text-gray-500 mb-2">TOTAL VALUE</h3>
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-2xl font-medium">₹{formatNumber(stats.totalValue)}</span>
+                    <span className={`text-sm ${stats.totalPnlPercent >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {stats.totalPnlPercent >= 0 ? '+' : ''}{stats.totalPnlPercent.toFixed(2)}%
+                    </span>
                   </div>
-                </div>
-
-                {/* P&L */}
-                <div className={`relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50 ${
-                  realtimeUpdates.type === 'pnl' && 
-                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
-                    ? 'animate-highlight bg-green-50' 
-                    : ''
-                }`}>
-                  <div className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">Profit & Loss</div>
-                  <div className={`text-3xl font-light mb-2 ${
-                    stats.totalPnl >= 0 ? 'text-emerald-700' : 'text-red-600'
-                  }`}>
-                    {stats.totalPnl >= 0 ? '+' : ''}{formatCurrency(stats.totalPnl)}
-                  </div>
-                  <div className="text-sm text-gray-500 font-light">{stats.totalTrades} trades executed</div>
-                </div>
-
-                {/* Available Balance */}
-                <div className={`relative bg-white/80 backdrop-blur-sm rounded-xl p-8 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 border border-gray-100/50 ${
-                  realtimeUpdates.type === 'balance' && 
-                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
-                    ? 'animate-highlight bg-green-50' 
-                    : ''
-                }`}>
-                  <div className="text-sm text-gray-400 font-light uppercase tracking-wider mb-3">Available</div>
-                  <div className="text-3xl font-light text-black mb-2">{formatCurrency(stats.availableBalance)}</div>
-                  <div className="text-sm text-gray-500 font-light">Ready to trade</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Secondary Metrics - Floating Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg shadow-gray-100/50 hover:shadow-xl hover:shadow-gray-100/70 transition-all duration-300 border border-white/50">
-                <div className="text-2xl font-light text-black mb-1">{stats.winRate.toFixed(1)}%</div>
-                <div className="text-xs text-gray-400 uppercase tracking-wider">Win Rate</div>
-              </div>
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg shadow-gray-100/50 hover:shadow-xl hover:shadow-gray-100/70 transition-all duration-300 border border-white/50">
-                <div className="text-2xl font-light text-black mb-1">{stats.activePositions}</div>
-                <div className="text-xs text-gray-400 uppercase tracking-wider">Active Positions</div>
-              </div>
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg shadow-gray-100/50 hover:shadow-xl hover:shadow-gray-100/70 transition-all duration-300 border border-white/50">
-                <div className="text-2xl font-light text-black mb-1">{formatCurrency(stats.totalInvested)}</div>
-                <div className="text-xs text-gray-400 uppercase tracking-wider">Total Invested</div>
-              </div>
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 text-center shadow-lg shadow-gray-100/50 hover:shadow-xl hover:shadow-gray-100/70 transition-all duration-300 border border-white/50">
-                <div className="text-2xl font-light text-black mb-1">{formatCurrency(stats.volume)}</div>
-                <div className="text-xs text-gray-400 uppercase tracking-wider">Volume</div>
-              </div>
-            </div>
-
-            {/* Performance Charts */}
-            <div>
-              <div className="flex items-end justify-between mb-8">
-                <div>
-                  <h2 className="text-2xl font-light text-black">Performance</h2>
-                  {timeframe !== 'ALL' && (
-                    <p className="text-sm text-gray-400 mt-2 font-light">
-                      Viewing {timeframe} period • Select "ALL" for complete history
-                    </p>
+                  {realtimeUpdates.type === 'balance' && (
+                    <div className="text-xs text-emerald-600 mt-1 font-medium animate-pulse">
+                      Real-time updates enabled
+                    </div>
                   )}
                 </div>
-                <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200 shadow-lg shadow-gray-100/50 overflow-hidden">
-                  {(['1D', '1W', '1M', '3M', '1Y', 'ALL'] as const).map((t, index) => (
-                    <button
-                      key={t}
-                      onClick={() => setTimeframe(t)}
-                      className={`px-4 py-2 text-sm font-light transition-all duration-300 relative ${
-                        timeframe === t 
-                          ? 'bg-black text-white shadow-lg' 
-                          : 'text-gray-500 hover:text-black hover:bg-white/80'
-                      }`}
-                    >
-                      {t}
-                      {timeframe === t && (
-                        <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-400 to-purple-400"></div>
-                      )}
-                    </button>
-                  ))}
+
+                {/* P&L Card */}
+                <div className={`bg-white/80 rounded-lg p-6 shadow-sm border border-gray-100/50 ${
+                  realtimeUpdates.type === 'position' && 
+                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
+                    ? 'animate-highlight' 
+                    : ''
+                }`}>
+                  <h3 className="text-sm font-light text-gray-500 mb-2">PROFIT & LOSS</h3>
+                  <div className="flex items-baseline space-x-2">
+                    <span className={`text-2xl font-medium ${stats.totalPnl >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {stats.totalPnl >= 0 ? '+' : ''}₹{formatNumber(Math.abs(stats.totalPnl))}
+                    </span>
+                    <span className="text-sm text-gray-500">{stats.totalTrades} trades executed</span>
+                  </div>
+                  {realtimeUpdates.type === 'position' && (
+                    <div className="text-xs text-emerald-600 mt-1 font-medium animate-pulse">
+                      Real-time updates enabled
+                    </div>
+                  )}
+                </div>
+
+                {/* Available Balance Card */}
+                <div className={`bg-white/80 rounded-lg p-6 shadow-sm border border-gray-100/50 ${
+                  realtimeUpdates.type === 'balance' && 
+                  new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
+                    ? 'animate-highlight' 
+                    : ''
+                }`}>
+                  <h3 className="text-sm font-light text-gray-500 mb-2">AVAILABLE</h3>
+                  <div className="flex items-baseline space-x-2">
+                    <span className="text-2xl font-medium">₹{formatNumber(stats.availableBalance)}</span>
+                    <span className="text-sm text-gray-500">Ready to trade</span>
+                  </div>
+                  {realtimeUpdates.type === 'balance' && (
+                    <div className="text-xs text-emerald-600 mt-1 font-medium animate-pulse">
+                      Real-time updates enabled
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="bg-white/70 backdrop-blur-sm border-1 border border-gray-300 rounded-lg shadow-xl shadow-gray-100/50 overflow-hidden">
-                <PortfolioCharts 
-                  timeframe={timeframe}
-                  data={{
-                    history: portfolio?.history || [],
-                    summary: {
-                      totalValue: stats.totalValue,
-                      totalPnl: stats.totalPnl,
-                      volume: stats.volume
-                    }
-                  }}
-                />
+              {/* Performance Metrics */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {[
+                  { label: 'WIN RATE', value: `${stats.winRate.toFixed(1)}%` },
+                  { label: 'ACTIVE POSITIONS', value: stats.activePositions },
+                  { label: 'TOTAL INVESTED', value: `₹${formatNumber(stats.totalInvested)}` },
+                  { label: 'VOLUME', value: `₹${formatNumber(stats.volume)}` }
+                ].map((metric, idx) => (
+                  <div key={idx} className="bg-white/60 rounded-lg p-4 text-center">
+                    <div className="text-xl font-medium">{metric.value}</div>
+                    <div className="text-xs font-light text-gray-500 mt-1">{metric.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Charts Section */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-light text-black">Performance</h2>
+                  <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200/50 shadow-sm overflow-hidden">
+                    {(['1D', '1W', '1M', '3M', '1Y', 'ALL'] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setTimeframe(t)}
+                        className={`
+                          px-4 py-2 text-sm font-medium transition-all duration-200
+                          ${timeframe === t 
+                            ? 'bg-black text-white shadow-lg' 
+                            : 'text-gray-600 hover:bg-gray-100'
+                          }
+                        `}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white/70 backdrop-blur-sm rounded-lg border border-gray-100/50 shadow-sm p-6">
+                  <PortfolioCharts 
+                    timeframe={timeframe}
+                    data={{
+                      history: portfolio?.history || [],
+                      summary: {
+                        totalValue: stats.totalValue,
+                        totalPnl: stats.totalPnl,
+                        volume: stats.volume
+                      }
+                    }}
+                  />
+                </div>
               </div>
             </div>
-
-            {/* Category Breakdown */}
-            {Object.keys(categoryBreakdown).length > 0 && (
-              <div>
-                <h2 className="text-2xl font-light text-black mb-8">Portfolio Allocation</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  {Object.entries(categoryBreakdown).map(([category, data], index) => (
-                    <div key={category} className="relative bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-6 text-center group hover:shadow-xl hover:shadow-gray-100/50 transition-all duration-500 hover:-translate-y-1 overflow-hidden">
-                      <div className="absolute top-0 right-0 w-16 h-16 rounded-full opacity-5 bg-gray-400 transform translate-x-6 -translate-y-6"></div>
-                      <div className="text-lg font-medium text-gray-800 mb-2 relative z-10">
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
-                      </div>
-                      <div className="text-2xl font-bold text-gray-900 mb-1 relative z-10">{formatCurrency(data.value)}</div>
-                      <div className="text-sm text-gray-500 font-medium relative z-10">
-                        {data.count} position{data.count !== 1 ? 's' : ''}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+          )}
 
         {/* Positions Tab */}
         {selectedTab === 'positions' && (
@@ -524,7 +547,7 @@ export function Portfolio() {
                 <select 
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value as any)}
-                  className="border border-gray-200 bg-white px-4 py-2 text-sm font-light text-black focus:outline-none focus:border-black transition-colors rounded-lg"
+                    className="border border-gray-200 bg-white/80 backdrop-blur-sm px-4 py-2 text-sm font-light rounded-lg hover:bg-white transition-colors"
                 >
                   <option value="all">All Positions ({transformedPositions.length})</option>
                   <option value="active">Active ({transformedPositions.filter(p => p.marketStatus === 'active').length})</option>
@@ -534,45 +557,42 @@ export function Portfolio() {
                 <select 
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="border border-gray-200 bg-white px-4 py-2 text-sm font-light text-black focus:outline-none focus:border-black transition-colors rounded-lg"
+                    className="border border-gray-200 bg-white/80 backdrop-blur-sm px-4 py-2 text-sm font-light rounded-lg hover:bg-white transition-colors"
                 >
                   <option value="pnl">Sort by P&L</option>
                   <option value="value">Sort by Value</option>
-                  <option value="alphabetical">Sort Alphabetically</option>
+                    <option value="alphabetical">Sort by Name</option>
                   <option value="date">Sort by Date</option>
                 </select>
               </div>
             </div>
 
-            {/* Position Statistics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center shadow-lg shadow-gray-100/50 border border-gray-200/50">
-                <div className="text-2xl font-bold text-gray-900 mb-1">{transformedPositions.length}</div>
-                <div className="text-sm text-gray-500">Total Positions</div>
-              </div>
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center shadow-lg shadow-gray-100/50 border border-gray-200/50">
-                <div className="text-2xl font-bold text-emerald-700 mb-1">
-                  {transformedPositions.filter(p => p.pnl > 0).length}
-                </div>
-                <div className="text-sm text-gray-500">Profitable</div>
-              </div>
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center shadow-lg shadow-gray-100/50 border border-gray-200/50">
-                <div className="text-2xl font-bold text-red-600 mb-1">
-                  {transformedPositions.filter(p => p.pnl < 0).length}
-                </div>
-                <div className="text-sm text-gray-500">Loss Making</div>
-              </div>
-              <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 text-center shadow-lg shadow-gray-100/50 border border-gray-200/50">
-                <div className="text-2xl font-bold text-gray-700 mb-1">
-                  {formatCurrency(transformedPositions.reduce((sum, p) => sum + p.investmentValue, 0))}
-                </div>
-                <div className="text-sm text-gray-500">Total Invested</div>
-              </div>
-            </div>
-
-            {filteredPositions.length > 0 ? (
-              <div className="space-y-4">
-                {filteredPositions
+              <div className="bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200/50 text-left bg-gray-50/50">
+                        <th className="px-6 py-4 text-sm font-light text-gray-600">Market</th>
+                        <th className="px-6 py-4 text-sm font-light text-gray-600">Type</th>
+                        <th className="px-6 py-4 text-sm font-light text-gray-600">Category</th>
+                        <th className="px-6 py-4 text-sm font-light text-gray-600">Quantity</th>
+                        <th className="px-6 py-4 text-sm font-light text-gray-600">Avg. Price</th>
+                        <th className="px-6 py-4 text-sm font-light text-gray-600">Current Value</th>
+                        <th className="px-6 py-4 text-sm font-light text-gray-600">P&L</th>
+                        <th className="px-6 py-4 text-sm font-light text-gray-600">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading ? (
+                        Array(3).fill(0).map((_, i) => <PositionSkeleton key={i} />)
+                      ) : filteredPositions.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                            No positions found
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredPositions
                   .sort((a, b) => {
                     switch (sortBy) {
                       case 'pnl':
@@ -582,116 +602,99 @@ export function Portfolio() {
                       case 'alphabetical':
                         return a.marketTitle.localeCompare(b.marketTitle);
                       case 'date':
-                        return b.lastUpdate.getTime() - a.lastUpdate.getTime();
+                                return new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime();
                       default:
                         return 0;
                     }
                   })
-                  .map((position, index) => (
-                  <div key={position.id} className={`relative bg-white/80 backdrop-blur-sm p-6 hover:bg-white/95 transition-all duration-300 group border border-gray-200/50 shadow-lg shadow-gray-100/50 hover:shadow-xl hover:-translate-y-0.5 ${
-                    index % 2 === 0 ? 'rounded-l-2xl rounded-r-lg' : 'rounded-r-2xl rounded-l-lg'
-                  } hover:shadow-gray-200/50 ${
-                    realtimeUpdates.type === 'position' && 
-                    new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 5000 
-                      ? 'animate-highlight bg-green-50' 
-                      : ''
-                  }`}>
-                    {/* Subtle left accent */}
-                    <div className={`absolute left-0 top-0 w-1 h-full rounded-l-2xl ${
-                      position.pnl >= 0 ? 'bg-gradient-to-b from-emerald-400 to-emerald-600' : 'bg-gradient-to-b from-red-400 to-red-600'
-                    }`}></div>
-                    
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 ml-4">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-xs uppercase tracking-wider font-medium px-3 py-1.5 rounded-full border border-gray-200/50 text-gray-700 bg-white/60">
+                          .map((position) => (
+                            <tr 
+                              key={position.id} 
+                              className={`
+                                border-b border-gray-100/50 transition-all duration-200
+                                ${position.pnl >= 0 
+                                  ? 'hover:bg-emerald-50/30' 
+                                  : 'hover:bg-red-50/30'
+                                }
+                              `}
+                            >
+                              <td className="px-6 py-4">
+                                <div className="font-light">{position.marketTitle}</div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <Badge 
+                                  variant="outline" 
+                                  className={`
+                                    bg-white/60 backdrop-blur-sm border border-gray-200/50
+                                    ${position.type === 'yes' 
+                                      ? 'text-emerald-900' 
+                                      : 'text-gray-700'
+                                    }
+                                  `}
+                                >
+                                  {position.type.toUpperCase()}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4">
+                                <Badge 
+                                  variant="outline" 
+                                  className="bg-white/60 backdrop-blur-sm border border-gray-200/50 text-gray-700"
+                                >
                             {position.category}
-                          </span>
-                          <span className={`text-xs uppercase tracking-wider font-light px-3 py-1.5 rounded-full ${
-                            position.marketStatus === 'active' 
-                              ? 'text-black bg-gray-100/60 border border-gray-300/50' 
-                              : 'text-gray-500 bg-gray-50/60 border border-gray-200/50'
-                          }`}>
-                            {position.marketStatus.replace('_', ' ')}
-                          </span>
-                          <span className={`text-xs uppercase tracking-wider font-semibold px-3 py-1.5 rounded-full border ${
-                            position.type === 'yes' 
-                              ? 'text-black bg-black/5 border-black/20' 
-                              : 'text-gray-600 bg-gray-100/60 border-gray-300/50'
-                          }`}>
-                            {position.type}
-                          </span>
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 font-light">
+                                {position.quantity.toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 font-light">
+                                {formatCurrency(position.avgPrice)}
+                              </td>
+                              <td className="px-6 py-4 font-light">
+                                {formatCurrency(position.currentValue)}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className={`
+                                  ${position.pnl >= 0 
+                                    ? 'text-emerald-800' 
+                                    : 'text-red-900'
+                                  }
+                                `}>
+                                  <div className="font-light">{formatCurrency(position.pnl)}</div>
+                                  <div className="text-sm opacity-75">{formatPercent(position.pnlPercent)}</div>
                         </div>
-                        
-                        <h3 className="text-lg font-medium text-gray-900 mb-4 leading-tight">{position.marketTitle}</h3>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-200/30">
-                            <div className="text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">Quantity</div>
-                            <div className="font-semibold text-gray-900">{position.quantity}</div>
-                          </div>
-                          <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-200/30">
-                            <div className="text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">Avg Price</div>
-                            <div className="font-semibold text-gray-900">₹{position.avgPrice.toFixed(2)}</div>
-                          </div>
-                          <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-200/30">
-                            <div className="text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">Invested</div>
-                            <div className="font-semibold text-gray-900">{formatCurrency(position.investmentValue)}</div>
-                          </div>
-                          <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-gray-200/30">
-                            <div className="text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">Current Value</div>
-                            <div className="font-semibold text-gray-900">{formatCurrency(position.currentValue)}</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={`text-right ml-8 px-4 py-6 rounded-xl border ${
-                        position.pnl >= 0 
-                          ? 'bg-emerald-50/60 border-emerald-200/30' 
-                          : 'bg-red-50/60 border-red-200/30'
-                      }`}>
-                        <div className={`text-2xl font-bold flex items-center gap-2 ${
-                          position.pnl >= 0 ? 'text-emerald-700' : 'text-red-600'
-                        }`}>
-                          <span className="text-lg">{position.pnl >= 0 ? '↗' : '↘'}</span>
-                          {position.pnl >= 0 ? '+' : ''}{formatCurrency(Math.abs(position.pnl))}
-                        </div>
-                        <div className={`text-sm font-medium mt-1 ${
-                          position.pnl >= 0 ? 'text-emerald-600' : 'text-red-500'
-                        }`}>
-                          {position.pnl >= 0 ? '+' : ''}{formatPercent(position.pnlPercent)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="border border-gray-100 p-16 text-center rounded-xl">
-                <div className="text-lg font-light text-gray-400 mb-2">No positions found</div>
-                <div className="text-sm text-gray-400 font-light">
-                  {filterStatus === 'all' 
-                    ? "Start trading to build your portfolio"
-                    : "No positions match your current filter"
-                  }
+                              </td>
+                              <td className="px-6 py-4">
+                                <Badge 
+                                  variant="outline" 
+                                  className={`
+                                    bg-white/60 backdrop-blur-sm border border-gray-200/50
+                                    ${position.marketStatus === 'active' 
+                                      ? 'text-emerald-900' 
+                                      : position.marketStatus === 'closing_soon'
+                                      ? 'text-amber-900'
+                                      : 'text-gray-700'
+                                    }
+                                  `}
+                                >
+                                  {position.marketStatus.replace('_', ' ').toUpperCase()}
+                                </Badge>
+                              </td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )}
           </div>
         )}
 
-        {/* Advanced Analytics Tab */}
+          {/* Analytics Tab */}
         {selectedTab === 'analytics' && (
-          <div className="space-y-8">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-light text-black mb-2">Advanced Portfolio Analytics</h2>
-              <p className="text-gray-500 font-light">Deep insights into your trading performance</p>
-            </div>
-            
-            <div className="bg-white/70 backdrop-blur-sm border border-gray-100 rounded-2xl shadow-xl shadow-gray-100/50 overflow-hidden p-6">
+            <div>
               <PortfolioAnalytics 
                 data={{
-                  positions: positions || [],
+                  positions: transformedPositions,
                   history: portfolio?.history || [],
                   summary: {
                     totalValue: stats.totalValue,
@@ -702,8 +705,8 @@ export function Portfolio() {
                 }}
               />
             </div>
+          )}
           </div>
-        )}
       </div>
     </div>
   );

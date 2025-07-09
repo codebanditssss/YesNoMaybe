@@ -47,7 +47,23 @@ import {
 
 interface PortfolioAnalyticsProps {
   data: {
-    positions: any[];
+    positions: Array<{
+      id: string;
+      marketId: string;
+      marketTitle: string;
+      category: string;
+      type: 'yes' | 'no';
+      quantity: number;
+      avgPrice: number;
+      currentPrice: number;
+      investmentValue: number;
+      currentValue: number;
+      pnl: number;
+      pnlPercent: number;
+      marketStatus: 'active' | 'closing_soon' | 'resolved';
+      expiryDate: Date;
+      lastUpdate: Date;
+    }>;
     history: any[];
     summary: {
       totalValue: number;
@@ -58,7 +74,28 @@ interface PortfolioAnalyticsProps {
   };
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300'];
+// Sophisticated color palette
+const COLORS = [
+  '#1a1a1a', // Black
+  '#2d3748', // Dark Gray
+  '#4a5568', // Medium Gray
+  '#718096', // Light Gray
+  '#a0aec0', // Lighter Gray
+  '#cbd5e0', // Very Light Gray
+  '#e2e8f0', // Almost White
+  '#edf2f7'  // White Gray
+];
+
+// Refined chart colors for metrics
+const METRIC_COLORS = {
+  primary: '#1a1a1a',
+  secondary: '#718096',
+  accent: '#4a5568',
+  success: '#047857',
+  danger: '#dc2626',
+  warning: '#d97706',
+  info: '#0369a1'
+};
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -78,10 +115,10 @@ export function PortfolioAnalytics({ data }: PortfolioAnalyticsProps) {
   const [interactiveMode, setInteractiveMode] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<{ start?: string; end?: string }>({});
 
-  // Calculate category allocation data
+  // Calculate category allocation data with sophisticated styling
   const categoryData = useMemo(() => {
     const categories = data.positions.reduce((acc: any, pos: any) => {
-      const category = pos.marketCategory || 'Other';
+      const category = pos.category || 'Other';
       if (!acc[category]) {
         acc[category] = {
           name: category,
@@ -92,16 +129,16 @@ export function PortfolioAnalytics({ data }: PortfolioAnalyticsProps) {
           riskScore: 0
         };
       }
-      acc[category].value += pos.totalInvested || 0;
+      acc[category].value += pos.investmentValue || 0;
       acc[category].positions += 1;
-      acc[category].pnl += (pos.unrealizedPnL || 0) + (pos.realizedPnL || 0);
+      acc[category].pnl += pos.pnl || 0;
       return acc;
     }, {});
 
     // Calculate additional metrics
     Object.values(categories).forEach((cat: any) => {
       cat.avgReturn = cat.value > 0 ? (cat.pnl / cat.value) * 100 : 0;
-      cat.riskScore = Math.min(100, Math.max(0, 50 + cat.avgReturn * 2)); // Simple risk calculation
+      cat.riskScore = Math.min(100, Math.max(0, 50 + cat.avgReturn * 2));
     });
 
     return Object.values(categories);
@@ -158,14 +195,14 @@ export function PortfolioAnalytics({ data }: PortfolioAnalyticsProps) {
   // Risk-Return bubble chart data
   const riskReturnData = useMemo(() => {
     return data.positions.map(pos => {
-      const totalInvested = pos.totalInvested || 0;
-      const pnl = (pos.unrealizedPnL || 0) + (pos.realizedPnL || 0);
+      const totalInvested = pos.investmentValue || 0;
+      const pnl = pos.pnl || 0;
       const returnPercent = totalInvested > 0 ? (pnl / totalInvested) * 100 : 0;
       const volatility = Math.random() * 50 + 10; // Simplified volatility calculation
       
       return {
         name: pos.marketTitle || 'Unknown',
-        category: pos.marketCategory || 'Other',
+        category: pos.category || 'Other',
         risk: volatility,
         return: returnPercent,
         size: totalInvested,
@@ -281,11 +318,522 @@ export function PortfolioAnalytics({ data }: PortfolioAnalyticsProps) {
     return null;
   };
 
+  // Render the pie chart with sophisticated styling
+  const renderCategoryAllocation = () => (
+    <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-light text-gray-900">Category Allocation</h3>
+          <p className="text-sm text-gray-500 mt-1 font-light">{categoryData.length} Categories</p>
+        </div>
+      </div>
+      <div className="relative" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+              innerRadius={80}
+                    outerRadius={120}
+              paddingAngle={2}
+              dataKey="value"
+              stroke="#fff"
+              strokeWidth={2}
+                  >
+                    {categoryData.map((entry: any, index: number) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[index % COLORS.length]}
+                  style={{ filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.1))' }}
+                />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                    <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-3">
+                      <div className="font-medium text-gray-900">{data.name}</div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {formatCurrency(data.value)} ({((data.value / data.positions) || 0).toFixed(1)}%)
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {data.positions} positions
+                      </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-6">
+        {categoryData.map((category: any, index: number) => (
+          <div 
+            key={category.name}
+            className="flex items-center gap-2 p-2 rounded-lg bg-white/60 border border-gray-100"
+          >
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-900 truncate">
+                {category.name}
+              </div>
+              <div className="text-xs text-gray-500">
+                {((category.value / data.summary.totalValue) * 100).toFixed(1)}%
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+
+  // Render the radar chart with sophisticated styling
+  const renderPerformanceMetrics = () => {
+    const metrics = [
+      { name: 'Win Rate', value: data.summary.winRate },
+      { name: 'Sharpe Ratio', value: 1.8 }, // Example value
+      { name: 'Profit Factor', value: 2.1 }, // Example value
+      { name: 'Risk Score', value: 65 }, // Example value
+      { name: 'Max Drawdown', value: 15 }, // Example value
+      { name: 'Calmar Ratio', value: 1.2 }, // Example value
+    ];
+
+    return (
+      <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-light text-gray-900">Performance Metrics</h3>
+            <p className="text-sm text-gray-500 mt-1 font-light">{metrics.length} Key Indicators</p>
+          </div>
+        </div>
+        <div className="relative" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={metrics}>
+              <PolarGrid stroke="#e2e8f0" />
+                  <PolarAngleAxis 
+                    dataKey="name" 
+                tick={{ fill: '#4a5568', fontSize: 12 }}
+                stroke="#cbd5e0"
+                  />
+                  <PolarRadiusAxis 
+                    angle={30} 
+                    domain={[0, 100]} 
+                stroke="#cbd5e0"
+                tick={{ fill: '#718096', fontSize: 10 }}
+                  />
+                  <Radar
+                name="Metrics"
+                    dataKey="value"
+                stroke={METRIC_COLORS.primary}
+                fill={METRIC_COLORS.primary}
+                fillOpacity={0.15}
+                  />
+                  <Tooltip 
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                      <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg p-3">
+                        <div className="font-medium text-gray-900">{data.name}</div>
+                        <div className="text-sm text-gray-600 mt-1">
+                          {data.value.toFixed(1)}
+                        </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+    );
+  };
+
+  // Render P&L and Drawdown Analysis
+  const renderPnLAnalysis = () => (
+    <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-light text-gray-900">P&L and Drawdown Analysis</h3>
+          <p className="text-sm text-gray-500 mt-1 font-light">Daily Performance Tracking</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-white/50">
+                  <Activity className="h-3 w-3 mr-1" />
+                  Cumulative P&L
+                </Badge>
+          <Badge variant="outline" className="bg-white/50">
+                  <TrendingDown className="h-3 w-3 mr-1" />
+            Max DD: {Math.max(...data.history.map((d: any) => d.drawdown || 0)).toFixed(1)}%
+                </Badge>
+              </div>
+            </div>
+      <div className="relative" style={{ height: '400px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data.history}>
+                  <defs>
+                    <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={METRIC_COLORS.success} stopOpacity={0.8}/>
+                <stop offset="95%" stopColor={METRIC_COLORS.success} stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={METRIC_COLORS.danger} stopOpacity={0.8}/>
+                <stop offset="95%" stopColor={METRIC_COLORS.danger} stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="date" 
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    tickFormatter={formatCurrency}
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    tickFormatter={(value) => `${value.toFixed(1)}%`}
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+            />
+            {interactiveMode && <Brush dataKey="date" height={30} stroke={METRIC_COLORS.accent} />}
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}
+            />
+                  <Area
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="cumulativePnL"
+              stroke={METRIC_COLORS.success}
+                    strokeWidth={2}
+                    fill="url(#pnlGradient)"
+                    name="Cumulative P&L"
+                  />
+                  <Area
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="drawdown"
+              stroke={METRIC_COLORS.danger}
+                    strokeWidth={1}
+                    fill="url(#drawdownGradient)"
+                    name="Drawdown %"
+                  />
+            <ReferenceLine yAxisId="left" y={0} stroke={METRIC_COLORS.accent} strokeDasharray="2 2" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+  );
+
+  // Render Risk vs Return Analysis
+  const renderRiskReturn = () => (
+    <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-light text-gray-900">Risk vs Return Analysis</h3>
+          <p className="text-sm text-gray-500 mt-1 font-light">Position Risk Assessment</p>
+        </div>
+        <Badge variant="outline" className="bg-white/50">
+          <Target className="h-3 w-3 mr-1" />
+          Position Analysis
+        </Badge>
+      </div>
+      <div className="relative" style={{ height: '350px' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <XAxis 
+              type="number" 
+              dataKey="risk" 
+              name="Risk (Volatility %)"
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+            />
+            <YAxis 
+              type="number" 
+              dataKey="return" 
+              name="Return %"
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}
+            />
+            <ReferenceLine y={0} stroke={METRIC_COLORS.accent} strokeDasharray="2 2" />
+            <ReferenceLine x={30} stroke={METRIC_COLORS.accent} strokeDasharray="2 2" />
+            <Scatter
+              data={data.positions}
+              fill={METRIC_COLORS.primary}
+            >
+              {data.positions.map((entry: any, index: number) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry.return >= 0 ? METRIC_COLORS.success : METRIC_COLORS.danger}
+                />
+              ))}
+            </Scatter>
+          </ScatterChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  );
+
+  // Render Trading Activity Analysis
+  const renderTradingActivity = () => (
+    <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-light text-gray-900">Trading Activity Analysis</h3>
+          <p className="text-sm text-gray-500 mt-1 font-light">Volume and Trade Frequency</p>
+        </div>
+        <Badge variant="outline" className="bg-white/50">
+          {data.history.reduce((sum: number, d: any) => sum + (d.trades || 0), 0)} Total Trades
+              </Badge>
+            </div>
+      <div className="relative" style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data.history}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="date" 
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    tickFormatter={formatCurrency}
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+                  />
+                  <YAxis 
+                    yAxisId="right" 
+                    orientation="right"
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}
+            />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="volume"
+              fill={METRIC_COLORS.info}
+                    name="Daily Volume"
+                    opacity={0.7}
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="trades"
+              stroke={METRIC_COLORS.warning}
+              strokeWidth={2}
+                    name="Trade Count"
+              dot={{ fill: METRIC_COLORS.warning, strokeWidth: 2, r: 3 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+  );
+
+  // Render Position Concentration
+  const renderPositionConcentration = () => (
+    <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-xl font-light text-gray-900">Position Concentration</h3>
+          <p className="text-sm text-gray-500 mt-1 font-light">Top Holdings Analysis</p>
+        </div>
+        <Badge variant="outline" className="bg-white/50">
+                Top Holdings
+              </Badge>
+            </div>
+      <div className="relative" style={{ height: '350px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={[...categoryData].sort((a: any, b: any) => b.value - a.value)}>
+                  <defs>
+                    <linearGradient id="concentrationGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={METRIC_COLORS.primary} stopOpacity={0.8}/>
+                <stop offset="95%" stopColor={METRIC_COLORS.primary} stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="name" 
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+              stroke={METRIC_COLORS.accent}
+                  />
+                  <YAxis 
+                    tickFormatter={formatCurrency}
+              tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+              stroke={METRIC_COLORS.accent}
+                  />
+                  <Tooltip
+              contentStyle={{ 
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+              stroke={METRIC_COLORS.primary}
+                    strokeWidth={2}
+                    fill="url(#concentrationGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+  );
+
+  // Render Monthly Returns Heatmap
+  const renderMonthlyReturns = () => {
+    const monthlyData = data.history.reduce((acc: any[], entry: any) => {
+      const month = new Date(entry.date).toLocaleString('default', { month: 'short', year: '2-digit' });
+      const existingMonth = acc.find(m => m.month === month);
+      if (existingMonth) {
+        existingMonth.return += entry.return || 0;
+        existingMonth.pnl += entry.pnl || 0;
+        existingMonth.trades += entry.trades || 0;
+        existingMonth.volume += entry.volume || 0;
+      } else {
+        acc.push({
+          month,
+          return: entry.return || 0,
+          pnl: entry.pnl || 0,
+          trades: entry.trades || 0,
+          volume: entry.volume || 0
+        });
+      }
+      return acc;
+    }, []);
+
+    return (
+      <Card className="p-6 bg-white/80 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-light text-gray-900">Monthly Returns Heatmap</h3>
+            <p className="text-sm text-gray-500 mt-1 font-light">Performance Distribution</p>
+        </div>
+          <Badge variant="outline" className="bg-white/50">
+              <Calendar className="h-3 w-3 mr-1" />
+            {monthlyData.length} Months
+            </Badge>
+          </div>
+        <div className="relative" style={{ height: '400px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={monthlyData}>
+                <defs>
+                  <linearGradient id="monthlyGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={METRIC_COLORS.success} stopOpacity={0.8}/>
+                  <stop offset="50%" stopColor={METRIC_COLORS.accent} stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor={METRIC_COLORS.danger} stopOpacity={0.8}/>
+                  </linearGradient>
+                </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis 
+                  dataKey="month" 
+                tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+                stroke={METRIC_COLORS.accent}
+                />
+                <YAxis 
+                  tickFormatter={(value) => `${value.toFixed(1)}%`}
+                tick={{ fontSize: 11, fill: METRIC_COLORS.secondary }}
+                stroke={METRIC_COLORS.accent}
+                />
+                <Tooltip
+                contentStyle={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                }}
+              />
+              <ReferenceLine y={0} stroke={METRIC_COLORS.accent} strokeDasharray="2 2" />
+                <Area
+                  type="monotone"
+                  dataKey="return"
+                stroke={METRIC_COLORS.success}
+                  strokeWidth={2}
+                  fill="url(#monthlyGradient)"
+                />
+                <Bar
+                  dataKey="trades"
+                fill={METRIC_COLORS.accent}
+                  opacity={0.3}
+                  yAxisId="right"
+                />
+            </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          
+        <div className="grid grid-cols-6 gap-2 mt-6">
+          {monthlyData.map((month: any) => (
+              <div
+                key={month.month}
+              className={`
+                p-3 rounded-lg text-center backdrop-blur-sm border
+                ${month.return > 5 ? 'bg-green-50/50 border-green-200 text-green-800' :
+                  month.return > 0 ? 'bg-green-50/30 border-green-100 text-green-700' :
+                  month.return > -5 ? 'bg-red-50/30 border-red-100 text-red-700' :
+                  'bg-red-50/50 border-red-200 text-red-800'
+                }
+              `}
+              >
+                <div className="text-xs text-gray-600">{month.month}</div>
+              <div className="font-medium">{formatPercent(month.return)}</div>
+                <div className="text-xs">{month.trades} trades</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+    );
+  };
+
   return (
     <div className="space-y-8">
-      {/* Chart Navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-light text-black mb-2">Advanced Portfolio Analytics</h2>
+        <p className="text-gray-500 font-light">Deep insights into your trading performance</p>
+      </div>
+
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
           {[
             { key: 'overview', label: 'Overview', icon: PieChartIcon },
             { key: 'performance', label: 'Performance', icon: TrendingUp },
@@ -297,7 +845,10 @@ export function PortfolioAnalytics({ data }: PortfolioAnalyticsProps) {
               onClick={() => setActiveChart(key as any)}
               variant={activeChart === key ? "default" : "outline"}
               size="sm"
-              className="flex items-center space-x-2"
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-lg transition-all
+                ${activeChart === key ? 'bg-black text-white shadow-lg' : 'bg-white/50 text-gray-700 hover:bg-black/5'}
+              `}
             >
               <Icon className="h-4 w-4" />
               <span>{label}</span>
@@ -305,456 +856,45 @@ export function PortfolioAnalytics({ data }: PortfolioAnalyticsProps) {
           ))}
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Button
-            onClick={() => setInteractiveMode(!interactiveMode)}
-            variant={interactiveMode ? "default" : "outline"}
-            size="sm"
-            className="flex items-center space-x-2"
-          >
-            <MousePointer className="h-4 w-4" />
-            <span>Interactive</span>
-          </Button>
-        </div>
+        <Button
+          onClick={() => setInteractiveMode(!interactiveMode)}
+          variant={interactiveMode ? "default" : "outline"}
+          size="sm"
+          className={`
+            flex items-center gap-2 px-4 py-2 rounded-lg transition-all
+            ${interactiveMode ? 'bg-black text-white shadow-lg' : 'bg-white/50 text-gray-700 hover:bg-black/5'}
+          `}
+        >
+          <MousePointer className="h-4 w-4" />
+          <span>Interactive</span>
+        </Button>
       </div>
 
-      {/* Overview Charts */}
       {activeChart === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Enhanced Category Allocation */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Category Allocation</h3>
-              <Badge variant="secondary">
-                {categoryData.length} Categories
-              </Badge>
-            </div>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={120}
-                    innerRadius={40}
-                    label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
-                  >
-                    {categoryData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload[0]) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-                            <p className="font-semibold text-gray-900">{data.name}</p>
-                            <p className="text-sm text-gray-600">Value: {formatCurrency(data.value)}</p>
-                            <p className="text-sm text-gray-600">Positions: {data.positions}</p>
-                            <p className="text-sm text-gray-600">P&L: {formatCurrency(data.pnl)}</p>
-                            <p className="text-sm text-gray-600">Return: {formatPercent(data.avgReturn)}</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          {/* Enhanced Performance Radar */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Performance Metrics</h3>
-              <Badge variant="secondary">
-                6 Metrics
-              </Badge>
-            </div>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={performanceData}>
-                  <PolarGrid gridType="polygon" />
-                  <PolarAngleAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 12, fontWeight: 500 }}
-                  />
-                  <PolarRadiusAxis 
-                    angle={30} 
-                    domain={[0, 100]} 
-                    tick={{ fontSize: 10 }}
-                  />
-                  <Radar
-                    name="Performance"
-                    dataKey="value"
-                    stroke="#8884d8"
-                    fill="#8884d8"
-                    fillOpacity={0.6}
-                    strokeWidth={2}
-                  />
-                  <Tooltip 
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload[0]) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-                            <p className="font-semibold text-gray-900 flex items-center space-x-2">
-                              <data.icon className="h-4 w-4" />
-                              <span>{data.name}</span>
-                            </p>
-                            <p className="text-sm text-gray-600">Score: {data.value.toFixed(1)}/100</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+          {renderCategoryAllocation()}
+          {renderPerformanceMetrics()}
         </div>
       )}
 
-      {/* Performance Charts */}
       {activeChart === 'performance' && (
         <div className="grid grid-cols-1 gap-6">
-          {/* Enhanced P&L Chart with Drawdown */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">P&L and Drawdown Analysis</h3>
-              <div className="flex items-center space-x-2">
-                <Badge variant="outline">
-                  <Activity className="h-3 w-3 mr-1" />
-                  Cumulative P&L
-                </Badge>
-                <Badge variant="outline">
-                  <TrendingDown className="h-3 w-3 mr-1" />
-                  Max DD: {Math.max(...dailyPnLData.map((d: any) => d.drawdown)).toFixed(1)}%
-                </Badge>
-              </div>
-            </div>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={dailyPnLData}>
-                  <defs>
-                    <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#059669" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#059669" stopOpacity={0.1}/>
-                    </linearGradient>
-                    <linearGradient id="drawdownGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#dc2626" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#dc2626" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis 
-                    yAxisId="left"
-                    tickFormatter={formatCurrency}
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  <YAxis 
-                    yAxisId="right"
-                    orientation="right"
-                    tickFormatter={(value) => `${value.toFixed(1)}%`}
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  {interactiveMode && <Brush dataKey="date" height={30} />}
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <Area
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="cumulativePnL"
-                    stroke="#059669"
-                    strokeWidth={2}
-                    fill="url(#pnlGradient)"
-                    name="Cumulative P&L"
-                  />
-                  <Area
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="drawdown"
-                    stroke="#dc2626"
-                    strokeWidth={1}
-                    fill="url(#drawdownGradient)"
-                    name="Drawdown %"
-                  />
-                  <ReferenceLine yAxisId="left" y={0} stroke="#94a3b8" strokeDasharray="2 2" />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          {/* Volume and Trade Count Analysis */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Trading Activity Analysis</h3>
-              <Badge variant="secondary">
-                {dailyPnLData.reduce((sum: number, d: any) => sum + d.trades, 0)} Total Trades
-              </Badge>
-            </div>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={dailyPnLData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  <YAxis 
-                    yAxisId="left"
-                    tickFormatter={formatCurrency}
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  <YAxis 
-                    yAxisId="right" 
-                    orientation="right"
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="volume"
-                    fill="#6366f1"
-                    name="Daily Volume"
-                    opacity={0.7}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="trades"
-                    stroke="#f59e0b"
-                    strokeWidth={3}
-                    name="Trade Count"
-                    dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+          {renderPnLAnalysis()}
+          {renderTradingActivity()}
         </div>
       )}
 
-      {/* Risk Analysis Charts */}
       {activeChart === 'risk' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Risk-Return Scatter Plot */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Risk vs Return Analysis</h3>
-              <Badge variant="outline">
-                <Target className="h-3 w-3 mr-1" />
-                Position Analysis
-              </Badge>
-            </div>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis 
-                    type="number" 
-                    dataKey="risk" 
-                    name="Risk (Volatility %)"
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  <YAxis 
-                    type="number" 
-                    dataKey="return" 
-                    name="Return %"
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  <Tooltip 
-                    content={({ active, payload }) => {
-                      if (active && payload && payload[0]) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-                            <p className="font-semibold text-gray-900">{data.name}</p>
-                            <p className="text-sm text-gray-600">Category: {data.category}</p>
-                            <p className="text-sm text-gray-600">Risk: {data.risk.toFixed(1)}%</p>
-                            <p className="text-sm text-gray-600">Return: {data.return.toFixed(1)}%</p>
-                            <p className="text-sm text-gray-600">Investment: {formatCurrency(data.size)}</p>
-                            <p className="text-sm text-gray-600">P&L: {formatCurrency(data.pnl)}</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="2 2" />
-                  <ReferenceLine x={30} stroke="#94a3b8" strokeDasharray="2 2" />
-                  <Scatter
-                    data={riskReturnData}
-                    fill="#8884d8"
-                  >
-                    {riskReturnData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.return >= 0 ? '#059669' : '#dc2626'}
-                      />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          {/* Position Concentration Chart */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Position Concentration</h3>
-              <Badge variant="secondary">
-                Top Holdings
-              </Badge>
-            </div>
-            <div className="h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={[...categoryData].sort((a: any, b: any) => b.value - a.value)}>
-                  <defs>
-                    <linearGradient id="concentrationGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={100}
-                  />
-                  <YAxis 
-                    tickFormatter={formatCurrency}
-                    tick={{ fontSize: 11, fill: '#64748b' }}
-                  />
-                  <Tooltip
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload[0]) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-                            <p className="font-semibold text-gray-900">{label}</p>
-                            <p className="text-sm text-gray-600">Investment: {formatCurrency(data.value)}</p>
-                            <p className="text-sm text-gray-600">Positions: {data.positions}</p>
-                            <p className="text-sm text-gray-600">P&L: {formatCurrency(data.pnl)}</p>
-                            <p className="text-sm text-gray-600">Avg Return: {formatPercent(data.avgReturn)}</p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    fill="url(#concentrationGradient)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+          {renderRiskReturn()}
+          {renderPositionConcentration()}
         </div>
       )}
 
-      {/* Monthly Returns Heatmap */}
       {activeChart === 'heatmap' && (
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Monthly Returns Heatmap</h3>
-            <Badge variant="secondary">
-              <Calendar className="h-3 w-3 mr-1" />
-              {monthlyReturnsData.length} Months
-            </Badge>
-          </div>
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyReturnsData}>
-                <defs>
-                  <linearGradient id="monthlyGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                    <stop offset="50%" stopColor="#6b7280" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0.8}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                />
-                <YAxis 
-                  tickFormatter={(value) => `${value.toFixed(1)}%`}
-                  tick={{ fontSize: 11, fill: '#64748b' }}
-                />
-                <Tooltip
-                  content={({ active, payload, label }) => {
-                    if (active && payload && payload[0]) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-                          <p className="font-semibold text-gray-900">{label}</p>
-                          <p className="text-sm text-gray-600">Return: {formatPercent(data.return)}</p>
-                          <p className="text-sm text-gray-600">P&L: {formatCurrency(data.pnl)}</p>
-                          <p className="text-sm text-gray-600">Trades: {data.trades}</p>
-                          <p className="text-sm text-gray-600">Volume: {formatCurrency(data.volume)}</p>
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
-                <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="2 2" />
-                <Area
-                  type="monotone"
-                  dataKey="return"
-                  stroke="#059669"
-                  strokeWidth={2}
-                  fill="url(#monthlyGradient)"
-                />
-                <Bar
-                  dataKey="trades"
-                  fill="#6b7280"
-                  opacity={0.3}
-                  yAxisId="right"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          
-          {/* Monthly Performance Grid */}
-          <div className="mt-6 grid grid-cols-6 gap-2">
-            {monthlyReturnsData.map((month: any, index) => (
-              <div
-                key={month.month}
-                className={`p-3 rounded-lg text-center text-sm font-medium ${
-                  month.return > 5 ? 'bg-green-100 text-green-800' :
-                  month.return > 0 ? 'bg-green-50 text-green-700' :
-                  month.return > -5 ? 'bg-red-50 text-red-700' :
-                  'bg-red-100 text-red-800'
-                }`}
-              >
-                <div className="text-xs text-gray-600">{month.month}</div>
-                <div className="font-bold">{formatPercent(month.return)}</div>
-                <div className="text-xs">{month.trades} trades</div>
-              </div>
-            ))}
-          </div>
-        </Card>
+        <div className="grid grid-cols-1 gap-6">
+          {renderMonthlyReturns()}
+        </div>
       )}
     </div>
   );

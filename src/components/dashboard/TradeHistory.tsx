@@ -226,7 +226,7 @@ export function TradeHistory() {
               <span className="text-base text-gray-700 font-medium ml-2">
                 {realtimeUpdates.type 
                   ? `Last update: ${realtimeUpdates.type} (${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()})`
-                  : 'Waiting for updates...'}
+                  : ''}
               </span>
             </div>
             <Button 
