@@ -347,46 +347,30 @@ export function Portfolio() {
             <p className="text-gray-500 mt-2 font-light">Your prediction market performance</p>
           </div>
           
-          {/* Real-time status indicator */}
-          <div className="flex items-center gap-6">
-            {/* Real-time Status */}
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-2 text-gray-500">
-                <span className="font-light">Last updated</span>
-                <span className="font-medium">
-                  {realtimeUpdates.lastUpdate ? (
-                    new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 ? (
-                      <span className="text-emerald-600 animate-pulse">Real-time</span>
-                    ) : (
-                      new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()
-                    )
-                  ) : (
-                    '--:--'
-                  )}
-                </span>
-              </div>
-              <div className="flex items-center space-x-1 text-emerald-600">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
-                {isConnected && (
-                  <span className="text-xs font-medium">Live</span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Radio className={`h-4 w-4 ${realtimeUpdates.type ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
-              <span className="text-sm text-gray-600">
-                {realtimeUpdates.type 
-                  ? `Last update: ${realtimeUpdates.type} (${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()})`
-                  : ''}
+          {/* Real-time status indicator as two separate buttons, always visible */}
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Last updated button (no clock, with label) */}
+            <div className="flex items-center gap-2 bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100 min-w-[160px] min-h-[44px]">
+              <span className="text-base font-semibold text-gray-700">Last updated:</span>
+              <span className="text-base text-gray-700 font-medium">
+                {realtimeUpdates.lastUpdate
+                  ? new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()
+                  : '--:--'}
               </span>
             </div>
+            {/* Live button (no green dot) */}
+            <div className="flex items-center gap-2 bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100 min-w-[120px] min-h-[44px]">
+              <Radio className={`h-5 w-5 ${isConnected ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
+              <span className="text-base text-gray-700 font-medium">Live</span>
+            </div>
+            {/* Refresh button (unchanged) */}
             <Button
               onClick={refresh}
               size="sm"
               variant="outline"
-              className="text-gray-600 hover:text-gray-900"
+              className="hover:border-gray-200 shadow bg-white/70 backdrop-blur-md rounded-full px-6 py-3 min-w-[120px] min-h-[44px] flex items-center justify-center"
             >
-              <RefreshCw className="h-4 w-4 mr-1" />
+              <RefreshCw className="h-5 w-5 mr-2" />
               Refresh
             </Button>
           </div>
@@ -422,7 +406,7 @@ export function Portfolio() {
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Total Value Card */}
-                <div className={`bg-white/80 rounded-lg p-6 shadow-sm border border-gray-100/50 ${
+                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-lg hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 ${
                   realtimeUpdates.type === 'balance' && 
                   new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
                     ? 'animate-highlight' 
@@ -443,7 +427,7 @@ export function Portfolio() {
                 </div>
 
                 {/* P&L Card */}
-                <div className={`bg-white/80 rounded-lg p-6 shadow-sm border border-gray-100/50 ${
+                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-lg hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 ${
                   realtimeUpdates.type === 'position' && 
                   new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
                     ? 'animate-highlight' 
@@ -464,7 +448,7 @@ export function Portfolio() {
                 </div>
 
                 {/* Available Balance Card */}
-                <div className={`bg-white/80 rounded-lg p-6 shadow-sm border border-gray-100/50 ${
+                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-lg hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 ${
                   realtimeUpdates.type === 'balance' && 
                   new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
                     ? 'animate-highlight' 
@@ -491,7 +475,10 @@ export function Portfolio() {
                   { label: 'TOTAL INVESTED', value: `₹${formatNumber(stats.totalInvested)}` },
                   { label: 'VOLUME', value: `₹${formatNumber(stats.volume)}` }
                 ].map((metric, idx) => (
-                  <div key={idx} className="bg-white/60 rounded-lg p-4 text-center">
+                  <div
+                    key={idx}
+                    className="bg-white/60 rounded-lg p-4 text-center shadow group hover:bg-white hover:shadow-lg hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1"
+                  >
                     <div className="text-xl font-medium">{metric.value}</div>
                     <div className="text-xs font-light text-gray-500 mt-1">{metric.label}</div>
                   </div>
@@ -499,7 +486,7 @@ export function Portfolio() {
               </div>
 
               {/* Charts Section */}
-              <div className="space-y-6">
+              <div className="space-y-6 mt-10">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-light text-black">Performance</h2>
                   <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200/50 shadow-sm overflow-hidden">
