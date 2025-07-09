@@ -245,58 +245,45 @@ export function Markets() {
   ];
 
   return (
-    <div className="p-8 bg-gray-50 min-h-full">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-14 gap-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Markets</h1>
-            <p className="text-gray-600">Trade on real-world events and outcomes</p>
-            <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-            <span>
+            <h1 className="text-5xl font-extralight text-black tracking-tight mb-2">Markets</h1>
+            <p className="text-gray-500 text-lg font-light">Trade on real-world events and outcomes</p>
+          </div>
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100 flex-wrap">
+              <span className="text-base text-gray-700 font-medium ml-2">
                 Last updated: {new Date().toLocaleTimeString().slice(11, 19)}
-            </span>
-              <div className="flex items-center gap-1">
+              </span>
+              <div className="flex items-center gap-1 ml-4">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span>Live data</span>
+                <span className="text-sm text-gray-500">Live data</span>
               </div>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={refreshMarkets}
+              className="hover:border-gray-200 shadow bg-white/70 backdrop-blur-md rounded-full px-6 py-3 min-w-[120px] min-h-[44px] flex items-center justify-center"
+            >
+              <RefreshCw className="h-5 w-5 mr-2" />
+              Refresh
+            </Button>
           </div>
-          
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search markets, tags..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2.5 w-full sm:w-80 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-              />
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Button 
-                variant={showFilters ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                Filters
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => refreshMarkets()}
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </Button>
-            </div>
-          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+          {marketSummaryCards.map(card => (
+            <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 shadow-md">
+              <div className="flex-shrink-0 mb-1">{card.icon}</div>
+              <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1 text-center">{card.label}</div>
+              <div className="text-3xl font-bold text-gray-900 text-center">{card.value}</div>
+              <div className={card.subtextClass + ' text-center'}>{card.subtext}</div>
+            </Card>
+          ))}
         </div>
 
         {/* Advanced Filters */}
@@ -389,7 +376,7 @@ export function Markets() {
         )}
 
         {/* Category Tabs */}
-        <div className="flex overflow-x-auto gap-2 pb-2">
+        <div className="flex overflow-x-auto gap-2 pb-2 mb-6">
           {categories.map((category) => {
             const Icon = category.icon;
             return (
@@ -412,24 +399,8 @@ export function Markets() {
           })}
         </div>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {marketSummaryCards.map(card => (
-            <Card key={card.label} className="p-4 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${card.iconBg}`}>{card.icon}</div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{card.label}</p>
-                  <p className={card.valueClass}>{card.value}</p>
-                  <p className={card.subtextClass}>{card.subtext}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-
         {/* Sorting and View Controls */}
-        <Card className="p-4 bg-white border-1 border border-gray-300 rounded-lg shadow-sm">
+        {/* <Card className="p-4 bg-white border-1 border border-gray-300 rounded-lg shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -485,17 +456,69 @@ export function Markets() {
               </div>
             </div>
           </div>
-        </Card>
+        </Card> */}
 
         {/* Markets List */}
-        <Card className="bg-white rounded-lg border-1 border border-gray-300 shadow-sm">
+        <Card className="border border-gray-100 overflow-hidden bg-white/95 rounded-2xl shadow-xl overflow-x-auto">
           <div className="p-3 sm:p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">
+          {/* <div className="bg-gray-50 border-b border-gray-100 p-3 sm:p-6">
+            <div className="flex items-center justify-between mb-6"> */}
+              <div className='flex items-center gap-4 justify-start w-full sm:w-auto mt-2 sm:mt-0 flex-wrap'>
+              <h3 className="text-xl font-semibold text-gray-900 flex-wrap">
                 {selectedCategory === 'all' ? 'All Markets' : `${categories.find(c => c.id === selectedCategory)?.name} Markets`}
               </h3>
-              <div className="text-sm text-gray-600">
-                {filteredMarkets.length} {filteredMarkets.length === 1 ? 'market' : 'markets'}
+              <div className="flex flex-col border-1 border border-gray-300 rounded-full sm:flex-row gap-1 rounded-lg bg-white p-1 w-full sm:w-auto overflow-x-auto">
+                {[
+                  { value: 'trending', label: 'Trending', icon: TrendingUp },
+                  { value: 'volume', label: 'Volume', icon: Volume2 },
+                  { value: 'newest', label: 'Newest', icon: Clock },
+                  { value: 'closing', label: 'Closing', icon: AlertCircle },
+                ].map(({ value, label, icon: Icon }) => {
+                  const isSelected = sortBy === value;
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => setSortBy(value as any)}
+                      className={
+                        `flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full transition-all duration-300 ` +
+                        (isSelected
+                          ? 'bg-black text-white shadow-lg'
+                          : 'bg-transparent text-gray-600 hover:text-black hover:bg-gray-100')
+                      }
+                      style={{ minWidth: 60, minHeight: 24, boxShadow: isSelected ? '0 2px 8px 0 rgba(0,0,0,0.08)' : undefined }}
+                    >
+                      <Icon className={`h-3 w-3 ${isSelected ? 'text-white' : 'text-gray-500'}`} />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              </div>
+              <div>
+              <div className="flex items-center gap-4 justify-end w-full sm:w-auto mt-2 sm:mt-0 flex-wrap">
+                  <div className="text-sm text-gray-600">
+                    {filteredMarkets.length} {filteredMarkets.length === 1 ? 'market' : 'markets'}
+                  </div>
+                  <div className="flex rounded-lg bg-gray-100 p-1">
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-1.5 rounded transition-colors ${
+                        viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+                      }`}
+                    >
+                      <BookOpen className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-1.5 rounded transition-colors ${
+                        viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+                      }`}
+                    >
+                      <Target className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
             <div className="border-b border-gray-200 my-2" />
@@ -534,124 +557,124 @@ export function Markets() {
               <>
                 {viewMode === 'list' ? (
                   /* List View */
-                  <div className="space-y-4">
-                    {filteredMarkets.map((market) => {
-                      const Icon = market.icon;
-                      return (
-                        <Card key={market.id} className="p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer group">
-                          <div className="flex items-start gap-4">
-                            {/* Market Icon */}
-                            <div className="p-3 bg-gray-100 rounded-lg flex-shrink-0 group-hover:bg-gray-200 transition-colors">
-                              <Icon className="h-6 w-6 text-gray-700" />
-                            </div>
-
-                            {/* Market Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-4 mb-3">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                    <Badge variant="outline" className="text-xs">
-                                      {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
-                                    </Badge>
-                                    <Badge className={`text-xs ${getStatusColor(market.status)}`}>
-                                      {getStatusText(market.status)}
-                                    </Badge>
-                                    <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
-                                      {market.riskLevel.toUpperCase()} RISK
-                                    </Badge>
-                                    {market.trending && (
-                                      <Badge className="text-xs bg-red-100 text-red-800">
-                                        <TrendingUp className="h-3 w-3 mr-1" />
-                                        Trending
-                                      </Badge>
-                                    )}
-                                    {market.featured && (
-                                      <Badge className="text-xs bg-yellow-100 text-yellow-800">
-                                        Featured
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  
-                                  <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
-                                    {market.title}
-                                  </h3>
-                                  
-                                  {market.description && (
-                                    <p className="text-sm text-gray-600 mb-3">{market.description}</p>
-                                  )}
-                                  
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                                    <div className="flex items-center gap-1 text-gray-500">
-                                      <Users className="h-3 w-3" />
-                                      <span>{formatNumber(market.traders)} traders</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-gray-500">
-                                      <Volume2 className="h-3 w-3" />
-                                      <span>₹{formatNumber(market.volume24h)}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-gray-500">
-                                      <Calendar className="h-3 w-3" />
-                                      <span>Expires {market.expiryDate.toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-gray-500">
-                                      <Clock className="h-3 w-3" />
-                                      <span>Updated {market.lastUpdate}</span>
-                                    </div>
-                                  </div>
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[900px] max-h-[520px] overflow-y-auto">
+                      <div className="space-y-4">
+                        {filteredMarkets.map((market) => {
+                          const Icon = market.icon;
+                          return (
+                            <Card key={market.id} className="p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer group">
+                              <div className="flex items-start gap-4">
+                                <div className="p-3 bg-gray-100 rounded-lg flex-shrink-0 group-hover:bg-gray-200 transition-colors">
+                                  <Icon className="h-6 w-6 text-gray-700" />
                                 </div>
 
-                                {/* Price Section */}
-                                <div className="flex flex-col items-end gap-3 flex-shrink-0">
-                                  <div className="text-right">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-sm text-gray-500">Probability:</span>
-                                      <span className="text-lg font-bold text-gray-900">{market.probability}%</span>
-                                      <div className={`flex items-center text-xs ${
-                                        market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
-                                      }`}>
-                                        {market.priceChange >= 0 ? (
-                                          <TrendingUp className="h-3 w-3 mr-1" />
-                                        ) : (
-                                          <TrendingDown className="h-3 w-3 mr-1" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-4 mb-3">
+                                    <div className="flex-1">
+                                      {/* <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        <Badge variant="outline" className="text-xs">
+                                          {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
+                                        </Badge>
+                                        <Badge className={`text-xs ${getStatusColor(market.status)}`}>
+                                          {getStatusText(market.status)}
+                                        </Badge>
+                                        <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
+                                          {market.riskLevel.toUpperCase()} RISK
+                                        </Badge>
+                                        {market.trending && (
+                                          <Badge className="text-xs bg-red-100 text-red-800">
+                                            <TrendingUp className="h-3 w-3 mr-1" />
+                                            Trending
+                                          </Badge>
                                         )}
-                                        {market.priceChangePercent >= 0 ? '+' : ''}{market.priceChangePercent.toFixed(1)}%
+                                        {market.featured && (
+                                          <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                                            Featured
+                                          </Badge>
+                                        )}
+                                      </div> */}
+                                      
+                                      <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                                        {market.title}
+                                      </h3>
+                                      
+                                      {market.description && (
+                                        <p className="text-sm text-gray-600 mb-3">{market.description}</p>
+                                      )}
+                                      
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                                        <div className="flex items-center gap-1 text-gray-500">
+                                          <Users className="h-3 w-3" />
+                                          <span>{formatNumber(market.traders)} traders</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-gray-500">
+                                          <Volume2 className="h-3 w-3" />
+                                          <span>₹{formatNumber(market.volume24h)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-gray-500">
+                                          <Calendar className="h-3 w-3" />
+                                          <span>Expires {market.expiryDate.toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1 text-gray-500">
+                                          <Clock className="h-3 w-3" />
+                                          <span>Updated {market.lastUpdate}</span>
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                  
-                                  {/* Trading Buttons */}
-                                  <div className="flex gap-2">
-                                    <Button 
-                                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOrderClick(market, 'yes');
-                                      }}
-                                    >
-                                      Yes ₹{market.yesPrice}
-                                    </Button>
-                                    <Button 
-                                      variant="outline" 
-                                      className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 text-sm font-medium"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOrderClick(market, 'no');
-                                      }}
-                                    >
-                                      No ₹{market.noPrice}
-                                    </Button>
-                                  </div>
-                                  
 
+                                    <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                                      <div className="text-right">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <span className="text-sm text-gray-500">Probability:</span>
+                                          <span className="text-lg font-bold text-gray-900">{market.probability}%</span>
+                                          <div className={`flex items-center text-xs ${
+                                            market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                                          }`}>
+                                            {market.priceChange >= 0 ? (
+                                              <TrendingUp className="h-3 w-3 mr-1" />
+                                            ) : (
+                                              <TrendingDown className="h-3 w-3 mr-1" />
+                                            )}
+                                            {market.priceChangePercent >= 0 ? '+' : ''}{market.priceChangePercent.toFixed(1)}%
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="flex gap-2">
+                                        <Button 
+                                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOrderClick(market, 'yes');
+                                          }}
+                                        >
+                                          Yes ₹{market.yesPrice}
+                                        </Button>
+                                        <Button 
+                                          variant="outline" 
+                                          className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 text-sm font-medium"
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOrderClick(market, 'no');
+                                          }}
+                                        >
+                                          No ₹{market.noPrice}
+                                        </Button>
+                                      </div>
+                                      
+
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   /* Grid View */
