@@ -89,10 +89,16 @@ export function MobileNav({ children }: MobileNavProps) {
 
 export function NavbarLogo() {
   return (
-    <div className="navbar-logo">
-      <span className="logo-text">YesNoMaybe</span>
-      <div className="logo-indicator"></div>
-    </div>
+    <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+      <svg 
+        viewBox="0 0 24 24" 
+        className="w-8 h-8 text-black"
+        fill="currentColor"
+      >
+        <path d="M12 2L9.5 7L15 9L12 14L18.5 16L15 22L21 19.5L19.5 15L16 13L18.5 9L15.5 7.5L17 4L12 2Z" />
+      </svg>
+      <span className="text-xl font-bold">Augur</span>
+    </a>
   );
 }
 
@@ -195,10 +201,10 @@ export default function ResizableNavbar({ onOpenAuth }: ResizableNavbarProps) {
   const avatarRef = useRef<HTMLDivElement>(null);
   
   const navItems = [
-    { name: "Markets", link: "/markets" },
-    { name: "Portfolio", link: "/portfolio" },
-    { name: "Analytics", link: "/analytics" },
-    { name: "About", link: "/about" }
+    { name: "Markets", link: "/Markets" },
+    { name: "Portfolio", link: "/Portfolio" },
+    { name: "Market Depth", link: "/MarketDepth" },
+    { name: "Trade History", link: "/TradeHistory" }
   ];
 
   const toggleMobileMenu = () => {

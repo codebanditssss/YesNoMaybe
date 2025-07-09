@@ -10,7 +10,7 @@
   <img src="public/logo.svg" alt="Augur Logo" width="120" height="120" />
 </div>
 
-A sophisticated prediction market platform where users can trade on future outcomes. Augur combines real-time market data, advanced trading features, and an elegant user experience to create a powerful platform for predictive trading.
+A sophisticated prediction market platform where users can trade on future outcomes. Augur combines real-time market data, advanced trading features, and an elegant user experience to create India's premier platform for predictive trading.
 
 ## Features
 

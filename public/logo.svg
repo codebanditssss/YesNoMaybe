@@ -1,28 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background Circle (optional) -->
-  <circle cx="256" cy="256" r="248" fill="#2B3A67" stroke="#FFC857" stroke-width="16"/>
+  <!-- Main Circle -->
+  <circle cx="256" cy="256" r="248" fill="currentColor" stroke="currentColor" stroke-width="16"/>
   
-  <!-- Bird + Graph Combined Shape -->
+  <!-- Augur Symbol (Stylized A with Rising Graph) -->
   <path d="
-    M 156 356
-    L 206 286
-    L 256 326
-    L 306 256
-    L 356 186
-    C 356 186 376 156 356 156
-    C 336 156 316 186 306 196
-    C 296 206 276 216 256 216
-    C 236 216 216 206 206 196
-    C 196 186 176 156 156 156
-    C 136 156 156 186 156 186
-    L 206 256
-    L 156 296
-    L 156 356
+    M 176 356
+    L 256 196
+    L 336 356
+    L 296 356
+    L 256 276
+    L 216 356
+    L 176 356
+    Z
+    M 196 286
+    L 256 286
+    L 316 286
+    L 336 246
+    L 296 246
+    L 256 246
+    L 216 246
+    L 196 286
     Z
   " 
-  fill="#FFC857" 
-  stroke="#FFC857" 
+  fill="white" 
+  stroke="white" 
   stroke-width="4"
   stroke-linejoin="round"/>
 </svg> 
