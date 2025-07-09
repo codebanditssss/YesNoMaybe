@@ -1,16 +1,24 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Orderbook } from '@/components/dashboard/Orderbook';
 import { MarketCarousel } from '@/components/dashboard/MarketCarousel';
 import { useMarkets } from '@/hooks/useMarkets';
 import type { Market } from '@/hooks/useMarkets';
+import { Card } from "@/components/ui/card";
 
 export default function MarketDepthPage() {
   const { markets, loading } = useMarkets();
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPending, setIsPending] = useState(false);
+
+  // Initialize with first market when markets load
+  useEffect(() => {
+    if (markets && markets.length > 0 && !selectedMarket) {
+      setSelectedMarket(markets[0]);
+    }
+  }, [markets, selectedMarket]);
 
   const handleMarketSelect = useCallback((market: Market) => {
     if (isTransitioning || isPending) return; // Prevent multiple transitions
@@ -36,8 +44,23 @@ export default function MarketDepthPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="text-gray-600">Loading market data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state if markets exist but none selected yet
+  if (!selectedMarket && markets && markets.length > 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="flex items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="text-gray-600">Initializing market view...</span>
+        </div>
       </div>
     );
   }
@@ -47,21 +70,33 @@ export default function MarketDepthPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Market Depth</h1>
-          <p className="text-gray-600 mt-2">Explore market details and order book depth</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Market Depth</h1>
+              <p className="text-gray-600 mt-2">Explore market details and order book depth</p>
+            </div>
+            {selectedMarket && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">Last update:</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {new Date().toLocaleTimeString()}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Market Carousel */}
-        <div className="mb-8">
+        <Card className="mb-8 p-6 bg-white shadow-sm border border-gray-100">
           <MarketCarousel
             markets={markets}
             currentMarket={selectedMarket}
             onMarketSelect={handleMarketSelect}
           />
-        </div>
+        </Card>
 
         {/* Orderbook */}
-        <div className="bg-white rounded-lg shadow relative">
+        <Card className="bg-white shadow-sm border border-gray-100 relative">
           <div className={`
             absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center
             transition-opacity duration-300 pointer-events-none
@@ -78,7 +113,7 @@ export default function MarketDepthPage() {
             isTransitioning={isTransitioning}
             isPending={isPending}
           />
-        </div>
+        </Card>
       </div>
     </div>
   );
