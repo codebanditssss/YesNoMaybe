@@ -269,113 +269,127 @@ export function Settings() {
               </div>
 
               {/* Profile Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Full Name</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.full_name}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, full_name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.full_name || '--'}</p>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                {/* Full Name */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <User className="h-4 w-4" /> Full Name
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.full_name}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, full_name: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.full_name || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email Address
-                  </label>
-                  <p className="text-gray-900">{profile?.email || "--"}</p>
+                {/* Email */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Mail className="h-4 w-4" /> Email Address
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">{profile?.email || "--"}</div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Username</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.username}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, username: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.username || '--'}</p>
-                  )}
+                {/* Username */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <User className="h-4 w-4" /> Username
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.username}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, username: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.username || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Bio</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.bio}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, bio: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.bio || '--'}</p>
-                  )}
+                {/* Bio */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Edit3 className="h-4 w-4" /> Bio
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.bio}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, bio: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.bio || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Location
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.location}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, location: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.location || '--'}</p>
-                  )}
+                {/* Location */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Globe className="h-4 w-4" /> Location
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.location}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, location: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.location || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Website
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.website}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, website: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.website || '--'}</p>
-                  )}
+                {/* Website */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Globe className="h-4 w-4" /> Website
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.website}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, website: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.website || '--'
+                    )}
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Twitter className="h-4 w-4" />
-                    Twitter Handle
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={tempProfile.twitter_handle}
-                      onChange={(e) => setTempProfile(prev => ({ ...prev, twitter_handle: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={saving}
-                    />
-                  ) : (
-                    <p className="text-gray-900">{profile?.twitter_handle || '--'}</p>
-                  )}
+                {/* Twitter Handle */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-100/50 shadow transition-all duration-200 hover:shadow-lg">
+                  <div className="flex items-center gap-2 text-xs text-gray-500 uppercase tracking-wider mb-1 font-medium">
+                    <Twitter className="h-4 w-4" /> Twitter Handle
+                  </div>
+                  <div className="text-lg font-semibold text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={tempProfile.twitter_handle}
+                        onChange={(e) => setTempProfile(prev => ({ ...prev, twitter_handle: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={saving}
+                      />
+                    ) : (
+                      profile?.twitter_handle || '--'
+                    )}
+                  </div>
                 </div>
               </div>
 
