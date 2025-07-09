@@ -12,8 +12,10 @@ interface UserBalance {
 }
 
 interface UserProfile {
-  full_name: string;
-  username: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  email: string;
 }
 
 export default function ProfileDropdown({
@@ -48,7 +50,7 @@ export default function ProfileDropdown({
         // Fetch profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('full_name, username')
+          .select('full_name, username, avatar_url, email')
           .eq('id', user.id)
           .single();
 
@@ -99,7 +101,18 @@ export default function ProfileDropdown({
         <div className="relative">
           <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-sm">
-              {displayInitial}
+              {/* {displayInitial} */}
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt={profile.full_name || 'Profile'} 
+                  className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
+                  {profile?.full_name?.split(' ').map(n => n[0]).join('') || profile?.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
             </span>
           </div>
           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center" >
@@ -121,11 +134,22 @@ export default function ProfileDropdown({
           <div className="absolute right-0 mt-2 w-72 rounded-xl shadow-lg z-50 bg-white border border-gray-100">
             <div className="p-4">
               <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
-                <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center">
+              {profile?.avatar_url ? (
+                <img 
+                  src={profile.avatar_url} 
+                  alt={profile.full_name || 'Profile'} 
+                  className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
+                  {profile?.full_name?.split(' ').map(n => n[0]).join('') || profile?.email?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              )}
+                {/* <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-lg">
                     {displayInitial}
                   </span>
-                </div>
+                </div> */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">
                     {displayName}

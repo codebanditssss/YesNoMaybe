@@ -194,7 +194,7 @@ export function MarketCarousel({ markets, currentMarket, onMarketSelect }: Marke
                       <div className="space-y-1">
                         <p className="text-sm text-gray-500">Volume</p>
                         <p className="text-lg font-semibold text-gray-900">
-                          ₹{displayMarket.volume?.toLocaleString() || '0'}
+                          {displayMarket.volume?.toLocaleString() || '0'}
                         </p>
                       </div>
                       <div className="space-y-1">

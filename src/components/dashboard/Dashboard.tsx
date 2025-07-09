@@ -103,7 +103,7 @@ export function Dashboard() {
   const portfolioStats: StatType[] = [
     {
       title: "Portfolio Value",
-      value: portfolioLoading ? "Loading..." : (portfolio?.summary?.totalValue ? `₹${portfolio.summary.totalValue.toLocaleString()}` : "₹0"),
+      value: portfolioLoading ? "Loading..." : (portfolio?.summary?.totalValue ? `${portfolio.summary.totalValue.toLocaleString()}` : "₹0"),
       change: portfolioLoading ? "Loading..." : ((pnlPercentage || 0) >= 0 ? `+${(pnlPercentage || 0).toFixed(2)}%` : `${(pnlPercentage || 0).toFixed(2)}%`),
       trend: portfolioLoading ? "neutral" : ((pnlPercentage || 0) >= 0 ? "up" : "down"),
       icon: DollarSign,
@@ -142,7 +142,7 @@ export function Dashboard() {
     },
     {
       title: "Win Rate",
-      value: portfolioLoading ? "Loading..." : `${(portfolio?.summary?.winRate || 0).toFixed(1)}%`,
+      value: portfolioLoading ? "Loading..." : `${(portfolio?.summary?.winRate || 0).toFixed(1)}`,
       change: portfolioLoading ? "Loading..." : (portfolio?.balance?.total_trades ? `${portfolio.balance.total_trades} total trades` : "No trading history"),
       trend: portfolioLoading ? "neutral" : ((portfolio?.summary?.winRate || 0) > 50 ? "up" : "down"),
       icon: Percent,

@@ -343,7 +343,7 @@ export function Portfolio() {
         {/* Header */}
         <div className="flex items-center justify-between mb-12">
           <div>
-            <h1 className="text-4xl font-light text-black tracking-tight">Portfolio</h1>
+            <h1 className="text-5xl  font-bold text-black tracking-tight">Portfolio</h1>
             <p className="text-gray-500 mt-2 font-light">Your prediction market performance</p>
           </div>
           
@@ -378,16 +378,16 @@ export function Portfolio() {
 
         {/* Tab Navigation */}
         <div className="flex items-center justify-center w-full mb-10">
-          <nav className="flex bg-white/80 backdrop-blur-lg rounded-full border border-gray-100 shadow px-2 py-2 gap-2">
+          <nav className="flex bg-white/80 backdrop-blur-lg rounded-full border border-gray-100 shadow">
             {tabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setSelectedTab(id)}
                 className={`
-                  flex items-center gap-3 px-8 py-3 text-lg font-medium rounded-full transition-all duration-300 min-w-[160px] min-h-[48px] justify-center
+                  flex items-center gap-3 px-8 py-3 text-lg font-medium rounded-full min-w-[160px] min-h-[48px] justify-center
                   ${selectedTab === id 
                     ? 'bg-black text-white shadow-lg' 
-                    : 'bg-transparent text-gray-700 hover:bg-gray-100 hover:text-black'}
+                    : 'bg-transparent'}
                 `}
                 style={{ boxShadow: selectedTab === id ? '0 2px 16px 0 rgba(0,0,0,0.08)' : undefined }}
               >
@@ -406,7 +406,7 @@ export function Portfolio() {
               {/* Stats Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Total Value Card */}
-                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-lg hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 ${
+                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md ${
                   realtimeUpdates.type === 'balance' && 
                   new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
                     ? 'animate-highlight' 
@@ -427,7 +427,7 @@ export function Portfolio() {
                 </div>
 
                 {/* P&L Card */}
-                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-lg hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 ${
+                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md ${
                   realtimeUpdates.type === 'position' && 
                   new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
                     ? 'animate-highlight' 
@@ -448,7 +448,7 @@ export function Portfolio() {
                 </div>
 
                 {/* Available Balance Card */}
-                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-lg hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 ${
+                <div className={`bg-white/80 rounded-lg p-6 shadow border border-gray-100/50 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md ${
                   realtimeUpdates.type === 'balance' && 
                   new Date().getTime() - realtimeUpdates.lastUpdate.getTime() < 2000 
                     ? 'animate-highlight' 
@@ -477,7 +477,7 @@ export function Portfolio() {
                 ].map((metric, idx) => (
                   <div
                     key={idx}
-                    className="bg-white/60 rounded-lg p-4 text-center shadow group hover:bg-white hover:shadow-lg hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1"
+                    className="bg-white/60 rounded-lg p-4 text-center shadow group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md"
                   >
                     <div className="text-xl font-medium">{metric.value}</div>
                     <div className="text-xs font-light text-gray-500 mt-1">{metric.label}</div>
@@ -486,9 +486,9 @@ export function Portfolio() {
               </div>
 
               {/* Charts Section */}
-              <div className="space-y-6 mt-10">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-light text-black">Performance</h2>
+              <div className="space-y-5">
+                <div className="flex items-center justify-between mt-16">
+                  <h2 className="text-4xl font-light text-black tracking-tigh">Performance</h2>
                   <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-lg border border-gray-200/50 shadow-sm overflow-hidden">
                     {(['1D', '1W', '1M', '3M', '1Y', 'ALL'] as const).map((t) => (
                       <button

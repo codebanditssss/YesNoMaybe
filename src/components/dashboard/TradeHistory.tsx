@@ -254,15 +254,15 @@ export function TradeHistory() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-14">
           {statCards.map((card) => (
             <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md">
-              <div className="flex-shrink-0 mb-1">{card.icon}</div>
-              <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1 text-center">{card.label}</div>
+              <div className="flex-shrink-0">{card.icon}</div>
+              <div className="text-xs text-gray-400 font-light uppercase tracking-wider text-center -mt-1">{card.label}</div>
               <div className="text-3xl font-bold text-gray-900 text-center">{card.value}</div>
             </Card>
           ))}
         </div>
 
         <div className="flex items-center justify-center mb-10 flex-wrap">
-          <div className="flex bg-white/80 backdrop-blur-lg rounded-full border border-gray-100 shadow-lg px-2 py-2 gap-2 flex-nowrap overflow-x-auto whitespace-nowrap max-w-full w-full sm:w-auto">
+          <div className="flex bg-white/80 backdrop-blur-lg rounded-full border border-gray-100 shadow-lg flex-nowrap overflow-x-auto whitespace-nowrap max-w-full w-full sm:w-auto">
             {[
               { id: 'all', label: 'All Trades', icon: Activity },
               { id: 'completed', label: 'Completed', icon: CheckCircle },

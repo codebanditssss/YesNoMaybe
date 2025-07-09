@@ -246,7 +246,7 @@ export function PortfolioCharts({ timeframe, data }: PortfolioChartsProps) {
   }
 
   return (
-    <div className="p-8">
+    <div className="">
       {/* Portfolio Value Chart */}
       <div className="mb-16">
         <h3 className="text-lg font-light text-black mb-6">Portfolio Value Over Time</h3>

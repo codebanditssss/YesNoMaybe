@@ -267,7 +267,7 @@ export function Markets() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-14 gap-8">
           <div>
-            <h1 className="text-5xl font-extralight text-black tracking-tight mb-2">Markets</h1>
+            <h1 className="text-5xl font-bold text-black tracking-tight mb-2">Markets</h1>
             <p className="text-gray-500 text-lg font-light">Trade on real-world events and outcomes</p>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
@@ -294,10 +294,10 @@ export function Markets() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
           {marketSummaryCards.map(card => (
-            <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md">
-              <div className="flex-shrink-0 mb-1">{card.icon}</div>
-              <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1 text-center">{card.label}</div>
-              <div className="text-3xl font-bold text-gray-900 text-center">{card.value}</div>
+            <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-2 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md">
+              <div className="flex-shrink-0">{card.icon}</div>
+              <div className="text-xs text-gray-400 font-light uppercase tracking-wider text-center">{card.label}</div>
+              <div className="text-2xl font-bold text-gray-900 text-center">{card.value}</div>
               <div className={card.subtextClass + ' text-center'}>{card.subtext}</div>
             </Card>
           ))}
