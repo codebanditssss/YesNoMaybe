@@ -21,23 +21,42 @@ export default function ProfileDropdown({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchBalance = async () => {
-      if (!user) return;
-      
-      const { data, error } = await supabase
-        .from('user_balances')
-        .select('available_balance, total_deposited, total_profit_loss')
-        .eq('user_id', user.id)
-        .single();
-
-      if (data) {
-        setBalance(data);
+      if (!user) {
+        if (isMounted) setLoading(false);
+        return;
       }
-      setLoading(false);
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_balances')
+          .select('available_balance, total_deposited, total_profit_loss')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+
+        if (isMounted) {
+          setBalance(data);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+        if (isMounted) {
+          setBalance(null);
+          setLoading(false);
+        }
+      }
     };
 
     fetchBalance();
-  }, [user]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]); // Only re-run if user ID changes, not the entire user object
 
   if (!user) return null;
 

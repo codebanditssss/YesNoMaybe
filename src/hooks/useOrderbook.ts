@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 // Types for orderbook
 export interface OrderbookLevel {
@@ -58,58 +58,69 @@ export function useOrderbook(marketId?: string, options: UseOrderbookOptions = {
   const {
     autoRefresh = true,
     refreshInterval = 5000
-  } = options
+  } = options;
 
-  const [orderbook, setOrderbook] = useState<OrderbookData | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [orderbook, setOrderbook] = useState<OrderbookData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const previousMarketIdRef = useRef<string | undefined>(marketId);
 
   // Fetch orderbook data
   const fetchOrderbook = useCallback(async () => {
     if (!marketId) {
-      setOrderbook(null)
-      setLoading(false)
-      return
+      setOrderbook(null);
+      setLoading(false);
+      return;
     }
 
     try {
-      setError(null)
-      if (!orderbook) setLoading(true) // Only show loading on initial fetch
-
-      const response = await fetch(`/api/orderbook?market_id=${marketId}`)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to fetch orderbook')
+      setError(null);
+      // Only show loading on initial fetch or market change
+      if (!orderbook || previousMarketIdRef.current !== marketId) {
+        setLoading(true);
       }
 
-      const data: OrderbookData = await response.json()
-      setOrderbook(data)
+      const response = await fetch(`/api/orderbook?market_id=${marketId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch orderbook');
+      }
+
+      const data: OrderbookData = await response.json();
+      setOrderbook(data);
+      previousMarketIdRef.current = marketId;
     } catch (err) {
-      console.error('Error fetching orderbook:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch orderbook')
+      console.error('Error fetching orderbook:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch orderbook');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [marketId, orderbook])
+  }, [marketId]); // Remove orderbook from dependencies
 
   // Refresh orderbook data
   const refresh = useCallback(() => {
-    fetchOrderbook()
-  }, [fetchOrderbook])
+    fetchOrderbook();
+  }, [fetchOrderbook]);
 
   // Auto-refresh setup
   useEffect(() => {
     if (autoRefresh && marketId && refreshInterval > 0) {
-      const interval = setInterval(fetchOrderbook, refreshInterval)
-      return () => clearInterval(interval)
+      // Initial fetch
+      fetchOrderbook();
+      
+      // Set up interval
+      const interval = setInterval(fetchOrderbook, refreshInterval);
+      return () => clearInterval(interval);
     }
-  }, [autoRefresh, marketId, refreshInterval, fetchOrderbook])
+  }, [autoRefresh, marketId, refreshInterval, fetchOrderbook]);
 
-  // Initial fetch when marketId changes
+  // Initial fetch only when marketId changes
   useEffect(() => {
-    fetchOrderbook()
-  }, [fetchOrderbook])
+    if (previousMarketIdRef.current !== marketId) {
+      fetchOrderbook();
+    }
+  }, [marketId, fetchOrderbook]);
 
   // Computed values
   const hasData = !!orderbook
