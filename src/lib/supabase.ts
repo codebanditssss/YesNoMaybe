@@ -24,7 +24,7 @@ export const supabase = createBrowserClient<Database>(
     },
     global: {
       headers: {
-        'x-my-custom-header': 'yesnomaybe'
+        'x-my-custom-header': 'augur'
       }
     }
   }

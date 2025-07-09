@@ -8,52 +8,39 @@ interface HeroSectionProps {
   onOpenAuth?: (tab: 'signin' | 'signup') => void;
 }
 
-export function HeroSection({ onOpenAuth }: HeroSectionProps) {
-  const { user, loading } = useAuth();
-
+export function HeroSection() {
   return (
-    <section className="pt-40 pb-24 px-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center space-y-8">
-          {/* Dynamic badge based on auth state */}
-          <div className="inline-flex items-center px-4 py-2 rounded-full border border-gray-200 bg-white/80 backdrop-blur-sm">
-            <span className="text-sm font-medium text-gray-700">
-              {user ? "Welcome to your trading dashboard" : "Enterprise-Grade Opinion Trading"}
-            </span>
+    <section className="relative py-20 overflow-hidden">
+      <div className="container px-4 mx-auto">
+        <div className="flex flex-wrap items-center -mx-4">
+          <div className="w-full lg:w-1/2 px-4 mb-12 lg:mb-0">
+            <div className="max-w-lg">
+              <img src="/logo.svg" alt="Augur" className="h-12 mb-8" />
+              <h1 className="font-light text-4xl md:text-5xl text-black mb-6">
+                Trade on the Future with <span className="font-normal">Augur</span>
+              </h1>
+              <p className="text-lg text-gray-600 mb-8">
+                Join the sophisticated prediction market where insight meets opportunity. Trade on future outcomes with real-time data and advanced analytics.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <button className="inline-block px-6 py-3 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors">
+                  Start Trading
+                </button>
+                <button className="inline-block px-6 py-3 text-sm font-medium text-gray-900 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+                  Learn More
+                </button>
+              </div>
+            </div>
           </div>
-          
-          {/* Clean, professional headline */}
-          <div className="space-y-6">
-            <h1 className="text-5xl md:text-7xl font-light tracking-tight text-black leading-[1.1]">
-              YesNoMaybe
-            </h1>
-            
-            {/* MacBook Scroll Component - positioned right after the title */}
-            <MacbookScroll
-              title={
-                <span>
-                  Experience the future of trading. <br />
-                  Scroll to see our platform in action.
-                </span>
-              }
-              badge={
-                <div className="h-10 w-10 transform -rotate-12 bg-black rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">Y</span>
-                </div>
-              }
-              src="/pic.png"
-              showGradient={false}
-            />
-          </div>
-          
-          {/* Added spacing before the subtitle */}
-          <div className="mt-16">
-            <h2 className="text-2xl md:text-3xl font-light text-gray-600 max-w-4xl mx-auto leading-relaxed" style={{ marginTop: '300px' }}>
-              {user 
-                ? `Welcome back, ${user.email?.split('@')[0] || 'Trader'}` 
-                : "Professional prediction markets for institutional-grade opinion trading"
-              }
-            </h2>
+          <div className="w-full lg:w-1/2 px-4">
+            <div className="relative">
+              <img 
+                className="relative rounded-2xl"
+                src="/trading-preview.png" 
+                alt="Trading Interface Preview" 
+              />
+              <div className="absolute inset-0 bg-gradient-to-tr from-gray-900/20 to-transparent rounded-2xl" />
+            </div>
           </div>
         </div>
       </div>

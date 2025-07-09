@@ -161,12 +161,14 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          System overview and key metrics for YesNoMaybe trading platform
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-light text-gray-900">Admin Dashboard</h1>
+          <p className="text-sm text-gray-600">
+            System overview and key metrics for Augur trading platform
+          </p>
+        </div>
+        <img src="/logo.svg" alt="Augur" className="h-8" />
       </div>
 
       {/* System Health Status */}

@@ -107,38 +107,34 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
   return (
     <Sidebar open={open} setOpen={setOpen}>
       <SidebarBody>
+        {/* Remove duplicate logo section */}
         <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
           {/* Logo */}
-          <SidebarLink
-            link={{
-              label: open ? 'YesNoMaybe' : '',
-              href: '/dashboard',
-              icon: (
-                <div className="h-6 w-6 shrink-0 rounded-tl-lg rounded-tr-sm rounded-br-lg rounded-bl-sm bg-black dark:bg-white" />
-              ),
-              onClick: (e?: React.MouseEvent<HTMLAnchorElement>) => {
-                if (e) handleNavigation(e, '/dashboard');
-              }
-            }}
-            variant="brand"
-            className="mb-2"
-            active={pathname === '/dashboard'}
-          />
+          <div className="px-3 py-2 mb-6">
+            <div className="flex items-center gap-3">
+              <svg 
+                viewBox="0 0 24 24" 
+                className="w-6 h-6 text-black dark:text-white shrink-0"
+                fill="currentColor"
+              >
+                <path d="M12 2L9.5 7L15 9L12 14L18.5 16L15 22L21 19.5L19.5 15L16 13L18.5 9L15.5 7.5L17 4L12 2Z" />
+              </svg>
+              <span className={`font-bold text-xl text-black dark:text-white transition-all ${open ? 'opacity-100' : 'opacity-0 w-0'}`}>
+                Augur
+              </span>
+            </div>
+          </div>
           
-          <div className="mt-6 flex flex-col gap-1">
+          <div className="flex flex-col gap-1">
             {/* Show admin navigation for admin users */}
             {isAdmin ? (
               <>
                 {open && (
-                  <SidebarLink
-                    link={{
-                      label: 'ADMIN PANEL',
-                      href: '#',
-                      icon: <div className="w-5" />,
-                    }}
-                    variant="muted"
-                    className="mb-1"
-                  />
+                  <div className="px-3 py-2">
+                    <span className="text-xs font-medium text-neutral-400">
+                      ADMIN PANEL
+                    </span>
+                  </div>
                 )}
                 {adminLinks.map((link, idx) => (
                   <SidebarLink 

@@ -211,7 +211,7 @@ class ErrorMonitor {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            service: 'yesnomaybe-trading',
+            service: 'augur-trading',
             environment: this.environment,
             error: errorDetails,
             timestamp: errorDetails.context.timestamp

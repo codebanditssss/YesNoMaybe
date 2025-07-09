@@ -4,105 +4,66 @@
 ### 📄 `README.md`
 
 ```markdown
-# YesNoMaybe
+# Augur
 
-YesNoMaybe is a real-time opinion trading platform where users can place positions on future events. It functions similarly to a prediction market, allowing users to express their beliefs through structured "Yes" or "No" trades. The platform maintains a live order book and matches opposing opinions dynamically using a basic matching engine.
+<div align="center">
+  <img src="public/logo.svg" alt="Augur Logo" width="120" height="120" />
+</div>
 
----
+A sophisticated prediction market platform where users can trade on future outcomes. Augur combines real-time market data, advanced trading features, and an elegant user experience to create a powerful platform for predictive trading.
 
 ## Features
 
-- User authentication using Supabase
-- Real-time order book updates via WebSockets
-- Opinion-based trade placement (Yes/No format)
-- Basic FIFO order matching system
-- Clean and responsive frontend UI
+- Real-time market updates using Server-Sent Events (SSE)
+- Advanced order matching engine
+- Portfolio tracking with P&L calculations
+- Interactive market depth visualization
+- Real-time analytics and leaderboards
+- Secure user authentication and authorization
+- Responsive, modern UI with dark mode support
 
----
+## Technology Stack
 
-## Architecture Overview
+- Next.js 14 with App Router
+- TypeScript
+- Supabase for authentication and real-time database
+- TailwindCSS for styling
+- Server-Sent Events for real-time updates
+- PostgreSQL with NOTIFY/LISTEN
 
-```
-
-Client (Next.js)
-↓
-Supabase (Auth & Database)
-↓
-Edge Functions / API Routes
-↓
-Realtime Engine (Supabase Realtime or Custom WebSocket)
-
-````
-
----
-
-## Tech Stack
-
-| Layer        | Technology                    |
-|--------------|-------------------------------|
-| Frontend     | Next.js, Tailwind CSS         |
-| Backend      | Supabase (PostgreSQL, Auth)   |
-| Realtime     | Supabase Realtime / WebSocket |
-| Deployment   | Vercel, Supabase              |
-
----
-
-## Setup Instructions
+## Getting Started
 
 1. Clone the repository
-   ```bash
-   git clone https://github.com/codebanditssss/YesNoMaybe.git
-   cd YesNoMaybe
-````
+```bash
+git clone https://github.com/yourusername/augur.git
+cd augur
+```
 
 2. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-3. Configure environment variables
-   Create a `.env.local` file and add your Supabase project credentials:
-
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=your_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-   ```
-
-4. Run the development server
-
-   ```bash
-   npm run dev
-   ```
-
----
-
-## Folder Structure
-
-```
-/components      → Reusable UI components
-/pages           → Next.js routes and pages
-/lib             → Supabase client and utilities
-/hooks           → Custom React hooks
-/styles          → Global Tailwind styles
-/public          → Static assets
+```bash
+npm install
 ```
 
----
+3. Set up environment variables
+```bash
+cp .env.example .env.local
+```
 
-## Roadmap
+4. Start the development server
+```bash
+npm run dev
+```
 
-* Initial MVP with real-time trade placement and matching
-* Portfolio tracking and performance analytics
-* Integration with payment gateways (Cashfree or Razorpay)
-* Advanced order types and risk management tools
-* Admin dashboard for dispute resolution and moderation
+## Documentation
 
----
+- [Environment Setup](docs/environment-setup.md)
+- [Architecture Overview](docs/architecture.md)
+- [API Documentation](docs/api.md)
+- [Contributing Guidelines](docs/contributing.md)
 
 ## License
 
-This project is licensed under the MIT License.
+MIT License - see LICENSE for details
 
 ```
 

@@ -1,6 +1,6 @@
 {
-  "name": "yesnomaybe",
-  "version": "1.0.0",
+  "name": "augur",
+  "version": "0.1.0",
   "description": "A real-time opinion trading platform where users can place positions on future events",
   "private": true,
   "scripts": {

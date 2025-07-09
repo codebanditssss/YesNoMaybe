@@ -296,104 +296,107 @@ useEffect(() => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl bg-white border-0 shadow-lg">
         <div className="p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome to YesNoMaybe
-            </h1>
-            <p className="text-gray-600">
-              Let's set up your profile to get you started
-            </p>
-          </div>
+          <div className="max-w-md w-full space-y-8">
+            <div>
+              <img src="/logo.svg" alt="Augur" className="h-12 mx-auto mb-8" />
+              <h2 className="mt-6 text-center text-3xl font-light text-gray-900">
+                Welcome to Augur
+              </h2>
+              <p className="mt-2 text-center text-sm text-gray-600">
+                Complete your profile to start trading
+              </p>
+            </div>
 
-          <div className="flex items-center justify-between mb-8">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
-                  step.id <= currentStep 
-                    ? 'bg-blue-600 border-blue-600 text-white' 
-                    : 'border-gray-300 text-gray-500'
-                }`}>
-                  {step.id < currentStep ? (
-                    <CheckCircle className="h-4 w-4" />
-                  ) : (
-                    <span className="text-sm font-medium">{step.id}</span>
+            <div className="flex items-center justify-between mb-8">
+              {steps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
+                    step.id <= currentStep 
+                      ? 'bg-blue-600 border-blue-600 text-white' 
+                      : 'border-gray-300 text-gray-500'
+                  }`}>
+                    {step.id < currentStep ? (
+                      <CheckCircle className="h-4 w-4" />
+                    ) : (
+                      <span className="text-sm font-medium">{step.id}</span>
+                    )}
+                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-16 h-0.5 mx-2 ${
+                      step.id < currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    }`} />
                   )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-2 ${
-                    step.id < currentStep ? 'bg-blue-600' : 'bg-gray-300'
-                  }`} />
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-1">
-              {currentStepData?.title}
-            </h2>
-            <p className="text-gray-600">{currentStepData?.description}</p>
-          </div>
-
-          <div className="space-y-6 mb-8">
-            {currentStepData?.fields.map(field => 
-              renderField(field as keyof OnboardingData)
-            )}
-          </div>
-
-          {error && (
-            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600 text-sm">{error}</p>
+              ))}
             </div>
-          )}
 
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Previous
-            </Button>
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">
+                {currentStepData?.title}
+              </h2>
+              <p className="text-gray-600">{currentStepData?.description}</p>
+            </div>
 
-            <Button
-              onClick={handleNext}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : currentStep === steps.length ? (
-                <>
-                  Complete Setup
-                  <CheckCircle className="h-4 w-4" />
-                </>
-              ) : (
-                <>
-                  Next
-                  <ArrowRight className="h-4 w-4" />
-                </>
+            <div className="space-y-6 mb-8">
+              {currentStepData?.fields.map(field => 
+                renderField(field as keyof OnboardingData)
               )}
-            </Button>
-          </div>
+            </div>
 
-          {currentStep === 3 && (
-            <div className="text-center mt-6">
+            {error && (
+              <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
+            <div className="flex justify-between">
               <Button
-                variant="ghost"
-                onClick={handleSubmit}
-                disabled={loading}
-                className="text-gray-500 hover:text-gray-700"
+                variant="outline"
+                onClick={handlePrevious}
+                disabled={currentStep === 1}
+                className="flex items-center gap-2"
               >
-                Skip for now
+                <ArrowLeft className="h-4 w-4" />
+                Previous
+              </Button>
+
+              <Button
+                onClick={handleNext}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : currentStep === steps.length ? (
+                  <>
+                    Complete Setup
+                    <CheckCircle className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Next
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
-          )}
+
+            {currentStep === 3 && (
+              <div className="text-center mt-6">
+                <Button
+                  variant="ghost"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Skip for now
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </Card>
     </div>

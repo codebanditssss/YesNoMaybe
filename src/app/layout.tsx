@@ -8,18 +8,10 @@ import ResizableNavbar from '@/components/ui/resizable-navbar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'YesNoMaybe - Opinion Trading Platform',
-  description: 'A real-time opinion trading platform where users can place positions on future events',
+  title: 'Augur | Prediction Market Platform',
+  description: 'Trade on future outcomes with Augur - the sophisticated prediction market platform combining real-time data, advanced trading features, and elegant user experience.',
   icons: {
-    icon: [
-      {
-        url: '/favicon.ico',
-        sizes: '16x16',
-        type: 'image/x-icon',
-      },
-    ],
-    shortcut: '/favicon.ico',
-    apple: '/favicon.ico',
+    icon: '/logo.svg',
   },
 }
 
