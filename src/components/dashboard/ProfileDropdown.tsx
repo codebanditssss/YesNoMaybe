@@ -11,6 +11,11 @@ interface UserBalance {
   total_profit_loss: number;
 }
 
+interface UserProfile {
+  full_name: string;
+  username: string;
+}
+
 export default function ProfileDropdown({
   user,
 }: {
@@ -18,45 +23,58 @@ export default function ProfileDropdown({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [balance, setBalance] = useState<UserBalance | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     
-    const fetchBalance = async () => {
+    const fetchUserData = async () => {
       if (!user) {
         if (isMounted) setLoading(false);
         return;
       }
       
       try {
-        const { data, error } = await supabase
+        // Fetch balance
+        const { data: balanceData, error: balanceError } = await supabase
           .from('user_balances')
           .select('available_balance, total_deposited, total_profit_loss')
           .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
+        if (balanceError) throw balanceError;
+
+        // Fetch profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) throw profileError;
 
         if (isMounted) {
-          setBalance(data);
+          setBalance(balanceData);
+          setProfile(profileData);
           setLoading(false);
         }
       } catch (error) {
-        console.error('Error fetching balance:', error);
+        console.error('Error fetching user data:', error);
         if (isMounted) {
           setBalance(null);
+          setProfile(null);
           setLoading(false);
         }
       }
     };
 
-    fetchBalance();
+    fetchUserData();
 
     return () => {
       isMounted = false;
     };
-  }, [user?.id]); // Only re-run if user ID changes, not the entire user object
+  }, [user?.id]);
 
   if (!user) return null;
 
@@ -64,6 +82,12 @@ export default function ProfileDropdown({
     await supabase.auth.signOut();
     window.location.href = '/';
   };
+
+  const displayName = profile?.full_name || profile?.username || user.email?.split('@')[0] || 'User';
+  const displayInitial = profile?.full_name?.charAt(0).toUpperCase() || 
+                        profile?.username?.charAt(0).toUpperCase() || 
+                        user.email?.charAt(0).toUpperCase() || 
+                        'U';
 
   return (
     <div className="relative">
@@ -75,7 +99,7 @@ export default function ProfileDropdown({
         <div className="relative">
           <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-sm">
-              {user?.email?.charAt(0).toUpperCase() || 'K'}
+              {displayInitial}
             </span>
           </div>
           <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white flex items-center justify-center" >
@@ -84,10 +108,10 @@ export default function ProfileDropdown({
         </div>
         <div className="hidden md:block text-left">
           <p className="text-sm font-bold text-gray-900">
-            {user?.email?.split('@')[0] || 'example@example.com'}
+            {displayName}
           </p>
           <p className="text-xs text-gray-600">
-            {user?.email || 'example@example.com'}
+            {user.email}
           </p>
         </div>
       </button>
@@ -99,15 +123,15 @@ export default function ProfileDropdown({
               <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
                 <div className="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-lg">
-                    {user?.email?.charAt(0).toUpperCase()}
+                    {displayInitial}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">
-                    {user?.email?.split('@')[0]}
+                    {displayName}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {user?.email}
+                    {user.email}
                   </p>
                 </div>
               </div>
