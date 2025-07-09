@@ -117,6 +117,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                 </label>
                 <input
                   type="email"
+                  name="email"
+                  autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none"
@@ -131,6 +133,8 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                 </label>
                 <input
                   type="password"
+                  name="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none"
