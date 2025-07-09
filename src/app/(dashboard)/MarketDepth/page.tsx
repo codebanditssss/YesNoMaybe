@@ -12,6 +12,8 @@ export default function MarketDepthPage() {
   const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
 
   // Initialize with first market when markets load
   useEffect(() => {
@@ -41,6 +43,10 @@ export default function MarketDepthPage() {
       }, 200);
     }, 150);
   }, [isTransitioning, isPending]);
+
+  const filteredMarkets = markets?.filter(market =>
+    market.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -76,11 +82,50 @@ export default function MarketDepthPage() {
               <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Explore market details and order book depth</p>
             </div>
             {selectedMarket && (
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600">Last update:</span>
-                <span className="font-medium text-gray-900">
-                  {new Date().toLocaleTimeString()}
-                </span>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100 flex-wrap">
+                  <span className="text-base text-gray-700 font-medium ml-2">
+                    Last updated:
+                  </span>
+                  <div className="flex items-center gap-1 ml-4">
+                    <span className="text-sm text-gray-500">{new Date().toLocaleTimeString()}</span>
+                  </div>
+                </div>
+                {/* Functional input bar for market search/select */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search market..."
+                    value={searchTerm}
+                    onChange={e => {
+                      setSearchTerm(e.target.value);
+                      setShowDropdown(true);
+                    }}
+                    onFocus={() => setShowDropdown(true)}
+                    className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100 flex-wrap"
+                  />
+                  {showDropdown && searchTerm && (
+                    <div className="absolute left-0 right-0 mt-2 bg-white border border-gray-200 rounded shadow z-10 max-h-60 overflow-y-auto">
+                      {filteredMarkets && filteredMarkets.length > 0 ? (
+                        filteredMarkets.map(market => (
+                          <div
+                            key={market.id}
+                            className="px-4 py-2 hover:bg-blue-100 cursor-pointer"
+                            onClick={() => {
+                              setSelectedMarket(market);
+                              setSearchTerm('');
+                              setShowDropdown(false);
+                            }}
+                          >
+                            {market.title}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-gray-500">No markets found</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
