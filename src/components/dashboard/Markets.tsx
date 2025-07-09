@@ -63,7 +63,15 @@ export function Markets() {
   
   // Order placement modal state
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+  // Use the minimal type for OrderPlacementProps.market
+  const [selectedMarket, setSelectedMarket] = useState<{
+    id: string;
+    title: string;
+    yesPrice: number;
+    noPrice: number;
+    availableQuantity: number;
+    status?: string;
+  } | null>(null);
   const [selectedSide, setSelectedSide] = useState<'yes' | 'no'>('yes');
 
   // Fetch ALL markets for category counts (no filters)
@@ -84,8 +92,7 @@ export function Markets() {
   } = useMarkets({
     category: selectedCategory === 'all' ? undefined : selectedCategory,
     status: statusFilter === 'all' ? undefined : statusFilter,
-    featured: featuredOnly || undefined,
-    search: searchTerm || undefined
+    featured: featuredOnly || undefined
   });
 
   // Auto-refresh market data
@@ -97,8 +104,8 @@ export function Markets() {
     return () => clearInterval(interval);
   }, [refreshMarkets]);
 
-  // Transform API markets to match frontend interface by adding icon
-  const markets = apiMarkets.map(market => ({
+  // Transform API markets to match frontend interface by adding icon (for UI only)
+  const marketsWithIcon = apiMarkets.map(market => ({
     ...market,
     icon: getCategoryIcon(market.category)
   }));
@@ -136,7 +143,7 @@ export function Markets() {
   };
 
   // Filter and sort markets
-  const filteredMarkets = markets
+  const filteredMarkets = marketsWithIcon
     .filter(market => {
       const matchesCategory = selectedCategory === 'all' || market.category === selectedCategory;
       const matchesSearch = market.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -186,12 +193,22 @@ export function Markets() {
     }
   };
 
-  const totalVolume = markets.reduce((sum, market) => sum + market.volume24h, 0);
-  const activeMarkets = markets.filter(m => m.status === 'active').length;
-  const totalTraders = markets.reduce((sum, market) => sum + market.traders, 0);
+  const totalVolume = apiMarkets.reduce((sum, market) => sum + market.volume24h, 0);
+  const activeMarkets = apiMarkets.filter(m => m.status === 'active').length;
+  const totalTraders = apiMarkets.reduce((sum, market) => sum + market.traders, 0);
 
   // Handle order placement
-  const handleOrderClick = (market: Market, side: 'yes' | 'no') => {
+  const handleOrderClick = (
+    market: {
+      id: string;
+      title: string;
+      yesPrice: number;
+      noPrice: number;
+      availableQuantity: number;
+      status?: string;
+    },
+    side: 'yes' | 'no'
+  ) => {
     setSelectedMarket(market);
     setSelectedSide(side);
     setShowOrderModal(true);
@@ -210,7 +227,7 @@ export function Markets() {
       icon: <Globe className="h-5 w-5 text-blue-600" />,
       iconBg: "bg-blue-100",
       label: "Total Markets",
-      value: formatNumber(markets.length),
+      value: formatNumber(marketsWithIcon.length),
       valueClass: "text-2xl font-bold text-gray-900",
       subtext: `${activeMarkets} active`,
       subtextClass: "text-xs text-gray-500 mt-1",
@@ -237,7 +254,7 @@ export function Markets() {
       icon: <Clock className="h-5 w-5 text-orange-600" />,
       iconBg: "bg-orange-100",
       label: "Closing Soon",
-      value: markets.filter(m => m.status === 'closing_soon').length,
+      value: apiMarkets.filter(m => m.status === 'closing_soon').length,
       valueClass: "text-2xl font-bold text-gray-900",
       subtext: "Within 24 hours",
       subtextClass: "text-xs text-gray-500 mt-1",
@@ -678,103 +695,118 @@ export function Markets() {
                   </div>
                 ) : (
                   /* Grid View */
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredMarkets.map((market) => {
-                      const Icon = market.icon;
-                      return (
-                        <Card key={market.id} className="p-5 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-lg transition-all cursor-pointer group">
-                          <div className="space-y-4">
-                            {/* Header */}
-                            <div className="flex items-start justify-between">
-                              <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
-                                <Icon className="h-5 w-5 text-gray-700" />
-                              </div>
-                              <div className="flex gap-1">
-                                {market.featured}
-                                {market.trending && (
-                                  <TrendingUp className="h-4 w-4 text-red-500" />
-                                )}
-                              </div>
-                            </div>
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[900px] max-h-[520px] overflow-y-auto">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredMarkets.map((market) => {
+                          const Icon = market.icon;
+                          // Find the original market object from apiMarkets for logic/handlers
+                          const originalMarket = apiMarkets.find(m => m.id === market.id)!;
+                          // Map to OrderPlacementProps.market type
+                          const orderPlacementMarket = {
+                            id: originalMarket.id,
+                            title: originalMarket.title,
+                            yesPrice: originalMarket.yesPrice,
+                            noPrice: originalMarket.noPrice,
+                            availableQuantity: 1000, // TODO: Replace with real value if available
+                            status: originalMarket.status
+                          };
+                          return (
+                            <Card key={market.id} className="p-5 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-lg transition-all cursor-pointer group">
+                              <div className="space-y-4">
+                                {/* Header */}
+                                <div className="flex items-start justify-between">
+                                  <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-gray-200 transition-colors">
+                                    <Icon className="h-5 w-5 text-gray-700" />
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {market.featured}
+                                    {market.trending && (
+                                      <TrendingUp className="h-4 w-4 text-red-500" />
+                                    )}
+                                  </div>
+                                </div>
 
-                            {/* Badges */}
-                            <div className="flex flex-wrap gap-1">
-                              <Badge variant="outline" className="text-xs">
-                                {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
-                              </Badge>
-                              <Badge className={`text-xs ${getStatusColor(market.status)}`}>
-                                {getStatusText(market.status)}
-                              </Badge>
-                              <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
-                                {market.riskLevel.toUpperCase()}
-                              </Badge>
-                            </div>
+                                {/* Badges */}
+                                <div className="flex flex-wrap gap-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {market.category.charAt(0).toUpperCase() + market.category.slice(1)}
+                                  </Badge>
+                                  <Badge className={`text-xs ${getStatusColor(market.status)}`}>
+                                    {getStatusText(market.status)}
+                                  </Badge>
+                                  <Badge className={`text-xs ${getRiskColor(market.riskLevel)}`}>
+                                    {market.riskLevel.toUpperCase()}
+                                  </Badge>
+                                </div>
 
-                            {/* Title */}
-                            <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-                              {market.title}
-                            </h3>
+                                {/* Title */}
+                                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+                                  {market.title}
+                                </h3>
 
-                            {/* Stats */}
-                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                              <div className="flex items-center gap-1">
-                                <Users className="h-3 w-3" />
-                                <span>{formatNumber(market.traders)}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Volume2 className="h-3 w-3" />
-                                <span>₹{formatNumber(market.volume24h)}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Target className="h-3 w-3" />
-                                <span>{market.probability}%</span>
-                              </div>
-                              <div className={`flex items-center gap-1 ${
-                                market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
-                              }`}>
-                                {market.priceChange >= 0 ? (
-                                  <TrendingUp className="h-3 w-3" />
-                                ) : (
-                                  <TrendingDown className="h-3 w-3" />
-                                )}
-                                <span>{market.priceChangePercent >= 0 ? '+' : ''}{market.priceChangePercent.toFixed(1)}%</span>
-                              </div>
-                            </div>
+                                {/* Stats */}
+                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    <span>{formatNumber(market.traders)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Volume2 className="h-3 w-3" />
+                                    <span>₹{formatNumber(market.volume24h)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Target className="h-3 w-3" />
+                                    <span>{market.probability}%</span>
+                                  </div>
+                                  <div className={`flex items-center gap-1 ${
+                                    market.priceChange >= 0 ? 'text-green-600' : 'text-red-600'
+                                  }`}>
+                                    {market.priceChange >= 0 ? (
+                                      <TrendingUp className="h-3 w-3" />
+                                    ) : (
+                                      <TrendingDown className="h-3 w-3" />
+                                    )}
+                                    <span>{market.priceChangePercent >= 0 ? '+' : ''}{market.priceChangePercent.toFixed(1)}%</span>
+                                  </div>
+                                </div>
 
-                            {/* Trading Buttons */}
-                            <div className="flex gap-2">
-                              <Button 
-                                className="bg-blue-600 hover:bg-blue-700 text-white flex-1 text-sm"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOrderClick(market, 'yes');
-                                }}
-                              >
-                                Yes ₹{market.yesPrice}
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1 text-sm"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOrderClick(market, 'no');
-                                }}
-                              >
-                                No ₹{market.noPrice}
-                              </Button>
-                            </div>
+                                {/* Trading Buttons */}
+                                <div className="flex gap-2">
+                                  <Button 
+                                    className="bg-blue-600 hover:bg-blue-700 text-white flex-1 text-sm"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOrderClick(orderPlacementMarket, 'yes');
+                                    }}
+                                  >
+                                    Yes ₹{market.yesPrice}
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1 text-sm"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOrderClick(orderPlacementMarket, 'no');
+                                    }}
+                                  >
+                                    No ₹{market.noPrice}
+                                  </Button>
+                                </div>
 
-                            {/* Footer */}
-                            <div className="flex items-center justify-between text-xs text-gray-500">
-                              <span>Expires {market.expiryDate.toLocaleDateString()}</span>
-                              <span>{market.lastUpdate}</span>
-                            </div>
-                          </div>
-                        </Card>
-                      );
-                    })}
+                                {/* Footer */}
+                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                  <span>Expires {market.expiryDate.toLocaleDateString()}</span>
+                                  <span>{market.lastUpdate}</span>
+                                </div>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -818,13 +850,7 @@ export function Markets() {
               onClick={(e) => e.stopPropagation()}
             >
               <OrderPlacement
-                market={{
-                  id: selectedMarket.id,
-                  title: selectedMarket.title,
-                  yesPrice: selectedMarket.yesPrice,
-                  noPrice: selectedMarket.noPrice,
-                  availableQuantity: 1000 // TODO: Get from market data
-                }}
+                market={selectedMarket}
                 initialSide={selectedSide}
                 onOrderSuccess={handleOrderSuccess}
               />
