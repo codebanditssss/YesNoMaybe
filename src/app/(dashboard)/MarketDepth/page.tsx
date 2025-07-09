@@ -44,7 +44,7 @@ export default function MarketDepthPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-gray-50">
         <div className="flex items-center gap-3">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <span className="text-gray-600">Loading market data...</span>
@@ -56,7 +56,7 @@ export default function MarketDepthPage() {
   // Show loading state if markets exist but none selected yet
   if (!selectedMarket && markets && markets.length > 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] bg-gray-50">
         <div className="flex items-center gap-3">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <span className="text-gray-600">Initializing market view...</span>
@@ -66,19 +66,19 @@ export default function MarketDepthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
+    <div className="min-h-[calc(100vh-4rem)] bg-gray-50 p-4 sm:p-6 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
+        <div className="mb-4 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Market Depth</h1>
-              <p className="text-gray-600 mt-2">Explore market details and order book depth</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Market Depth</h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Explore market details and order book depth</p>
             </div>
             {selectedMarket && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Last update:</span>
-                <span className="text-sm font-medium text-gray-900">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-600">Last update:</span>
+                <span className="font-medium text-gray-900">
                   {new Date().toLocaleTimeString()}
                 </span>
               </div>
@@ -87,16 +87,20 @@ export default function MarketDepthPage() {
         </div>
 
         {/* Market Carousel */}
-        <Card className="mb-8 p-6 bg-white shadow-sm border border-gray-100">
-          <MarketCarousel
-            markets={markets}
-            currentMarket={selectedMarket}
-            onMarketSelect={handleMarketSelect}
-          />
+        <Card className="mb-4 sm:mb-8 p-4 sm:p-6 bg-white shadow-sm border border-gray-100 overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[320px]">
+              <MarketCarousel
+                markets={markets}
+                currentMarket={selectedMarket}
+                onMarketSelect={handleMarketSelect}
+              />
+            </div>
+          </div>
         </Card>
 
         {/* Orderbook */}
-        <Card className="bg-white shadow-sm border border-gray-100 relative">
+        <Card className="bg-white shadow-sm border border-gray-100 relative overflow-hidden">
           <div className={`
             absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center
             transition-opacity duration-300 pointer-events-none
@@ -107,12 +111,16 @@ export default function MarketDepthPage() {
               <span className="text-gray-600">Updating...</span>
             </div>
           </div>
-          <Orderbook
-            selectedMarket={selectedMarket}
-            onMarketSelect={handleMarketSelect}
-            isTransitioning={isTransitioning}
-            isPending={isPending}
-          />
+          <div className="w-full overflow-x-auto">
+            <div className="min-w-[320px]">
+              <Orderbook
+                selectedMarket={selectedMarket}
+                onMarketSelect={handleMarketSelect}
+                isTransitioning={isTransitioning}
+                isPending={isPending}
+              />
+            </div>
+          </div>
         </Card>
       </div>
     </div>
