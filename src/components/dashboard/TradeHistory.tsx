@@ -284,6 +284,21 @@ export function TradeHistory() {
                 >
                   <Icon className={`h-6 w-6 ${isSelected ? 'text-white' : 'text-gray-500'}`} />
                   {label}
+                  {id === 'all' && (
+                    <Badge variant="secondary" className="ml-1 text-xs opacity-75 bg-gray-100 px-1.5 py-0.5 rounded">
+                    {stats.totalTrades}
+                  </Badge>
+                  )}
+                  {id === 'completed' && (
+                    <Badge variant="secondary" className="ml-1 text-xs opacity-75 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {stats.completedTrades}
+                    </Badge>
+                  )}
+                  {id === 'pending' && (
+                    <Badge variant="secondary" className="ml-1 text-xs opacity-75 bg-gray-100 px-1.5 py-0.5 rounded">
+                      {stats.pendingTrades}
+                    </Badge>
+                  )}
                 </button>
               );
             })}
