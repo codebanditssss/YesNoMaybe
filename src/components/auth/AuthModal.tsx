@@ -119,7 +119,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none"
                   placeholder="your@email.com"
                   required
                 />
@@ -133,7 +133,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = 'signin' }: AuthModalP
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-sm focus:outline-none"
                   placeholder="Enter your password"
                   required
                 />

@@ -53,7 +53,7 @@ const getCategoryIcon = (category: string) => {
 export function Markets() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState<'trending' | 'volume' | 'newest' | 'closing' | 'alphabetical'>('trending');
+  const [sortBy, setSortBy] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'closing_soon' | 'resolved'>('active');
@@ -294,7 +294,7 @@ export function Markets() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
           {marketSummaryCards.map(card => (
-            <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 shadow-md">
+            <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md">
               <div className="flex-shrink-0 mb-1">{card.icon}</div>
               <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1 text-center">{card.label}</div>
               <div className="text-3xl font-bold text-gray-900 text-center">{card.value}</div>
@@ -485,27 +485,27 @@ export function Markets() {
               <h3 className="text-xl font-semibold text-gray-900 flex-wrap">
                 {selectedCategory === 'all' ? 'All Markets' : `${categories.find(c => c.id === selectedCategory)?.name} Markets`}
               </h3>
-              <div className="flex flex-col border-1 border border-gray-300 rounded-full sm:flex-row gap-1 rounded-lg bg-white p-1 w-full sm:w-auto overflow-x-auto">
-                {[
-                  { value: 'trending', label: 'Trending', icon: TrendingUp },
-                  { value: 'volume', label: 'Volume', icon: Volume2 },
-                  { value: 'newest', label: 'Newest', icon: Clock },
-                  { value: 'closing', label: 'Closing', icon: AlertCircle },
-                ].map(({ value, label, icon: Icon }) => {
-                  const isSelected = sortBy === value;
+              <div className="flex rounded-full bg-white p-1 ml-4">
+                {['1D', '1W', '1M', '3M', '1Y', 'ALL'].map((label, idx, arr) => {
+                  const isSelected = sortBy === label;
+                  const isLast = idx === arr.length - 1;
                   return (
                     <button
-                      key={value}
-                      onClick={() => setSortBy(value as any)}
+                      key={label}
+                      onClick={() => setSortBy(label)}
                       className={
-                        `flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full transition-all duration-300 ` +
+                        `flex-1 px-3 py-1 text-sm font-medium shadow-sm ` +
                         (isSelected
-                          ? 'bg-black text-white shadow-lg'
-                          : 'bg-transparent text-gray-600 hover:text-black hover:bg-gray-100')
+                          ? `bg-black text-white ${isLast ? 'rounded-r-full' : ''}`
+                          : `bg-transparent ${isLast ? 'rounded-r-full' : ''}`)
                       }
-                      style={{ minWidth: 60, minHeight: 24, boxShadow: isSelected ? '0 2px 8px 0 rgba(0,0,0,0.08)' : undefined }}
+                      style={{
+                        borderTopLeftRadius: idx === 0 ? '9999px' : undefined,
+                        borderBottomLeftRadius: idx === 0 ? '9999px' : undefined,
+                        borderTopRightRadius: isLast ? '9999px' : undefined,
+                        borderBottomRightRadius: isLast ? '9999px' : undefined,
+                      }}
                     >
-                      <Icon className={`h-3 w-3 ${isSelected ? 'text-white' : 'text-gray-500'}`} />
                       {label}
                     </button>
                   );

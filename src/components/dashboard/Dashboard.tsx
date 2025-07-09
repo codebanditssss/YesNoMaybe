@@ -428,7 +428,7 @@ export function Dashboard() {
         {/* Stats Card Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
           {portfolioStats.map((stat, index) => (
-            <Card key={index} className="p-7 flex items-center gap-5 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 shadow-md">
+            <Card key={index} className="p-7 flex items-center gap-5 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md">
               <div className="flex-shrink-0">
                 {stat.icon && <stat.icon className="h-6 w-6 text-gray-400" />}
               </div>

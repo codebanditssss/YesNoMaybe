@@ -451,7 +451,7 @@ export function Leaderboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
           {statsCards.map((card, i) => (
-            <Card key={i} className="p-7 flex items-center gap-5 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 shadow-md">
+            <Card key={i} className="p-7 flex items-center gap-5 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md">
               <div className="flex-shrink-0">{card.icon}</div>
               <div>
                 <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1">{card.label}</div>
@@ -470,7 +470,7 @@ export function Leaderboard() {
                 placeholder="Search traders..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-full text-base focus:ring-2 focus:ring-black focus:border-black bg-white/90 shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
+                className="w-full pl-12 pr-4 py-2.5 border border-gray-200 rounded-full text-base focus:outline-none"
               />
             </div>
             <SelectDropdown

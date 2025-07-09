@@ -85,26 +85,26 @@ export function TradeHistory() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': 
-      case 'filled': return 'bg-green-100 text-green-800';
-      case 'open': return 'bg-yellow-100 text-yellow-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled': return 'bg-gray-100 text-gray-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'filled': return 'bg-green-100';
+      case 'open': return 'bg-yellow-100';
+      case 'pending': return 'bg-yellow-100';
+      case 'cancelled': return 'bg-gray-100';
+      case 'failed': return 'bg-red-100';
+      default: return 'bg-gray-100';
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed': 
-      case 'filled': return <CheckCircle className="h-4 w-4" />;
-      case 'open': return <Clock className="h-4 w-4" />;
-      case 'pending': return <Clock className="h-4 w-4" />;
-      case 'cancelled': return <XCircle className="h-4 w-4" />;
-      case 'failed': return <AlertCircle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
-    }
-  };
+  // const getStatusIcon = (status: string) => {
+  //   switch (status) {
+  //     case 'completed': 
+  //     case 'filled': return <CheckCircle className="h-4 w-4" />;
+  //     case 'open': return <Clock className="h-4 w-4" />;
+  //     case 'pending': return <Clock className="h-4 w-4" />;
+  //     case 'cancelled': return <XCircle className="h-4 w-4" />;
+  //     case 'failed': return <AlertCircle className="h-4 w-4" />;
+  //     default: return <Clock className="h-4 w-4" />;
+  //   }
+  // };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
@@ -253,7 +253,7 @@ export function TradeHistory() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-14">
           {statCards.map((card) => (
-            <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-900/10 transition-all duration-500 hover:-translate-y-1 shadow-md">
+            <Card key={card.label} className="p-7 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-lg rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-2xl hover:shadow-gray-200/10 shadow-md">
               <div className="flex-shrink-0 mb-1">{card.icon}</div>
               <div className="text-xs text-gray-400 font-light uppercase tracking-wider mb-1 text-center">{card.label}</div>
               <div className="text-3xl font-bold text-gray-900 text-center">{card.value}</div>
@@ -275,7 +275,7 @@ export function TradeHistory() {
                   key={id}
                   onClick={() => setSelectedTab(id as any)}
                   className={
-                    `relative flex items-center gap-3 px-8 py-3 text-lg font-medium rounded-full transition-all duration-300 min-w-[180px] min-h-[48px] justify-center ` +
+                    `relative flex items-center gap-3 px-8 py-3 text-lg font-medium rounded-full min-w-[180px] min-h-[48px] justify-center ` +
                     (isSelected
                       ? 'bg-black text-white shadow-lg'
                       : 'bg-transparent text-gray-500 hover:text-black')
@@ -351,7 +351,7 @@ export function TradeHistory() {
                           placeholder="Search by market title..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none"
                         />
                       </div>
                     </div>
@@ -493,7 +493,7 @@ export function TradeHistory() {
                                 <div className="w-24 text-xs text-center">
                                   <Badge className={getStatusColor(trade.status)} variant="outline">
                                     <div className="flex items-center gap-1">
-                                      {getStatusIcon(trade.status)}
+                                      {/* {getStatusIcon(trade.status)} */}
                                       {trade.status.toUpperCase()}
                                     </div>
                                   </Badge>
@@ -508,16 +508,16 @@ export function TradeHistory() {
                           <div className="min-w-[900px] max-h-[520px] overflow-y-auto">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 w-full">
                               {filteredTrades.map((trade) => (
-                                <Card key={trade.id} className="p-2 sm:p-4 md:p-5 bg-white border-2 border border-gray-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full w-full break-words">
+                                <Card key={trade.id} className="p-2 sm:p-4 md:p-5 bg-white border-2 border border-gray-200 shadow-sm hover:shadow-lg cursor-pointer group flex flex-col h-full w-full break-words">
                               {/* Header */}
                               <div className="flex items-start justify-between mb-2">
                                 <div className="flex gap-1 flex-wrap">
                                   <Badge className={getCategoryColor(trade.marketCategory || 'general')} variant="outline">
                                     {(trade.marketCategory || 'general').charAt(0).toUpperCase() + (trade.marketCategory || 'general').slice(1)}
                                   </Badge>
-                                  <Badge className={getStatusColor(trade.status)} variant="outline">
+                                  <Badge className={getStatusColor(trade.status)} variant="secondary">
                                     <div className="flex items-center gap-1">
-                                      {getStatusIcon(trade.status)}
+                                      {/* {getStatusIcon(trade.status)} */}
                                       {trade.status.toUpperCase()}
                                     </div>
                                   </Badge>
