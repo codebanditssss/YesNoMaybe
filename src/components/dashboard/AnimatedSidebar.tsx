@@ -150,7 +150,7 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
               </>
             ) : (
               <>
-                {open && (
+                {/* {open && (
                   <SidebarLink
                     link={{
                       label: 'NAVIGATION',
@@ -160,7 +160,7 @@ export function AnimatedSidebar({ isOpen, onClose }: AnimatedSidebarProps) {
                     variant="muted"
                     className="mb-1"
                   />
-                )}
+                )} */}
                 {regularLinks.map((link, idx) => (
                   <SidebarLink 
                     key={idx} 
