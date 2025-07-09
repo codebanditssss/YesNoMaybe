@@ -377,21 +377,21 @@ export function Portfolio() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center justify-center w-full bg-white/50 backdrop-blur-sm rounded-lg p-1 shadow-sm">
-          <nav className="flex items-center justify-center space-x-2 w-full max-w-2xl">
+        <div className="flex items-center justify-center w-full mb-10">
+          <nav className="flex bg-white/80 backdrop-blur-lg rounded-full border border-gray-100 shadow px-2 py-2 gap-2">
             {tabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setSelectedTab(id)}
                 className={`
-                  flex items-center justify-center px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 min-w-[140px]
+                  flex items-center gap-3 px-8 py-3 text-lg font-medium rounded-full transition-all duration-300 min-w-[160px] min-h-[48px] justify-center
                   ${selectedTab === id 
                     ? 'bg-black text-white shadow-lg' 
-                    : 'text-gray-600 hover:bg-gray-100'
-                  }
+                    : 'bg-transparent text-gray-700 hover:bg-gray-100 hover:text-black'}
                 `}
+                style={{ boxShadow: selectedTab === id ? '0 2px 16px 0 rgba(0,0,0,0.08)' : undefined }}
               >
-                <Icon className="w-4 h-4 mr-2" />
+                <Icon className={`h-6 w-6 ${selectedTab === id ? 'text-white' : 'text-gray-500'}`} />
                 {label}
               </button>
             ))}
