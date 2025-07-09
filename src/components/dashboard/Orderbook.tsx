@@ -117,15 +117,15 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
   // Calculate totals from real data
   const totalYesVolume = marketStats?.yesLiquidity || 0;
   const totalNoVolume = marketStats?.noLiquidity || 0;
-  const totalUsers = yesBids.reduce((sum, level) => sum + level.orders.length, 0) + 
-                     noAsks.reduce((sum, level) => sum + level.orders.length, 0);
+  const totalUsers = yesBids.reduce((sum: number, level: any) => sum + level.orders.length, 0) + 
+                     noAsks.reduce((sum: number, level: any) => sum + level.orders.length, 0);
 
   const handleRefresh = () => {
     refresh();
   };
 
   // Get visible orders based on current index
-  const getVisibleOrders = (orders: typeof yesBids, startIndex: number) => {
+  const getVisibleOrders = (orders: any[], startIndex: number) => {
     if (orders.length <= 5) return orders;
     return orders.slice(startIndex, startIndex + 5);
   };
@@ -136,22 +136,8 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
       label: "Total Liquidity",
       value: displayData?.marketStats ? formatNumber(displayData.marketStats.totalLiquidity) : '0',
       valueClass: "text-gray-900",
-    },
-    {
-      label: "Active Orders",
-      value: (displayData?.yesBids?.length || 0) + (displayData?.noAsks?.length || 0),
-      valueClass: "text-gray-900",
-    },
-    {
-      label: "Best Yes",
-      value: displayData?.bestPrices?.bestYesBid ? `₹${formatPrice(displayData.bestPrices.bestYesBid)}` : 'N/A',
-      valueClass: "text-blue-600",
-    },
-    {
-      label: "Best No",
-      value: displayData?.bestPrices?.bestNoAsk ? `₹${formatPrice(displayData.bestPrices.bestNoAsk)}` : 'N/A',
-      valueClass: "text-gray-600",
-    },
+      icon: <Activity className="h-4 w-4 text-gray-600" />,
+    }
   ];
 
   // Orderbook stat cards array for DRY rendering
@@ -199,142 +185,92 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
   }
 
   return (
-    <div className={`space-y-6 transition-opacity duration-300 ${isPending ? 'opacity-50' : 'opacity-100'}`}>
-      {/* Market Info */}
-      <div className="bg-white rounded-lg p-6 border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge className="bg-green-100 text-green-800">
-                {selectedMarket.status}
-              </Badge>
-              <Badge variant="outline">{selectedMarket.category}</Badge>
+    <div className="p-6">
+      {/* Top Bar with Liquidity and Refresh */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-gray-600" />
+          <span className="text-sm text-gray-600">Total Liquidity:</span>
+          <span className="text-sm font-semibold">
+            {displayData?.marketStats ? formatNumber(displayData.marketStats.totalLiquidity) : '0'}
+          </span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          className="flex items-center gap-2"
+          disabled={orderbookLoading || isTransitioning}
+        >
+          <RefreshCw className={`h-4 w-4 ${orderbookLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* View Mode and Filter Controls */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-gray-600" />
+            <span className="text-sm text-gray-600">View:</span>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'combined' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('combined')}
+              >
+                Combined
+              </Button>
+              <Button
+                variant={viewMode === 'yes' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('yes')}
+              >
+                YES Only
+              </Button>
+              <Button
+                variant={viewMode === 'no' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('no')}
+              >
+                NO Only
+              </Button>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900">{selectedMarket.title}</h2>
-            <p className="text-sm text-gray-600 mt-1">{selectedMarket.description}</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Radio className={`h-4 w-4 ${realtimeUpdates.type ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
-              <span className="text-sm text-gray-600">
-                {realtimeUpdates.type 
-                  ? `Last update: ${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()}`
-                  : 'Waiting for updates...'}
-              </span>
-            </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-gray-600" />
+          <span className="text-sm text-gray-600">Filter:</span>
+          <div className="flex gap-2">
             <Button
+              variant={priceFilter === 'all' ? 'default' : 'outline'}
               size="sm"
-              variant="outline"
-              onClick={handleRefresh}
-              className="flex items-center gap-2"
+              onClick={() => setPriceFilter('all')}
             >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
+              All Orders
+            </Button>
+            <Button
+              variant={priceFilter === 'best' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPriceFilter('best')}
+            >
+              Best Prices
+            </Button>
+            <Button
+              variant={priceFilter === 'recent' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setPriceFilter('recent')}
+            >
+              Recent
             </Button>
           </div>
         </div>
-
-        {/* Market Stats */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-300 
-        ${isPending ? 'scale-99 blur-[0.3px]' : 'scale-100 blur-0'}`}>
-          {marketStatsCards.map((card, index) => (
-            <Card key={index} className="p-4">
-              <div className="text-sm text-gray-600">{card.label}</div>
-              <div className={`text-lg font-semibold mt-1 ${card.valueClass}`}>
-                {card.value}
-              </div>
-            </Card>
-          ))}
-        </div>
       </div>
 
-      {/* Orderbook Controls */}
-      <Card className="p-4 bg-white border-0 shadow-sm">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-900">View Mode:</span>
-            </div>
-            <div className="flex rounded-lg bg-white p-1 border border-gray-200">
-              <button
-                onClick={() => setViewMode('combined')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  viewMode === 'combined'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Combined
-              </button>
-              <button
-                onClick={() => setViewMode('yes')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  viewMode === 'yes'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                YES Only
-              </button>
-              <button
-                onClick={() => setViewMode('no')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  viewMode === 'no'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                NO Only
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-500" />
-              <span className="text-sm font-medium text-gray-900">Filter:</span>
-            </div>
-            <div className="flex rounded-lg bg-white p-1 border border-gray-200">
-              <button
-                onClick={() => setPriceFilter('all')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  priceFilter === 'all'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                All Orders
-              </button>
-              <button
-                onClick={() => setPriceFilter('best')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  priceFilter === 'best'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Best Prices
-              </button>
-              <button
-                onClick={() => setPriceFilter('recent')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  priceFilter === 'recent'
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Recent
-              </button>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Orderbook Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      {/* Main Stats Grid */}
+      <div className="grid grid-cols-4 gap-4 mb-6">
         {orderbookCards.map((card, index) => (
-          <Card key={index} className="p-4 bg-white border-0 shadow-sm">
+          <Card key={index} className="p-4">
             <div className="flex items-center gap-2 mb-2">
               {card.icon}
               <span className="text-sm text-gray-600">{card.label}</span>
