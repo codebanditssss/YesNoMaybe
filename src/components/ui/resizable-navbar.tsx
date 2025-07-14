@@ -201,10 +201,9 @@ export default function ResizableNavbar({ onOpenAuth }: ResizableNavbarProps) {
   const avatarRef = useRef<HTMLDivElement>(null);
   
   const navItems = [
-    { name: "Markets", link: "/Markets" },
-    { name: "Portfolio", link: "/Portfolio" },
-    { name: "Market Depth", link: "/MarketDepth" },
-    { name: "Trade History", link: "/TradeHistory" }
+    { name: "Feature", link: "/features" },
+    { name: "FAQ", link: "/faq" },
+    { name: "Learn", link: "/learn" },
   ];
 
   const toggleMobileMenu = () => {
