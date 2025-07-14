@@ -89,13 +89,13 @@ export function MarketCarousel({ markets, currentMarket, onMarketSelect }: Marke
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-100 text-green-800';
+        return 'border border-green-400 bg-white text-green-800';
       case 'resolved':
-        return 'bg-blue-100 text-blue-800';
+        return ' border border-blue-400 bg-white text-blue-800';
       case 'closing_soon':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'border border-yellow-400 bg-white text-yellow-600';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'border border-gray-400 bg-white text-gray-800';
     }
   };
 

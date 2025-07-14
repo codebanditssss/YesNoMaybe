@@ -338,13 +338,13 @@ export function Leaderboard() {
         <div className="w-32 flex items-center justify-center">
           {trader.achievements && badges.length > 0 ? (
             <div className="flex items-center gap-2">
-              {badges.slice(0, 2).map((badge, i) => (
+              {badges.slice(0, 1).map((badge, i) => (
                 <Badge 
                   key={i}
                   className={`text-xs px-2.5 py-1 flex items-center gap-1.5 ${
-                    badge.tier === 'bronze' ? 'bg-orange-100 text-orange-700' :
-                    badge.tier === 'silver' ? 'bg-gray-100 text-gray-700' :
-                    badge.tier === 'gold' ? 'bg-yellow-100 text-yellow-700' :
+                    badge.tier === 'bronze' ? 'border border-orange bg-orange-100 text-orange-700' :
+                    badge.tier === 'silver' ? 'border border-gray bg-gray-100 text-gray-700' :
+                    badge.tier === 'gold' ? 'border border-yellow bg-yellow-100 text-yellow-700' :
                     'bg-blue-100 text-blue-700'
                   }`}
                 >
@@ -355,8 +355,8 @@ export function Leaderboard() {
                   <span className="text-xs font-medium">{badge.name}</span>
                 </Badge>
               ))}
-              {badges.length > 2 && (
-                <span className="text-xs text-gray-500 font-medium">+{badges.length - 2}</span>
+              {badges.length > 1 && (
+                <span className="text-xs text-gray-500 font-medium">+{badges.length - 1}</span>
               )}
             </div>
           ) : (

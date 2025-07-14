@@ -135,10 +135,10 @@ export function Markets() {
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
-      case 'low': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'low': return 'border border-green-400 bg-white text-green-800';
+      case 'medium': return 'border border-yellow-400 bg-white text-yellow-600';
+      case 'high': return 'border border-red-400 bg-white text-red-800';
+      default: return 'border border-gray-400 bg-white text-gray-800';
     }
   };
 
@@ -177,10 +177,10 @@ export function Markets() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'closing_soon': return 'bg-orange-100 text-orange-800';
-      case 'resolved': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'border border-green-400 bg-white text-green-800';
+      case 'closing_soon': return 'border border-orange-400 bg-white text-orange-600';
+      case 'resolved': return 'border border-gray-400 bg-white text-gray-800';
+      default: return 'border border-gray-400 bg-white text-gray-800';
     }
   };
 

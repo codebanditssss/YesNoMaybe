@@ -85,12 +85,12 @@ export function TradeHistory() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': 
-      case 'filled': return 'bg-green-100';
-      case 'open': return 'bg-yellow-100';
-      case 'pending': return 'bg-yellow-100';
-      case 'cancelled': return 'bg-gray-100';
-      case 'failed': return 'bg-red-100';
-      default: return 'bg-gray-100';
+      case 'filled': return 'border border-green-400';
+      case 'open': return 'border border-yellow-400';
+      case 'pending': return 'border border-yellow-400';
+      case 'cancelled': return 'border border-gray-400';
+      case 'failed': return 'border border-red-400';
+      default: return 'border border-gray-400';
     }
   };
 
@@ -221,14 +221,14 @@ export function TradeHistory() {
             <p className="text-gray-500 text-lg font-light">Track all your trading activity and performance</p>
           </div>
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100 flex-wrap">
+            {/* <div className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-6 py-3 shadow border border-gray-100 flex-wrap">
               <Radio className={`h-5 w-5 ${realtimeUpdates.type ? 'text-green-500 animate-pulse' : 'text-gray-400'}`} />
               <span className="text-base text-gray-700 font-medium ml-2">
                 {realtimeUpdates.type 
                   ? `Last update: ${realtimeUpdates.type} (${new Date(realtimeUpdates.lastUpdate).toLocaleTimeString()})`
                   : ''}
               </span>
-            </div>
+            </div> */}
             <Button 
               variant="outline" 
               size="sm"
