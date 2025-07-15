@@ -1,5 +1,5 @@
 import { HeroSection } from "./HeroSection";
-import { StatsSection } from "./StatsSection";
+import { HowItWorksSections } from "./StatsSection";
 import { FeaturesSection } from "./FeaturesSection";
 import { MarketsSection } from "./MarketsSection";
 import { HowItWorksSection } from "./HowItWorksSection";
@@ -28,16 +28,20 @@ export function LandingPage({ onOpenAuth }: LandingPageProps) {
       {/* Content */}
       <div className="relative z-10">
         <HeroSection onOpenAuth={onOpenAuth} />
-        {/* <StatsSection /> */}
+       
         {/* <HeroScrollDemo/> */}
         <div id="features">
           <FeaturesSection />
         </div>
-        <MarketsSection />
-        <div id="something">
-          <HowItWorksSection />
-        </div>
         <div id="learn">
+         <MarketsSection /> 
+        </div>
+         
+        <div>
+          <HowItWorksSections />
+          {/* <HowItWorksSection /> */}
+        </div>
+        <div>
           <CTASection onOpenAuth={onOpenAuth} />
         </div>
         <div id="faq">

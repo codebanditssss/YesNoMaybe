@@ -202,7 +202,7 @@ export default function ResizableNavbar({ onOpenAuth }: ResizableNavbarProps) {
   
   const navItems = [
     { name: "Feature", link: "#features" },
-    { name: "Learn", link: "#learn" },
+    { name: "Markets", link: "#learn" },
     { name: "FAQ", link: "#faq" },
   ];
 

@@ -10,7 +10,7 @@ export function CTASection({ onOpenAuth }: CTASectionProps) {
   const { user, loading } = useAuth();
 
   return (
-    <section className="py-44 pt-10 px-4">
+    <section className="py-44 px-4">
       <div className="max-w-4xl mx-auto text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
           {user ? "Continue Your Trading Journey" : "Ready to Start Trading?"}
