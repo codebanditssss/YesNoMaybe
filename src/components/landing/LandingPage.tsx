@@ -33,7 +33,7 @@ export function LandingPage({ onOpenAuth }: LandingPageProps) {
         <div id="features">
           <FeaturesSection />
         </div>
-        {/* <MarketsSection /> */}
+        <MarketsSection />
         <div id="something">
           <HowItWorksSection />
         </div>
