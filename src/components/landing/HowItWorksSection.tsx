@@ -108,12 +108,19 @@ export function HowItWorksSection() {
     })
 
     return (
+        <div className="p-24">
+         <div className="text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
+            Enterprise-grade prediction markets
+          </h2>
+        </div>
         <div id="how-it-works-scrollable">
             {[1, 2, 3, 4, 5].map((_, idx) => (
                 <Image key={idx} imageSrc={imageSrc} title={titles[idx] || `Step ${idx + 1}`} />
             ))}
             <motion.div className="progress" style={{ scaleX }} />
             <StyleSheet />
+        </div>
         </div>
     )
 }
@@ -129,7 +136,7 @@ function StyleSheet() {
             scroll-snap-type: y mandatory;
         }
         .img-container {
-            height: 60vh;
+            height: 70vh;
             scroll-snap-align: start;
             display: flex;
             justify-content: center;
@@ -139,7 +146,7 @@ function StyleSheet() {
         .img-container > div {
             border: 1px solid #e5e7eb;
             border-radius: 1rem;
-            width: 800px;
+            width: 700px;
             height: 400px;
             margin: 20px;
             background: #f5f5f5;
