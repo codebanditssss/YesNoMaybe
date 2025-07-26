@@ -99,16 +99,16 @@ interface MorphingTextProps {
 const Texts: React.FC<Pick<MorphingTextProps, "texts">> = ({ texts }) => {
   const { text1Ref, text2Ref } = useMorphingText(texts);
   return (
-    <>
+    <span className="relative inline-block min-w-[200px] h-[80px]">
       <span
-        className="absolute m-auto inline font-light text-5xl md:text-6xl text-black mb-0 mr-10"
+        className="absolute inset-0 flex items-center justify-start font-light text-5xl md:text-6xl text-black"
         ref={text1Ref}
       />
       <span
-        className="absolute m-auto inline font-light text-5xl md:text-6xl text-black mb-0 mr-10"
+        className="absolute inset-0 flex items-center justify-start font-light text-5xl md:text-6xl text-black"
         ref={text2Ref}
       />
-    </>
+    </span>
   );
 };
  
@@ -139,7 +139,7 @@ export const MorphingText: React.FC<MorphingTextProps> = ({
 }) => (
   <span
     className={cn(
-      "inline mr-10 font-sans font-light [filter:url(#threshold)_blur(0.6px)]",
+      "inline-block font-sans font-light [filter:url(#threshold)_blur(0.6px)]",
       className,
     )}
   >
@@ -149,15 +149,14 @@ export const MorphingText: React.FC<MorphingTextProps> = ({
 );
  
 const texts = [
-  "Hello",
-  "Morphing",
-  "Text",
-  "Animation",
-  "React",
-  "Component",
-  "Smooth",
-  "Transition",
-  "Engaging",
+  "Sports",
+  "Crypto",
+  "Politics",
+  "Finance",
+  "Markets",
+  "Trading",
+  "Events",
+  "Futures"
 ];
  
 export function MorphingTextDemo() {
