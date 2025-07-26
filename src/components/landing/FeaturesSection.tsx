@@ -31,7 +31,7 @@ export function FeaturesSection() {
   ];
 
   return (
-    <section className="py-24 bg-white">
+    <section className="py-24">
       <div className="container px-4 mx-auto">
         
         {/* Section Header */}
