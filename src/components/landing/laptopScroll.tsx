@@ -21,7 +21,7 @@ export function HeroScrollDemo() {
           src={`/Screenshotdb.png`}
           alt="hero"
           height={720}
-          width={1400}
+          width={1500}
           className="mx-auto rounded-2xl object-cover h-full object-left-top"
           draggable={false}
         />
