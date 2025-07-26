@@ -53,6 +53,7 @@
 
 
 import { Card } from '@/components/ui/card';
+import { MarqueeDemo } from '../ui/movingbar';
 
 export function FeaturesSection() {
   const features = [
@@ -74,7 +75,7 @@ export function FeaturesSection() {
   ];
 
   return (
-    <section className="py-44 px-6">
+    <section className="py-34 pt-44 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-light text-black mb-4">
@@ -84,8 +85,9 @@ export function FeaturesSection() {
             Advanced tools and analytics for professional opinion trading
           </p>
         </div>
-        
-        <div className="grid md:grid-cols-3 gap-8">
+         <MarqueeDemo/>
+        {/* <div className="grid md:grid-cols-3 gap-8">
+       
           {features.map((feature, index) => (
             <Card key={index} className="p-8 border border-gray-200 bg-white/80 backdrop-blur-sm">
               <div className="space-y-4">
@@ -99,7 +101,7 @@ export function FeaturesSection() {
               </div>
             </Card>
           ))}
-        </div>
+        </div> */}
       </div>
     </section>
   );
