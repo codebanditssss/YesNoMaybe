@@ -58,7 +58,7 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
               <h1 className="font-light text-5xl md:text-7xl text-black mb-6 leading-tight">
                 Professional Prediction
                 <br />
-                <span className="flex items-center justify-center gap-4 mt-2">
+                <span className="flex items-center justify-center gap-4 mt-2 flex-wrap">
                   Markets for <span className="ml-2"><MorphingTextDemo /></span>
                 </span>
               </h1>
