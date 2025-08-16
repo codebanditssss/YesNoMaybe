@@ -38,8 +38,8 @@ export function LandingPage({ onOpenAuth }: LandingPageProps) {
         </div>
          
         <div>
-          <HowItWorksSections />
-          {/* <HowItWorksSection /> */}
+          {/* <HowItWorksSections /> */}
+          <HowItWorksSection />
         </div>
         <div>
           <CTASection onOpenAuth={onOpenAuth} />

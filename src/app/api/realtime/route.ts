@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   // Create readable stream for SSE
   const stream = new ReadableStream({
     start(controller) {
-      console.log('🔗 New SSE client connected');
+      console.log('New SSE client connected');
       
       // Send initial connection event
       controller.enqueue(
@@ -42,15 +42,15 @@ export async function GET(request: NextRequest) {
           const message = `data: ${JSON.stringify(sseData)}\n\n`;
           controller.enqueue(new TextEncoder().encode(message));
           
-          console.log(`📡 Sent ${channel} event to client:`, event.operation);
+          console.log(`Sent ${channel} event to client:`, event.operation);
         } catch (error) {
-          console.error('❌ Error sending SSE event:', error);
+          console.error('Error sending SSE event:', error);
         }
       });
 
       // Store cleanup function
       (controller as any)._cleanup = () => {
-        console.log('🔌 SSE client disconnected');
+        console.log('SSE client disconnected');
         unsubscribe();
       };
 
