@@ -97,7 +97,7 @@ export default function SystemMonitor() {
       case 'Response Time':
         return `${Math.floor(Math.random() * 40 + 70)}ms`;
       default:
-        return metric.value;
+        return 'N/A';
     }
   };
 
