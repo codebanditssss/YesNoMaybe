@@ -58,7 +58,8 @@ export function useProfile() {
       }
 
       if (data) {
-        setProfile(data);
+        // Ensure is_verified is boolean, not null
+        setProfile({ ...data, is_verified: data.is_verified ?? false });
       } else {
         // Create a profile if it doesn't exist
         await createProfile();
@@ -100,7 +101,9 @@ export function useProfile() {
 
       if (error) throw error;
 
-      setProfile(data);
+      if (data) {
+        setProfile({ ...data, is_verified: data.is_verified ?? false });
+      }
     } catch (err) {
       console.error("Error creating profile:", err);
       setError("Failed to create profile");
@@ -126,7 +129,9 @@ export function useProfile() {
 
       if (error) throw error;
 
-      setProfile(data);
+      if (data) {
+        setProfile({ ...data, is_verified: data.is_verified ?? false });
+      }
       return data;
     } catch (err) {
       console.error("Error updating profile:", err);
@@ -166,13 +171,13 @@ export function useProfile() {
       }
 
       // 2. Get public URL
-      const { data: { publicUrl }, error: urlError } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      if (urlError) {
-        console.error("Get public URL error:", urlError);
-        setError(`Failed to get image URL: ${urlError.message}`);
+      if (!urlData?.publicUrl) {
+        console.error("Get public URL error: No public URL returned");
+        setError(`Failed to get image URL`);
         return null;
       }
 
@@ -180,7 +185,7 @@ export function useProfile() {
       const { data, error: updateError } = await supabase
         .from("profiles")
         .update({
-          avatar_url: publicUrl,
+          avatar_url: urlData.publicUrl,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id)
@@ -193,7 +198,9 @@ export function useProfile() {
         return null;
       }
 
-      setProfile(data);
+      if (data) {
+        setProfile({ ...data, is_verified: data.is_verified ?? false });
+      }
       return data;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';

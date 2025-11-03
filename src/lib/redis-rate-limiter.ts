@@ -50,7 +50,6 @@ function initRedisClient(): Redis | null {
   
   try {
     redisClient = new Redis(redisUrl, {
-      retryDelayOnFailover: 100,
       enableReadyCheck: false,
       maxRetriesPerRequest: 2,
       lazyConnect: true,

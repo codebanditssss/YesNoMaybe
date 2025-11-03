@@ -24,8 +24,8 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [currentData, setCurrentData] = useState<OrderbookState | null>(null);
   const [stableData, setStableData] = useState<OrderbookState | null>(null);
-  const updateTimeoutRef = useRef<NodeJS.Timeout>();
-  const transitionTimeoutRef = useRef<NodeJS.Timeout>();
+  const updateTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const orderbookRef = useRef<OrderbookData | null>(null);
 
   // Use base orderbook hook for initial data and polling

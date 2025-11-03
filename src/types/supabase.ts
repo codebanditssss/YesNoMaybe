@@ -387,6 +387,126 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          id: string
+          email: string
+          created_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      portfolios: {
+        Row: {
+          id: string
+          user_id: string
+          total_value: number
+          available_balance: number
+          locked_balance: number
+          total_pnl: number
+          daily_pnl: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          total_value?: number
+          available_balance?: number
+          locked_balance?: number
+          total_pnl?: number
+          daily_pnl?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          total_value?: number
+          available_balance?: number
+          locked_balance?: number
+          total_pnl?: number
+          daily_pnl?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      portfolio_snapshots: {
+        Row: {
+          id: string
+          user_id: string
+          total_value: number
+          available_balance: number
+          locked_balance: number
+          total_pnl: number
+          daily_pnl: number
+          snapshot_date: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          total_value?: number
+          available_balance?: number
+          locked_balance?: number
+          total_pnl?: number
+          daily_pnl?: number
+          snapshot_date?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          total_value?: number
+          available_balance?: number
+          locked_balance?: number
+          total_pnl?: number
+          daily_pnl?: number
+          snapshot_date?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      achievements: {
+        Row: {
+          id: string
+          user_id: string
+          achievement_type: string
+          achievement_name: string
+          description: string | null
+          earned_at: string
+          metadata: Json | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          achievement_type: string
+          achievement_name: string
+          description?: string | null
+          earned_at?: string
+          metadata?: Json | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          achievement_type?: string
+          achievement_name?: string
+          description?: string | null
+          earned_at?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

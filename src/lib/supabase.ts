@@ -57,6 +57,9 @@ if (supabaseAdmin && typeof window !== 'undefined') {
   supabaseAdmin.realtime.disconnect()
 }
 
+// Export createClient for server-side use
+export { createClient } from '@supabase/supabase-js'
+
 // Types
 export type User = Database['public']['Tables']['users']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
