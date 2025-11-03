@@ -149,12 +149,13 @@ export function HeroSection({ onOpenAuth }: HeroSectionProps) {
                   <h3 className="text-2xl font-bold text-gray-900">Live Platform Demo</h3>
                   <p className="text-gray-600 mt-2">Experience the full trading interface</p>
                 </div>
-                <div className="h-96 bg-gray-100 flex items-center justify-center">
-                  <div className="text-center">
-                    <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Interactive demo would be embedded here</p>
-                    <p className="text-sm text-gray-500 mt-2">Showing live markets, orderbook, and portfolio</p>
-                  </div>
+                <div className="bg-gray-100 flex items-center justify-center overflow-auto max-h-[80vh]">
+                  <img
+                    src="/Screenshotdb.png"
+                    alt="Platform Demo"
+                    className="w-full h-auto object-contain max-h-[80vh]"
+                    draggable={false}
+                  />
                 </div>
                 <div className="p-6 bg-gray-50 flex justify-end">
                   <Button onClick={handleStartTrading}>
