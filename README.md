@@ -5,11 +5,10 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+
 
 **A sophisticated real-time prediction market platform enabling users to trade on future outcomes across multiple domains.**
 
-[Features](#-key-features) • [Installation](#-installation) • [Architecture](#-architecture) • [Contributors](#-contributors)
 
 </div>
 
