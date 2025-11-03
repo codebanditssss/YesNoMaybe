@@ -100,7 +100,7 @@ export function OrderDebugger() {
                 {orders.map((order) => (
                   <tr key={order.id}>
                     <td className="border border-gray-300 px-3 py-2 text-sm">
-                      {new Date(order.created_at).toLocaleString()}
+                      {new Date(order.createdAt).toLocaleString()}
                     </td>
                     <td className="border border-gray-300 px-3 py-2">
                       <span className={`px-2 py-1 rounded text-xs ${
@@ -112,7 +112,7 @@ export function OrderDebugger() {
                     <td className="border border-gray-300 px-3 py-2">₹{order.price}</td>
                     <td className="border border-gray-300 px-3 py-2">{order.quantity}</td>
                     <td className="border border-gray-300 px-3 py-2 font-semibold">
-                      ₹{order.total_cost?.toFixed(2) || calculateOrderCost(order.side, order.price, order.quantity).toFixed(2)}
+                      ₹{calculateOrderCost(order.side, order.price, order.quantity).toFixed(2)}
                     </td>
                     <td className="border border-gray-300 px-3 py-2">
                       <span className={`px-2 py-1 rounded text-xs ${

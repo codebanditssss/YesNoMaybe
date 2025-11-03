@@ -20,6 +20,10 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
       }, { status: 400 })
     }
 
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Admin client not configured' }, { status: 500 })
+    }
+
     // First fetch user balances
     const { data: leaderboardData, error: balanceError, count } = await supabaseAdmin
       .from('user_balances')
@@ -48,7 +52,27 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
     const profileMap = new Map(profilesData?.map(profile => [profile.id, profile]) || [])
 
     // Transform data to leaderboard format
-    let leaderboardEntries = (leaderboardData || []).map((entry, index) => {
+    type LeaderboardEntry = {
+      id: string;
+      rank: number;
+      name: string;
+      email: string;
+      avatar: string;
+      isVerified: boolean;
+      totalPnL: number;
+      totalTrades: number;
+      winningTrades: number;
+      winRate: number;
+      totalVolume: number;
+      balance: number;
+      isCurrentUser: boolean;
+      streak: number;
+      achievements: Array<{ name: string; tier: 'bronze' | 'silver' | 'gold' | 'platinum'; icon: string; description: string }>;
+      lastActive: string;
+      recentTrades?: Array<{ id: string; marketTitle: string; timestamp: string; side: string; price: number; pnl: number }>;
+    };
+    
+    let leaderboardEntries: LeaderboardEntry[] = (leaderboardData || []).map((entry, index) => {
       const winRate = entry.total_trades > 0 ? (entry.winning_trades / entry.total_trades) * 100 : 0
       const profile = profileMap.get(entry.user_id)
       
@@ -62,12 +86,12 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
         email: profile?.email || '',
         avatar: profile?.avatar_url || '',
         isVerified: Boolean(profile?.email),
-        totalPnL: parseFloat(entry.total_profit_loss || '0'),
+        totalPnL: parseFloat(String(entry.total_profit_loss || '0')),
         totalTrades: entry.total_trades || 0,
         winningTrades: entry.winning_trades || 0,
         winRate: Math.round(winRate * 100) / 100,
-        totalVolume: parseFloat(entry.total_volume || '0'),
-        balance: parseFloat(entry.available_balance || '0'),
+        totalVolume: parseFloat(String(entry.total_volume || '0')),
+        balance: parseFloat(String(entry.available_balance || '0')),
         isCurrentUser: entry.user_id === user.id,
         streak: 0, // Will be calculated below
         achievements: [], // Will be calculated below
@@ -96,7 +120,7 @@ async function leaderboardHandler(request: NextRequest, user: AuthenticatedUser)
                 status
               )
             `)
-            .or(`yes_user_id.eq.${entry.id},no_user_id.eq.${entry.id}`)
+            .or(`yes_user_id.eq.${String(entry.id)},no_user_id.eq.${String(entry.id)}`)
             .order('created_at', { ascending: false })
             .limit(30) // Fetch last 30 trades for better Sharpe calculation
 

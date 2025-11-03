@@ -66,8 +66,10 @@ export async function GET(request: NextRequest) {
       
       // Calculate days until expiry for status
       const now = new Date();
-      const expiryDate = new Date(market.resolution_date);
-      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const expiryDate = market.resolution_date ? new Date(market.resolution_date) : null;
+      const daysUntilExpiry = expiryDate 
+        ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        : Infinity;
       
       let marketStatus: 'active' | 'closing_soon' | 'resolved' = market.status as any;
       if (market.status === 'active' && daysUntilExpiry <= 7) {
@@ -88,15 +90,15 @@ export async function GET(request: NextRequest) {
         priceChangePercent: mockPriceChange / yesPrice * 100,
         lastUpdate: '1 min ago', // In real app, calculate from updated_at
         trending: isTrending,
-        icon: getCategoryIcon(market.category),
+        icon: getCategoryIcon(market.category || 'general'),
         status: marketStatus,
-        expiryDate: new Date(market.resolution_date),
+        expiryDate: market.resolution_date ? new Date(market.resolution_date) : null,
         totalLiquidity: totalVolume * 1.2, // Estimate liquidity
         marketCap: totalVolume * 1.5, // Estimate market cap
         createdAt: new Date(market.created_at),
         tags: market.tags || [],
         featured: market.is_featured || false,
-        riskLevel: calculateRiskLevel(daysUntilExpiry, market.category),
+        riskLevel: calculateRiskLevel(daysUntilExpiry, market.category || 'general'),
         probability: yesPrice
       };
     }) || [];
@@ -127,6 +129,7 @@ function getCategoryIcon(category: string) {
 
 // Helper function to calculate risk level
 function calculateRiskLevel(daysUntilExpiry: number, category: string): 'low' | 'medium' | 'high' {
+  if (!isFinite(daysUntilExpiry) || daysUntilExpiry === Infinity) return 'low';
   if (daysUntilExpiry <= 30) return 'high';
   if (daysUntilExpiry <= 180) return 'medium';
   return 'low';

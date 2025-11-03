@@ -24,9 +24,9 @@ async function portfolioSnapshotsHandler(request: NextRequest, user: Authenticat
 
 async function createDailySnapshot(user: AuthenticatedUser) {
   try {
-    // Get current portfolio value
+    // Get current portfolio value from portfolios table
     const { data: portfolio, error: portfolioError } = await supabaseAdmin!
-      .from('portfolio_summary')
+      .from('portfolios')
       .select('*')
       .eq('user_id', user.id)
       .single()
@@ -37,23 +37,24 @@ async function createDailySnapshot(user: AuthenticatedUser) {
     }
 
     const totalValue = portfolio?.total_value || 0
-    const totalInvested = portfolio?.total_invested || 0
-    const totalPnL = totalValue - totalInvested
+    const availableBalance = portfolio?.available_balance || 0
+    const lockedBalance = portfolio?.locked_balance || 0
+    const totalPnL = portfolio?.total_pnl || 0
 
     // Create snapshot record
     const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
     
     const { data: snapshot, error: snapshotError } = await supabaseAdmin!
-      .from('portfolio_daily_snapshots')
+      .from('portfolio_snapshots')
       .upsert({
         user_id: user.id,
         snapshot_date: today,
         total_value: totalValue,
-        total_invested: totalInvested,
+        available_balance: availableBalance,
+        locked_balance: lockedBalance,
         total_pnl: totalPnL,
-        active_positions: portfolio?.active_positions || 0,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        daily_pnl: portfolio?.daily_pnl || 0,
+        created_at: new Date().toISOString()
       }, {
         onConflict: 'user_id,snapshot_date'
       })
@@ -78,8 +79,12 @@ async function createDailySnapshot(user: AuthenticatedUser) {
 
 async function getSnapshot(user: AuthenticatedUser, date?: string | null) {
   try {
-    let query = supabaseAdmin!
-      .from('portfolio_daily_snapshots')
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Admin client not configured' }, { status: 500 })
+    }
+    
+    let query = supabaseAdmin
+      .from('portfolio_snapshots')
       .select('*')
       .eq('user_id', user.id)
 

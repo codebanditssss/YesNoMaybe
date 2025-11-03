@@ -65,12 +65,15 @@ async function adminMarketsHandler(user: any, supabase: any, request: NextReques
     }
 
     // Transform the data to match AdminMarket interface
+    const validStatuses: AdminMarket['status'][] = ['active', 'resolved', 'cancelled', 'pending'];
     const adminMarkets: AdminMarket[] = (markets || []).map(market => ({
       id: market.id,
       title: market.title,
       description: market.description || '',
       category: market.category || 'general',
-      status: market.status || 'pending',
+      status: (validStatuses.includes(market.status as AdminMarket['status']) 
+        ? market.status 
+        : 'pending') as AdminMarket['status'],
       created_at: market.created_at,
       resolution_date: market.resolution_date,
       actual_outcome: market.actual_outcome,

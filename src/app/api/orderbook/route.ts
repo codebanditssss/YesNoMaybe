@@ -38,31 +38,34 @@ export async function GET(request: NextRequest) {
     // Get unique user IDs from orders to fetch usernames
     const userIds = [...new Set((orders || []).map(order => order.user_id))]
     
-    // Fetch usernames for all users with orders
-    const { data: userBalances, error: usersError } = await supabase
-      .from('user_balances')
-      .select('user_id, username')
-      .in('user_id', userIds)
+    // Fetch user profiles for all users with orders
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', userIds)
 
-    if (usersError) {
-      console.error('Error fetching user data:', usersError)
+    if (profilesError) {
+      console.error('Error fetching user profiles:', profilesError)
     }
 
-    // Create a mapping of user_id to username
-    const userMap = new Map((userBalances || []).map(user => [user.user_id, user.username || 'Anonymous']))
+    // Create a mapping of user_id to display name
+    const userMap = new Map((profiles || []).map(profile => [
+      profile.id, 
+      profile.full_name || profile.email?.split('@')[0] || 'Anonymous'
+    ]))
 
     // Separate YES and NO orders (only include orders with remaining quantity)
     const yesOrders = (orders || [])
-      .filter(order => order.side === 'YES' && order.quantity > order.filled_quantity)
+      .filter(order => order.side === 'YES' && order.quantity > (order.filled_quantity || 0))
       .sort((a, b) => b.price - a.price) // Highest price first for YES
 
     const noOrders = (orders || [])
-      .filter(order => order.side === 'NO' && order.quantity > order.filled_quantity)
+      .filter(order => order.side === 'NO' && order.quantity > (order.filled_quantity || 0))
       .sort((a, b) => a.price - b.price) // Lowest price first for NO
 
     // Group orders by price level for YES side
     const yesBids = yesOrders.reduce((acc, order) => {
-      const remainingQuantity = order.quantity - order.filled_quantity
+      const remainingQuantity = order.quantity - (order.filled_quantity || 0)
       const existing = acc.find(bid => bid.price === order.price)
       
       if (existing) {
@@ -92,7 +95,7 @@ export async function GET(request: NextRequest) {
 
     // Group orders by price level for NO side
     const noAsks = noOrders.reduce((acc, order) => {
-      const remainingQuantity = order.quantity - order.filled_quantity
+      const remainingQuantity = order.quantity - (order.filled_quantity || 0)
       const existing = acc.find(ask => ask.price === order.price)
       
       if (existing) {
@@ -123,23 +126,30 @@ export async function GET(request: NextRequest) {
     // Fetch recent trades for this market
     const { data: recentTrades, error: tradesError } = await supabase
       .from('trades')
-      .select(`
-        *,
-        yes_orders:yes_order_id (
-          price
-        ),
-        no_orders:no_order_id (
-          price
-        )
-      `)
+      .select('*')
       .eq('market_id', marketId)
       .order('created_at', { ascending: false })
       .limit(20)
 
+    // Fetch order prices separately for trades
+    const tradeIds = recentTrades?.map(t => t.id) || []
+    const { data: yesOrderPrices } = tradeIds.length > 0 ? await supabase
+      .from('orders')
+      .select('id, price')
+      .in('id', recentTrades?.map(t => t.yes_order_id).filter(Boolean) || []) : { data: null }
+    
+    const { data: noOrderPrices } = tradeIds.length > 0 ? await supabase
+      .from('orders')
+      .select('id, price')
+      .in('id', recentTrades?.map(t => t.no_order_id).filter(Boolean) || []) : { data: null }
+
+    const yesOrderMap = new Map((yesOrderPrices || []).map(order => [order.id, order.price]))
+    const noOrderMap = new Map((noOrderPrices || []).map(order => [order.id, order.price]))
+
     const trades = recentTrades?.map(trade => ({
       id: trade.id,
       quantity: trade.quantity,
-      price: trade.yes_orders?.price || trade.no_orders?.price || 0,
+      price: yesOrderMap.get(trade.yes_order_id) || noOrderMap.get(trade.no_order_id) || trade.price || 0,
       timestamp: trade.created_at,
       side: trade.winner_side as 'YES' | 'NO' | null
     })) || []
@@ -154,9 +164,11 @@ export async function GET(request: NextRequest) {
     const bestNoAsk = noAsks.length > 0 ? noAsks[0].price : null
 
     // Calculate current market price based on volume
-    const totalVolume = market.total_yes_volume + market.total_no_volume
+    const totalYesVolume = market.total_yes_volume || 0
+    const totalNoVolume = market.total_no_volume || 0
+    const totalVolume = totalYesVolume + totalNoVolume
     const currentPrice = totalVolume > 0 
-      ? Math.round((market.total_yes_volume / totalVolume) * 100) 
+      ? Math.round((totalYesVolume / totalVolume) * 100) 
       : 50
 
     // Calculate spread
@@ -170,7 +182,7 @@ export async function GET(request: NextRequest) {
 
     const { data: dayTrades, error: dayTradesError } = await supabase
       .from('trades')
-      .select('quantity, yes_orders:yes_order_id(price), no_orders:no_order_id(price)')
+      .select('quantity, price')
       .eq('market_id', marketId)
       .gte('created_at', oneDayAgo.toISOString())
 
@@ -179,15 +191,15 @@ export async function GET(request: NextRequest) {
     // Get price from 24h ago for price change calculation
     const { data: oldTrade } = await supabase
       .from('trades')
-      .select('yes_orders:yes_order_id(price), no_orders:no_order_id(price)')
+      .select('price')
       .eq('market_id', marketId)
       .lte('created_at', oneDayAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(1)
       .single()
 
-    const priceChange24h = oldTrade 
-      ? currentPrice - (oldTrade.yes_orders?.price || oldTrade.no_orders?.price || currentPrice)
+    const priceChange24h = oldTrade?.price 
+      ? currentPrice - oldTrade.price
       : 0
 
     const orderbookData = {
@@ -200,9 +212,9 @@ export async function GET(request: NextRequest) {
         currentPrice,
         volume24h,
         priceChange24h,
-        totalVolume: market.total_yes_volume + market.total_no_volume,
-        yesVolume: market.total_yes_volume,
-        noVolume: market.total_no_volume
+        totalVolume: totalYesVolume + totalNoVolume,
+        yesVolume: totalYesVolume,
+        noVolume: totalNoVolume
       },
       orderbook: {
         yesBids, // Buying YES shares (supporting the outcome)

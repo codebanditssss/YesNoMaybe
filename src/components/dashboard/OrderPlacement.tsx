@@ -75,7 +75,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
   const hasInsufficientBalance = !!(balance && totalCost > balance.available_balance);
   
   // Check if market is active
-  const isMarketInactive = market.status && !['active', 'open'].includes(market.status.toLowerCase());
+  const isMarketInactive = !!(market.status && !['active', 'open'].includes(market.status.toLowerCase()));
 
   const handleSideChange = (side: 'yes' | 'no') => {
     setSelectedSide(side);
@@ -187,7 +187,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
         <div className="flex rounded-lg bg-gray-100 p-1 mb-6">
           <button
             onClick={() => handleSideChange('yes')}
-            disabled={isMarketInactive}
+            disabled={!!isMarketInactive}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${
               selectedSide === 'yes'
                 ? 'bg-blue-600 text-white shadow-sm'
@@ -201,7 +201,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           </button>
           <button
             onClick={() => handleSideChange('no')}
-            disabled={isMarketInactive}
+            disabled={!!isMarketInactive}
             className={`flex-1 py-3 px-4 rounded-md text-sm font-medium transition-colors ${
               selectedSide === 'no'
                 ? 'bg-gray-900 text-white shadow-sm'
@@ -239,7 +239,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
               <button
                 onClick={() => handlePriceChange(price - 0.1)}
-                disabled={price <= 1 || isMarketInactive}
+                disabled={price <= 1 || !!isMarketInactive}
                 className="p-3 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border-r border-gray-200 transition-colors"
               >
                 <Minus className="h-4 w-4 text-gray-600" />
@@ -249,7 +249,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
               </div>
               <button
                 onClick={() => handlePriceChange(price + 0.1)}
-                disabled={price >= 99 || isMarketInactive}
+                disabled={price >= 99 || !!isMarketInactive}
                 className="p-3 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border-l border-gray-200 transition-colors"
               >
                 <Plus className="h-4 w-4 text-gray-600" />
@@ -272,7 +272,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden bg-white">
             <button
               onClick={() => handleQuantityChange(quantity - 1)}
-              disabled={quantity <= 1 || isMarketInactive}
+              disabled={quantity <= 1 || !!isMarketInactive}
               className="p-3 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border-r border-gray-200 transition-colors"
             >
               <Minus className="h-4 w-4 text-gray-600" />
@@ -282,7 +282,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             </div>
             <button
               onClick={() => handleQuantityChange(quantity + 1)}
-              disabled={quantity >= Math.min(market.availableQuantity || 1000, 1000) || isMarketInactive}
+              disabled={quantity >= Math.min(market.availableQuantity || 1000, 1000) || !!isMarketInactive}
               className="p-3 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed border-l border-gray-200 transition-colors"
             >
               <Plus className="h-4 w-4 text-gray-600" />
@@ -322,7 +322,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
           <div className="flex rounded-lg bg-gray-100 p-1">
             <button
               onClick={() => handleOrderTypeChange('market')}
-              disabled={isMarketInactive}
+              disabled={!!isMarketInactive}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                 orderType === 'market'
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -333,7 +333,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
             </button>
             <button
               onClick={() => handleOrderTypeChange('limit')}
-              disabled={isMarketInactive}
+              disabled={!!isMarketInactive}
               className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                 orderType === 'limit'
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -371,7 +371,7 @@ export function OrderPlacement({ market, user_id, initialSide = 'yes', onOrderPl
         {/* Place Order Button */}
         <Button
           onClick={handlePlaceOrder}
-          disabled={placing || hasInsufficientBalance || portfolioLoading || !balance || isMarketInactive}
+          disabled={placing || hasInsufficientBalance || portfolioLoading || !balance || !!isMarketInactive}
           className={`w-full py-3 text-base font-semibold rounded-lg ${
             selectedSide === 'yes'
               ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-400'

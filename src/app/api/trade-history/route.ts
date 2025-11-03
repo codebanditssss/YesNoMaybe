@@ -31,6 +31,10 @@ async function tradeHistoryHandler(request: NextRequest, user: AuthenticatedUser
       }, { status: 400 })
     }
 
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Admin client not configured' }, { status: 500 })
+    }
+
     // Base query for orders with market information
     let query = supabaseAdmin
       .from('orders')

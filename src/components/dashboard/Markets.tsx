@@ -579,6 +579,17 @@ export function Markets() {
                       <div className="space-y-4">
                         {filteredMarkets.map((market) => {
                           const Icon = market.icon;
+                          // Find the original market object from apiMarkets for logic/handlers
+                          const originalMarket = apiMarkets.find(m => m.id === market.id)!;
+                          // Map to OrderPlacementProps.market type
+                          const orderPlacementMarket = {
+                            id: originalMarket.id,
+                            title: originalMarket.title,
+                            yesPrice: originalMarket.yesPrice,
+                            noPrice: originalMarket.noPrice,
+                            availableQuantity: 1000, // TODO: Replace with real value if available
+                            status: originalMarket.status
+                          };
                           return (
                             <Card key={market.id} className="p-6 bg-white border-1 border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer group">
                               <div className="flex items-start gap-4">
@@ -664,7 +675,7 @@ export function Markets() {
                                           size="sm"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleOrderClick(market, 'yes');
+                                            handleOrderClick(orderPlacementMarket, 'yes');
                                           }}
                                         >
                                           Yes ₹{market.yesPrice}
@@ -675,7 +686,7 @@ export function Markets() {
                                           size="sm"
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleOrderClick(market, 'no');
+                                            handleOrderClick(orderPlacementMarket, 'no');
                                           }}
                                         >
                                           No ₹{market.noPrice}

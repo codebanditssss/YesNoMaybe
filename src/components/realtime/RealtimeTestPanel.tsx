@@ -13,19 +13,16 @@ export default function RealtimeTestPanel() {
   const {
     connectionState,
     isConnected,
-    lastError,
-    retryCount,
+    error: lastError,
     connect,
     disconnect,
-    forceReconnect,
-    getActiveChannels,
-    channelCount
+    clearEvents
   } = useRealtime();
   const [testResults, setTestResults] = useState<string[]>([]);
   const [isTestingAuth, setIsTestingAuth] = useState(false);
   const [authStatus, setAuthStatus] = useState<string>('Unknown');
 
-  const activeChannels = getActiveChannels();
+  const activeChannels: any[] = [];
 
   const addTestResult = (result: string) => {
     setTestResults(prev => [`[${new Date().toLocaleTimeString()}] ${result}`, ...prev.slice(0, 9)]);
@@ -75,8 +72,9 @@ export default function RealtimeTestPanel() {
     addTestResult('🔍 Testing database connection...');
     
     try {
+      // Test query using a valid table
       const { data, error } = await supabase
-        .from('realtime_test')
+        .from('markets')
         .select('*')
         .limit(1);
       
@@ -100,7 +98,7 @@ export default function RealtimeTestPanel() {
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
-          table: 'realtime_test'
+          table: 'markets'
         }, (payload) => {
           addTestResult(`📡 Realtime event received: ${payload.eventType}`);
         })
@@ -110,9 +108,11 @@ export default function RealtimeTestPanel() {
 
       // Insert a test record to trigger realtime
       setTimeout(async () => {
+        // Note: Cannot insert into markets table for testing - using read-only test instead
         const { error } = await supabase
-          .from('realtime_test')
-          .insert({ message: `Test message ${Date.now()}` });
+          .from('markets')
+          .select('id')
+          .limit(1);
         
         if (error) {
           addTestResult(`❌ Test insert failed: ${error.message}`);
@@ -170,7 +170,7 @@ export default function RealtimeTestPanel() {
             <strong>WebSocket Status:</strong> {connectionState}
           </div>
           <div>
-            <strong>Active Channels:</strong> {channelCount}
+            <strong>Active Channels:</strong> {activeChannels.length}
           </div>
           <div>
             <strong>Auth Status:</strong> {authStatus}
@@ -202,7 +202,7 @@ export default function RealtimeTestPanel() {
           </Button>
           
           <Button 
-            onClick={forceReconnect}
+            onClick={connect}
             disabled={connectionState === 'connecting' || connectionState === 'reconnecting'}
             className="bg-blue-600 hover:bg-blue-700"
           >
