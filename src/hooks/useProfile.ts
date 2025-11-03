@@ -58,8 +58,15 @@ export function useProfile() {
       }
 
       if (data) {
-        // Ensure is_verified is boolean, not null
-        setProfile({ ...data, is_verified: data.is_verified ?? false });
+        // Ensure is_verified is boolean, not null, and handle null numbers
+        setProfile({ 
+          ...data, 
+          is_verified: data.is_verified ?? false,
+          total_trades: data.total_trades ?? 0,
+          total_winnings: data.total_winnings ?? 0,
+          win_rate: data.win_rate ?? 0,
+          reputation_score: data.reputation_score ?? 0
+        });
       } else {
         // Create a profile if it doesn't exist
         await createProfile();
@@ -102,7 +109,14 @@ export function useProfile() {
       if (error) throw error;
 
       if (data) {
-        setProfile({ ...data, is_verified: data.is_verified ?? false });
+        setProfile({ 
+          ...data, 
+          is_verified: data.is_verified ?? false,
+          total_trades: data.total_trades ?? 0,
+          total_winnings: data.total_winnings ?? 0,
+          win_rate: data.win_rate ?? 0,
+          reputation_score: data.reputation_score ?? 0
+        });
       }
     } catch (err) {
       console.error("Error creating profile:", err);
@@ -130,7 +144,14 @@ export function useProfile() {
       if (error) throw error;
 
       if (data) {
-        setProfile({ ...data, is_verified: data.is_verified ?? false });
+        setProfile({ 
+          ...data, 
+          is_verified: data.is_verified ?? false,
+          total_trades: data.total_trades ?? 0,
+          total_winnings: data.total_winnings ?? 0,
+          win_rate: data.win_rate ?? 0,
+          reputation_score: data.reputation_score ?? 0
+        });
       }
       return data;
     } catch (err) {
@@ -199,7 +220,14 @@ export function useProfile() {
       }
 
       if (data) {
-        setProfile({ ...data, is_verified: data.is_verified ?? false });
+        setProfile({ 
+          ...data, 
+          is_verified: data.is_verified ?? false,
+          total_trades: data.total_trades ?? 0,
+          total_winnings: data.total_winnings ?? 0,
+          win_rate: data.win_rate ?? 0,
+          reputation_score: data.reputation_score ?? 0
+        });
       }
       return data;
     } catch (err) {

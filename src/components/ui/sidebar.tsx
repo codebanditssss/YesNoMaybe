@@ -70,11 +70,11 @@ export const Sidebar = ({
   );
 };
 
-export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
+export const SidebarBody = (props: { className?: string; children?: React.ReactNode }) => {
   return (
     <>
       <DesktopSidebar {...props} />
-      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
+      <MobileSidebar {...props} />
     </>
   );
 };
@@ -107,8 +107,13 @@ export const MobileSidebar = ({
   className,
   children,
   ...props
-}: React.ComponentProps<"div">) => {
+}: {
+  className?: string;
+  children?: React.ReactNode;
+} & Omit<React.ComponentProps<typeof motion.div>, 'onDrag' | 'onDragStart' | 'onDragEnd' | 'children'>) => {
   const { open, setOpen } = useSidebar();
+  // Extract conflicting props to avoid type errors
+  const { onDrag, onDragStart, onDragEnd, ...motionProps } = props as any;
   return (
     <>
       <AnimatePresence>
@@ -122,7 +127,7 @@ export const MobileSidebar = ({
               "fixed inset-0 z-50 flex h-full w-full flex-col bg-white lg:hidden dark:bg-neutral-900",
               className
             )}
-            {...props}
+            {...motionProps}
           >
             <div className="flex h-16 items-center justify-between px-4 border-b dark:border-neutral-800">
               <div className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Menu</div>

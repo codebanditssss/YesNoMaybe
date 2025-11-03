@@ -15,7 +15,10 @@ interface TraderStats {
 }
 
 export class AchievementService {
-  private supabase = createClient();
+  private supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   async checkAndAwardAchievements(stats: TraderStats) {
     try {

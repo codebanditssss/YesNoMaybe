@@ -136,8 +136,9 @@ export default function RealtimeTestPanel() {
   const getConnectionStatusColor = () => {
     switch (connectionState) {
       case 'connected': return 'bg-green-500';
-      case 'connecting': case 'reconnecting': return 'bg-yellow-500';
+      case 'connecting': return 'bg-yellow-500';
       case 'error': return 'bg-red-500';
+      case 'disconnected': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }
   };
@@ -203,7 +204,7 @@ export default function RealtimeTestPanel() {
           
           <Button 
             onClick={connect}
-            disabled={connectionState === 'connecting' || connectionState === 'reconnecting'}
+            disabled={connectionState === 'connecting'}
             className="bg-blue-600 hover:bg-blue-700"
           >
             Force Reconnect

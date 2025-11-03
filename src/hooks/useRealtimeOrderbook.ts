@@ -10,6 +10,21 @@ interface UseRealtimeOrderbookOptions {
 interface OrderbookState extends OrderbookData {
   lastUpdate: Date;
   isStale: boolean;
+  yesBids: Array<{ price: number; quantity: number; orders: Array<{ id: string; quantity: number; username: string }> }>;
+  noAsks: Array<{ price: number; quantity: number; orders: Array<{ id: string; quantity: number; username: string }> }>;
+  marketInfo: OrderbookData['marketInfo'];
+  bestPrices: { bestYesBid: number | null; bestNoAsk: number | null; midPrice: number } | null;
+  marketStats: {
+    totalLiquidity: number;
+    yesLiquidity: number;
+    noLiquidity: number;
+    liquidityRatio: number;
+    recentTradeCount: number;
+    lastTradePrice: number;
+    priceVolatility: number;
+  } | null;
+  spread: number | null;
+  spreadPercentage: number;
 }
 
 export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) {
@@ -37,7 +52,7 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
   // Update orderbook ref when data changes
   useEffect(() => {
     if (!orderbookData.loading && orderbookData.orderbook) {
-      orderbookRef.current = orderbookData;
+      orderbookRef.current = orderbookData.orderbook;
     }
   }, [orderbookData.loading, orderbookData.orderbook]);
 
@@ -73,12 +88,18 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
 
   // Update current data when orderbook changes
   useEffect(() => {
-    const orderbookDataRef = orderbookRef.current;
-    if (!orderbookDataRef) return;
+    if (!orderbookData.orderbook) return;
 
     const updateData = () => {
       const newData: OrderbookState = {
-        ...orderbookDataRef,
+        ...orderbookData.orderbook!,
+        yesBids: orderbookData.yesBids,
+        noAsks: orderbookData.noAsks,
+        marketInfo: orderbookData.marketInfo!,
+        bestPrices: orderbookData.bestPrices,
+        marketStats: orderbookData.marketStats,
+        spread: orderbookData.spread ?? null,
+        spreadPercentage: orderbookData.spreadPercentage ?? 0,
         lastUpdate: new Date(),
         isStale: false
       };
@@ -105,7 +126,7 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
         clearTimeout(updateTimeoutRef.current);
       }
     };
-  }, [marketId, isTransitioning, orderbookRef.current]);
+  }, [marketId, isTransitioning, orderbookData.orderbook, orderbookData.yesBids, orderbookData.noAsks, orderbookData.marketInfo, orderbookData.bestPrices, orderbookData.marketStats, orderbookData.spread, orderbookData.spreadPercentage]);
 
   // Handle real-time updates with debouncing
   const handleRealtimeEvent = useCallback((event: MessageEvent) => {
@@ -126,7 +147,7 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
 
             // Mark current data as stale and trigger refresh
             setCurrentData(prev => prev ? { ...prev, isStale: true } : null);
-            orderbookRef.current?.refresh?.();
+            orderbookData.refresh();
             break;
           default:
             break;
@@ -135,7 +156,7 @@ export function useRealtimeOrderbook(options: UseRealtimeOrderbookOptions = {}) 
     } catch (err) {
       console.error('Error processing realtime event:', err);
     }
-  }, [isTransitioning]);
+  }, [isTransitioning, orderbookData]);
 
   // Set up SSE connection
   useEffect(() => {

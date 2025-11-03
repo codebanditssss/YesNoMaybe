@@ -139,14 +139,14 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
   // Calculate depth percentage
   const calculateDepthPercentage = (total: number) => {
     const maxTotal = Math.max(
-      ...(yesBids || []).map((level: OrderLevel) => level.total),
-      ...(noAsks || []).map((level: OrderLevel) => level.total)
+      ...(yesBids || []).map((level) => level.quantity),
+      ...(noAsks || []).map((level) => level.quantity)
     );
     return maxTotal > 0 ? (total / maxTotal) * 100 : 0;
   };
 
   // Get visible orders based on current index and filter
-  const getVisibleOrders = (orders: OrderLevel[]) => {
+  const getVisibleOrders = (orders: typeof yesBids) => {
     if (!orders?.length) return [];
     
     let filteredOrders = orders;
@@ -159,12 +159,8 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
         filteredOrders = orders.filter(order => order.price === bestPrice);
         break;
       case 'recent':
-        // Sort by timestamp and take most recent
-        filteredOrders = [...orders].sort((a, b) => {
-          const latestA = Math.max(...a.orders.map(o => new Date(o.timestamp).getTime()));
-          const latestB = Math.max(...b.orders.map(o => new Date(o.timestamp).getTime()));
-          return latestB - latestA;
-        }).slice(0, 5);
+        // Sort by price (most recent would be highest price for bids)
+        filteredOrders = [...orders].sort((a, b) => b.price - a.price).slice(0, 5);
         break;
       default: // 'all'
         // Show paginated view for all orders
@@ -191,10 +187,10 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
 
     const visibleOrders = getVisibleOrders(orders);
 
-    return visibleOrders.map((level: OrderLevel, index: number) => {
-      const depthPercentage = calculateDepthPercentage(level.total);
-      const isNewOrder = level.orders.some(o => o.isNew);
-      const isUpdated = level.orders.some(o => o.isUpdated);
+    return visibleOrders.map((level, index: number) => {
+      const depthPercentage = calculateDepthPercentage(level.quantity);
+      const isNewOrder = false; // Not available in OrderbookLevel
+      const isUpdated = false; // Not available in OrderbookLevel
       
       return (
         <tr 
@@ -217,7 +213,7 @@ export function Orderbook({ selectedMarket, onMarketSelect, isTransitioning, isP
             </div>
           </td>
           <td className="py-2 text-right">{formatNumber(level.quantity)}</td>
-          <td className="py-2 text-right text-gray-500">{formatNumber(level.total)}</td>
+          <td className="py-2 text-right text-gray-500">{formatNumber(level.quantity)}</td>
           <td className="py-2 pr-4">
             <div className="w-full bg-gray-100 rounded-full h-1.5">
               <div

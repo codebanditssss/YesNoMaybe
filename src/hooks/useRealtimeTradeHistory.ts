@@ -7,7 +7,7 @@ interface UseRealtimeTradeHistoryOptions {
   refreshInterval?: number;
   limit?: number;
   offset?: number;
-  sortBy?: string;
+  sortBy?: 'created_at' | 'updated_at' | 'filled_quantity' | 'price' | 'quantity';
   sortOrder?: 'asc' | 'desc';
 }
 

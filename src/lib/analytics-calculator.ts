@@ -211,7 +211,8 @@ export class AnalyticsCalculator {
         progress: Math.min(winningTrades.length, 20),
         requirement: 20,
         category: "achievement",
-        icon: "Award"
+        icon: "Award",
+        tier: "gold"
       }
     ]
 

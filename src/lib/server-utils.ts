@@ -90,9 +90,7 @@ export function withAuthentication<
     request: NextRequest,
     ...args: T
   ) => Promise<Response>
-): T extends []
-  ? (request: NextRequest) => Promise<Response>
-  : (request: NextRequest, ...args: T) => Promise<Response> {
+): (request: NextRequest, ...args: T) => Promise<Response> {
   return async (request: NextRequest, ...args: T) => {
     try {
       const user = await getCurrentUser(request)
@@ -141,9 +139,7 @@ export function withAdminAuthentication<
     request: NextRequest,
     ...args: T
   ) => Promise<Response>
-): T extends [] 
-  ? (request: NextRequest) => Promise<Response>
-  : (request: NextRequest, ...args: T) => Promise<Response> {
+): (request: NextRequest, ...args: T) => Promise<Response> {
   return withAuthentication(async (user, supabase, request, ...args: T) => {
     if (user.role !== 'admin') {
       return new Response(
@@ -159,9 +155,7 @@ export function withAdminAuthentication<
     }
 
     return handler(user, supabase, request, ...args)
-  }) as T extends []
-    ? (request: NextRequest) => Promise<Response>
-    : (request: NextRequest, ...args: T) => Promise<Response>
+  })
 }
 
 /**
