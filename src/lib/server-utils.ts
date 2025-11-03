@@ -83,7 +83,7 @@ export async function getCurrentUser(request?: NextRequest) {
  */
 export function withAuthentication<T extends any[]>(
   handler: (user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>, supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>, request: NextRequest, ...args: T) => Promise<Response>
-) {
+): (request: NextRequest, ...args: T) => Promise<Response> {
   return async (request: NextRequest, ...args: T) => {
     try {
       const user = await getCurrentUser(request)
@@ -125,7 +125,7 @@ export function withAuthentication<T extends any[]>(
  */
 export function withAdminAuthentication<T extends any[]>(
   handler: (user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>, supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>, request: NextRequest, ...args: T) => Promise<Response>
-) {
+): (request: NextRequest, ...args: T) => Promise<Response> {
   return withAuthentication(async (user, supabase, request, ...args: T) => {
     if (user.role !== 'admin') {
       return new Response(
