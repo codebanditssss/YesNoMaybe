@@ -19,7 +19,11 @@ const config = {
     }
     return config;
   },
-  serverExternalPackages: ['pg']
+  serverExternalPackages: ['pg'],
+  // Ensure proper build output generation
+  experimental: {
+    optimizePackageImports: ['@supabase/supabase-js', '@supabase/ssr']
+  }
 }
 
 module.exports = config 
