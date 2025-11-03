@@ -34,7 +34,7 @@ interface OrderLevel {
 }
 
 interface OrderbookProps {
-  selectedMarket?: Market;
+  selectedMarket?: Market | null;
   onMarketSelect?: (market: Market) => void;
   isTransitioning?: boolean;
   isPending?: boolean;
