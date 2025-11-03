@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuthentication } from '@/lib/server-utils';
+import { withAdminAuthentication, getCurrentUser, getAuthenticatedServerClient } from '@/lib/server-utils';
 
-export async function GET(request: NextRequest) {
-  return withAdminAuthentication(async (user) => {
-    try {
-      // Simulate moderation data
-      // In a real app, this would query the database for actual reports
-      const moderationData = {
+async function moderationHandler(
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>,
+  request: NextRequest
+) {
+  try {
+    // Simulate moderation data
+    // In a real app, this would query the database for actual reports
+    const moderationData = {
         reports: [
           {
             id: '1',
@@ -75,16 +78,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(moderationData);
     } catch (error) {
       console.error('Error fetching moderation data:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch moderation data' },
-        { status: 500 }
-      );
-    }
-  });
+    return NextResponse.json(
+      { error: 'Failed to fetch moderation data' },
+      { status: 500 }
+    );
+  }
 }
 
-export async function POST(request: NextRequest) {
-  return withAdminAuthentication(async (user) => {
+async function moderationActionHandler(
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>,
+  request: NextRequest
+) {
     try {
       const { reportId, action, reason } = await request.json();
 
@@ -99,10 +104,12 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       console.error('Error taking moderation action:', error);
-      return NextResponse.json(
-        { error: 'Failed to take moderation action' },
-        { status: 500 }
-      );
-    }
-  });
-} 
+    return NextResponse.json(
+      { error: 'Failed to take moderation action' },
+      { status: 500 }
+    );
+  }
+}
+
+export const GET = withAdminAuthentication(moderationHandler);
+export const POST = withAdminAuthentication(moderationActionHandler); 

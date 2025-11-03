@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuthentication } from '@/lib/server-utils';
+import { withAdminAuthentication, getCurrentUser, getAuthenticatedServerClient } from '@/lib/server-utils';
 
-export async function GET(request: NextRequest) {
-  return withAdminAuthentication(async (user) => {
+async function systemHandler(
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>,
+  request: NextRequest
+) {
     try {
       // Simulate system metrics data
       // In a real app, this would gather actual system metrics
@@ -54,10 +57,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(systemMetrics);
     } catch (error) {
       console.error('Error fetching system metrics:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch system metrics' },
-        { status: 500 }
-      );
-    }
-  });
-} 
+    return NextResponse.json(
+      { error: 'Failed to fetch system metrics' },
+      { status: 500 }
+    );
+  }
+}
+
+export const GET = withAdminAuthentication(systemHandler); 

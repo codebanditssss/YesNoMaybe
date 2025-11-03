@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuthentication } from '@/lib/server-utils';
+import { withAdminAuthentication, getCurrentUser, getAuthenticatedServerClient } from '@/lib/server-utils';
 
-export async function GET(request: NextRequest) {
-  return withAdminAuthentication(async (user) => {
+async function reportsHandler(
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>,
+  request: NextRequest
+) {
     try {
       // Simulate reports data
       // In a real app, this would generate actual reports from database data
@@ -52,16 +55,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(reportsData);
     } catch (error) {
       console.error('Error fetching reports data:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch reports data' },
-        { status: 500 }
-      );
-    }
-  });
+    return NextResponse.json(
+      { error: 'Failed to fetch reports data' },
+      { status: 500 }
+    );
+  }
 }
 
-export async function POST(request: NextRequest) {
-  return withAdminAuthentication(async (user) => {
+async function generateReportHandler(
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>,
+  request: NextRequest
+) {
     try {
       const { reportType, dateRange, includeData } = await request.json();
 
@@ -80,10 +85,12 @@ export async function POST(request: NextRequest) {
       });
     } catch (error) {
       console.error('Error generating custom report:', error);
-      return NextResponse.json(
-        { error: 'Failed to generate custom report' },
-        { status: 500 }
-      );
-    }
-  });
-} 
+    return NextResponse.json(
+      { error: 'Failed to generate custom report' },
+      { status: 500 }
+    );
+  }
+}
+
+export const GET = withAdminAuthentication(reportsHandler);
+export const POST = withAdminAuthentication(generateReportHandler); 
