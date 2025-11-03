@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuthentication } from '@/lib/server-utils';
+import { withAdminAuthentication, getCurrentUser, getAuthenticatedServerClient } from '@/lib/server-utils';
 import { supabaseAdmin } from '@/lib/supabase';
 
 async function adminUserHandler(
-  user: any, 
-  supabase: any, 
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>,
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: Promise<{ userId: string }> }
 ): Promise<Response> {
   try {
     if (!supabaseAdmin) {
       return NextResponse.json({ error: 'Admin client not configured' }, { status: 500 });
     }
 
+    const params = await context.params;
     const { userId } = params;
     
     if (request.method === 'PATCH') {
@@ -165,5 +166,16 @@ async function adminUserHandler(
   }
 }
 
-export const GET = withAdminAuthentication(adminUserHandler);
-export const PATCH = withAdminAuthentication(adminUserHandler); 
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ userId: string }> }
+) {
+  return withAdminAuthentication(adminUserHandler)(request, context);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  context: { params: Promise<{ userId: string }> }
+) {
+  return withAdminAuthentication(adminUserHandler)(request, context);
+} 
