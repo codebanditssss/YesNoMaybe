@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuthentication } from '@/lib/server-utils';
+import { withAdminAuthentication, getCurrentUser, getAuthenticatedServerClient } from '@/lib/server-utils';
 
-export async function GET(request: NextRequest) {
-  return withAdminAuthentication(async (user) => {
-    try {
-      // Simulate analytics data
-      // In a real app, this would query the database for actual analytics
-      const analyticsData = {
+async function analyticsHandler(
+  user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>,
+  supabase: Awaited<ReturnType<typeof getAuthenticatedServerClient>>,
+  request: NextRequest
+) {
+  try {
+    // Simulate analytics data
+    // In a real app, this would query the database for actual analytics
+    const analyticsData = {
         overview: {
           userGrowth: {
             total: 12547,
@@ -64,10 +67,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(analyticsData);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch analytics data' },
-        { status: 500 }
-      );
-    }
-  });
-} 
+    return NextResponse.json(
+      { error: 'Failed to fetch analytics data' },
+      { status: 500 }
+    );
+  }
+}
+
+export const GET = withAdminAuthentication(analyticsHandler); 

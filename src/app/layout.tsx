@@ -4,6 +4,7 @@ import '@/styles/globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { RealtimeProvider } from '@/contexts/RealtimeContext'
 import ResizableNavbar from '@/components/ui/resizable-navbar'
+import { Analytics } from '@vercel/analytics/next'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -28,6 +29,7 @@ export default function RootLayout({
           {children}
           </RealtimeProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   )
